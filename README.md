@@ -1,6 +1,7 @@
-# TSP-1-2---Modul-rn-software-pro-klasifikaci-elektrofyziologick-ch-dat
-# some chang
+# TSP 1/2
 
+## Project structure
+```
 repo/
 ├─ configs/ (konfigurační soubory pro hydru)
 │  ├─ config.yaml
@@ -67,3 +68,41 @@ repo/
    │     └─ mne.py
    │
    └─ main.py
+```
+### src/validation
+Obsahuje validátor pro každý hydra config, kontroluje:
+- existenci parametrů
+- typy
+- strukturu configu
+- logickou konzistenci parametrů
+- hodnotové rozsahy
+- existence vstupních souborů
+
+### src/types/dto
+DTO definují datové struktury, které jsou vstupem pro každý krok pipeline (viz `src/impl`). Umožní jednodušší testování, případnou serializaci do .jsonu / Pickle. Každá struktura obsahuje:
+- parametry
+- seed
+- dataset
+
+### src/types/interfaces
+Obecná rozhraní, která definují chování implementace v daném kroku pipeline. Pro každou knihovnu existuje adaptér, který implementuje dané rozhraní. Pipeline pracuje s rozhraním jako závislost a je kompletně oddělena od vnějších knihoven.
+
+## Pipeline
+```
+Hydra Config (config.yaml)
+     │
+     ▼
+Config Schema Validation (validation for each config input)
+     │
+     ▼
+Preprocessing
+     │
+     ▼
+Augmentation (optional)
+     │
+     ▼
+Model / Detection
+     │
+     ▼
+Visualization
+```
