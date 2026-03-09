@@ -14,6 +14,5 @@ gaussian_noise_std: 0.01
 # Maximum temporal shift applied to each sample, expressed in samples.
 max_time_shift: 10
 
-
 # Probability of dropping a channel during augmentation.
 channel_dropout_prob: 0.0
