@@ -10,6 +10,7 @@ class PipelineStepMeta:
     e.g. 'validation' or 'preprocessing'.
     """
 
+
     implementation_name: str
     """
     Name of current implementation, e. g. 'PydanticConfigValidator'
