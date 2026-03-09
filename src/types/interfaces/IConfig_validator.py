@@ -1,11 +1,9 @@
-# src/types/interfaces/validator.py
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from src.pipeline.contracts.step_result import StepResult
-from src.validation.validation_input import ValidationInput
+from src.validation.contracts.validation_input import ValidationInput
+from src.validation.contracts.validation_message import ValidationMessage
 
 
 class IConfigValidator(ABC):
@@ -14,5 +12,5 @@ class IConfigValidator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def validate(self, input_dto: ValidationInput) -> StepResult[ValidatedConfig]:
+    def validate(self, input_dto: ValidationInput) -> list[ValidationMessage]:
         raise NotImplementedError
