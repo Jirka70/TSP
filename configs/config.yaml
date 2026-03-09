@@ -34,5 +34,5 @@ visualization:
   save_training_curve: true
 
 reproducibility:
-  seed: 42
+  seed: 69
   output_dir: ./outputs
