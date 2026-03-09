@@ -1,0 +1,16 @@
+from dataclasses import dataclass
+
+from src.types.dto.config.augmentation_config import AugmentationConfig
+from src.types.dto.config.dataset_config import DatasetConfig
+from src.types.dto.config.evaluation_config import EvaluationConfig
+from src.types.dto.config.model_config import ModelConfig
+from src.types.dto.config.preprocessing_config import PreprocessingConfig
+
+
+@dataclass(frozen=True)
+class ExperimentConfig:
+    dataset: DatasetConfig
+    preprocessing: PreprocessingConfig
+    augmentation: AugmentationConfig
+    model: ModelConfig
+    evaluation: EvaluationConfig
