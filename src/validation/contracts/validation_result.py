@@ -4,8 +4,7 @@ from src.validation.contracts.validation_message import ValidationMessage
 
 
 @dataclass(frozen=True)
-class ValidationResult[T]:
-    value: T | None
+class ValidationResult:
     messages: list[ValidationMessage]
 
     @property
