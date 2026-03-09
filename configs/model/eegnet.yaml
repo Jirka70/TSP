@@ -1,9 +1,11 @@
 # Model configuration for EEGNet.
 
 # Backend / model family identifier.
+# Type of model
 backend: eegnet
 
 # Number of target classes in the classification task.
+# Number of output classes (e. g. 0 -> left_hand, 1 -> right_hand)
 n_classes: 2
 
 # Number of EEG channels expected by the model.
@@ -12,21 +14,30 @@ n_channels: 64
 
 # Number of temporal samples per input window / epoch.
 # This should match the prepared sample shape.
+# In EEG classification model usually does not obtain entire continuous signal.Instead of it gets smaller parts of signal (a. k. a. "epochs" or "windows")
 n_times: 256
 
 # Dropout rate used inside the model.
+# Reduces overfitting of model
 dropout: 0.25
 
 # Temporal kernel length used by the first convolutional block.
+# Window with size of kernel_length, which shifts over the signal and finds certain patterns
 kernel_length: 64
 
 # Number of temporal filters in the first convolutional layer.
+# Neural network will learn [F1] temporal filters (alpha_rhythm, beta_rhythm, small movements, fast movements, ...)
 F1: 8
 
 # Depth multiplier used in the depthwise convolution block.
+# One temporal filter (F1) could have more spatial filters (combination of signals from more electrodes)
+# Spatial filter creates a new signal as a combination of more electrodes)
 D: 2
 
 # Number of pointwise filters.
+# After F1 and D filter neural network has information about: which rhythms exist and where appears in the head
+# F2 filter combines these two filters (e g. beta_rhythm + right hemisphere = left hand movement)
+# F1 * D = F2
 F2: 16
 
 # Training-related parameters could be here,
