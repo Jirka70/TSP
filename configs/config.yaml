@@ -1,37 +1,38 @@
-# Root experiment configuration.
-# This file composes the full experiment config from smaller config groups.
+dataset:
+  name: eegbci
+  path: ./data/eegbci
+  subject_ids: [1]
+  session_ids: null
+  run_ids: [4, 8, 12]
+  task: mi
 
-defaults:
-  # Select one dataset configuration.
-  - dataset: eegbci
+preprocessing:
+  backend: mne
+  l_freq: 8.0
+  h_freq: 30.0
+  notch_freq: 50.0
+  target_sfreq: 128
+  rereference: average
+  channel_selection: null
 
-  # Select one preprocessing backend/configuration.
-  - preprocessing: mne
+augmentation:
+  enabled: false
+  backend: null
 
-  # Select one augmentation configuration.
-  - augmentation: none
+model:
+  backend: eegnet
+  n_classes: 2
 
-  # Select one model configuration.
-  - model: eegnet
+evaluation:
+  metrics:
+    - accuracy
+    - f1_macro
 
-  # Select one evaluation configuration.
-  - evaluation: default
+visualization:
+  backend: matplotlib
+  save_confusion_matrix: true
+  save_training_curve: true
 
-  # Keep Hydra's own defaults behavior.
-  - _self_
-
-# Global reproducibility and run-level settings.
 reproducibility:
-  # Random seed used across the whole experiment.
   seed: 42
-
-  # Directory where experiment outputs will be stored.
   output_dir: ./outputs
-
-# Optional metadata for experiment tracking.
-experiment:
-  # Human-readable experiment name.
-  name: eeg_motor_imagery_baseline
-
-  # Free-form description for logs or reports.
-  description: Baseline EEG motor imagery experiment with MNE preprocessing and EEGNet model.
