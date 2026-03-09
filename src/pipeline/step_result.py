@@ -15,11 +15,10 @@ class StepResult(Generic[T]):
 
     meta: PipelineStepMeta | None = None
     """
-    Metadata o provedení kroku.
-    Např. název kroku, implementace, doba běhu.
+    Metadata about step execution
     """
 
     warnings: list[str] = field(default_factory=list)
     """
-    Ne-fatální upozornění vzniklá během kroku.
+    Warning messages caused during step
     """
