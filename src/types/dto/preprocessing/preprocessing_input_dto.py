@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.types.dto.raw_data_dto import RawDataDTO
+from src.types.dto.load.raw_data_dto import RawDataDTO
 
 
 @dataclass(frozen=True)
