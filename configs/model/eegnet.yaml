@@ -1,0 +1,45 @@
+# Model configuration for EEGNet.
+
+# Backend / model family identifier.
+backend: eegnet
+
+# Number of target classes in the classification task.
+n_classes: 2
+
+# Number of EEG channels expected by the model.
+# This should match the data after preprocessing / channel selection.
+n_channels: 64
+
+# Number of temporal samples per input window / epoch.
+# This should match the prepared sample shape.
+n_times: 256
+
+# Dropout rate used inside the model.
+dropout: 0.25
+
+# Temporal kernel length used by the first convolutional block.
+kernel_length: 64
+
+# Number of temporal filters in the first convolutional layer.
+F1: 8
+
+# Depth multiplier used in the depthwise convolution block.
+D: 2
+
+# Number of pointwise filters.
+F2: 16
+
+# Training-related parameters could be here,
+# or alternatively placed in a separate training config group.
+training:
+  # Number of training epochs.
+  epochs: 50
+
+  # Batch size used during training.
+  batch_size: 32
+
+  # Learning rate for the optimizer.
+  learning_rate: 0.001
+
+  # Optimizer name.
+  optimizer: adam

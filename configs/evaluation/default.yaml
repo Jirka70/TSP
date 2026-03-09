@@ -1,0 +1,14 @@
+# Default evaluation configuration.
+
+# Metrics to compute after model inference.
+metrics:
+  - accuracy
+  - f1_macro
+  - precision_macro
+  - recall_macro
+
+# Whether to compute a confusion matrix.
+compute_confusion_matrix: true
+
+# Whether to store raw predictions for later analysis.
+save_predictions: true

@@ -1,0 +1,7 @@
+# No-op augmentation configuration.
+# This explicitly disables data augmentation.
+
+enabled: false
+
+# Backend is null because no augmentation implementation is used.
+backend: null
