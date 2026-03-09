@@ -6,5 +6,5 @@ from src.validation.contracts.validation_result import ValidationResult
 
 class IRawDataValidator(ABC):
     @abstractmethod
-    def validate(self, raw_data: RawDataDTO) -> ValidationResult[RawDataDTO]:
+    def validate(self, raw_data: RawDataDTO) -> ValidationResult:
         raise NotImplementedError
