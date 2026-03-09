@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.types.dto.augmentation.augmented_samples import AugmentedSamplesDTO
+from src.types.dto.augmentation.augmented_samples_dto import AugmentedSamplesDTO
 
 
 @dataclass(frozen=True)
