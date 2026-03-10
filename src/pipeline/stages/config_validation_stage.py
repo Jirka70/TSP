@@ -1,3 +1,4 @@
+from src.pipeline.context.run_context import RunContext
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.validation.config_validator import IConfigValidator
 from src.validation.contracts.validation_message import ValidationMessage
@@ -8,11 +9,11 @@ class ConfigValidationStage:
     def __init__(self, validators: list[IConfigValidator]) -> None:
         self._validators = validators
 
-    def run(self, config: ExperimentConfig) -> ValidationResult:
+    def run(self, config: ExperimentConfig, run_ctx: RunContext) -> ValidationResult:
         messages: list[ValidationMessage] = []
 
         for validator in self._validators:
-            result: ValidationResult = validator.validate(config)
+            result: ValidationResult = validator.validate(config, run_ctx)
             messages.extend(result.messages)
 
         if any(msg.severity == "error" for msg in messages):
