@@ -20,8 +20,11 @@ from typing import Optional
 @dataclass(frozen=True)
 class RunContext:
     run_id: str
+    started_at: datetime
+    dataset_name: str
+    preprocessing_backend: str
+    augmentation_backend: str | None
     experiment_name: str  # experiment name (e. g. "left_right_subject_01")
     pipeline_name: str  # name of the entire pipeline (e. g. "training_pipeline_<version>")
     git_commit_hash: Optional[str]
     random_seed: int  # seed of run
-    started_at: datetime
