@@ -28,9 +28,6 @@ def my_app(cfg):
         preprocessing
     )
 
-    print(type(cfg))
-
-
     experiment_config_mock = ExperimentConfig(
         dataset=DatasetConfig(
             name="EEGBCI",
@@ -59,7 +56,8 @@ def my_app(cfg):
         ),
         evaluation=EvaluationConfig(
             metrics=["accuracy", "f1_macro", "precision_macro", "recall_macro"],
-        )
+        ),
+        mode=cfg.mode
     )
 
     ex.run(experiment_config_mock)

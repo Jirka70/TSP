@@ -7,5 +7,7 @@ defaults:
   - visualization: matplotlib
   - dataset: eegbci
 
+mode: training
+
 reproducibility:
   output_dir: ./outputs
