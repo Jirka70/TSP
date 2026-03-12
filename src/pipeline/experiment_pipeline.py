@@ -9,6 +9,7 @@ from src.pipeline.stages.preprocessing_stage import PreprocessingStage
 from src.pipeline.stages.raw_data_validation_stage import RawDataValidationStage
 from src.pipeline.stages.sample_preparation_stage import SamplePreparationStage
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
+from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
@@ -27,8 +28,8 @@ class ExperimentPipeline:
 
     def run(self, config: ExperimentConfig) -> None:
 
-        run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
-        self._data_loader.run(run_ctx)
+        #run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
+        #self._data_loader.run(DatasetConfig(), run_ctx)
         """
         config_validation = self._config_validation_stage.run(config)
         if not config_validation.is_valid:
