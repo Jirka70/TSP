@@ -4,6 +4,7 @@ from pathlib import Path
 import hydra
 
 from src.impl.data_loader.dummy_data_loader import DummyLoader
+from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.pipeline.experiment_pipeline import ExperimentPipeline
 from src.types.dto.config.augmentation_config import AugmentationConfig
 from src.types.dto.config.dataset_config import DatasetConfig
@@ -21,8 +22,10 @@ def my_app(cfg):
     log.info("Experiment start")
 
     dl = DummyLoader()
+    preprocessing = DummyPreprocessing()
     ex = ExperimentPipeline(
-        dl
+        dl,
+        preprocessing
     )
 
     print(type(cfg))

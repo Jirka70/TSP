@@ -17,21 +17,26 @@ from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInp
 from src.types.dto.training.sample_preparation_input_dto import SamplePreparationInputDTO
 from src.types.dto.training.training_input_dto import TrainingInputDTO
 from src.types.interfaces.data_loader import IDataLoader
+from src.types.interfaces.preprocessing import IPreprocessing
 
 
 class ExperimentPipeline:
     def __init__(
         self,
-        data_loader: IDataLoader
+        data_loader: IDataLoader,
+        preprocessing: IPreprocessing
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
+        self._preprocessing = preprocessing
 
     def run(self, config: ExperimentConfig) -> None:
 
         run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
         raw_data: RawDataDTO = self._data_loader.run(config.dataset, run_ctx)
-        print(raw_data)
+
+        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(raw_data, config.preprocessing)
+        self._preprocessing.run(preprocessing_input, run_ctx)
         """
         config_validation = self._config_validation_stage.run(config)
         if not config_validation.is_valid:

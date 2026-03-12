@@ -7,4 +7,4 @@ class PreprocessedDataDTO:
     signal: Any
     s_freq: float
     channel_names: list[str]
-    metadata: dict[str, object]
+    metadata: dict[str, object] | None = None
