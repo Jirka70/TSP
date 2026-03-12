@@ -4,9 +4,6 @@ from typing import Any
 
 @dataclass(frozen=True)
 class PreparedSamplesDTO:
-    """
-    Output of sample preparation step for model
-    """
 
     X: Any
     """
@@ -18,7 +15,7 @@ class PreparedSamplesDTO:
     Correct answer (answer from the "teacher")
     """
 
-    metadata: dict[str, object]
+    metadata: dict[str, object] | None = None
     """
     Additional info about dataset (optional)
     """

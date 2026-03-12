@@ -8,21 +8,23 @@ from src.types.dto.config.mode import Mode
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.preprocessing.preprocessed_data_dto import PreprocessedDataDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
+from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.preprocessing import IPreprocessing
 
 
 class ExperimentPipeline:
     def __init__(
-        self,
-        data_loader: IDataLoader,
-        preprocessing: IPreprocessing
+            self,
+            data_loader: IDataLoader,
+            preprocessing: IPreprocessing,
+            #augmentation: IAugmentor
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
         self._preprocessing = preprocessing
+        #self._augmentation = augmentation
         self._log = logging.Logger(__name__)
-
 
     def run(self, config: ExperimentConfig) -> None:
 
@@ -32,9 +34,10 @@ class ExperimentPipeline:
         preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(load_result.data, config.preprocessing)
         preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(preprocessing_input, run_ctx)
 
-        if (config.mode == Mode.TRAINING):
+        if config.mode == Mode.TRAINING.value:
             pass
-        elif (config.mode == Mode.EXPERIMENT):
+            #self._augmentation.run()
+        elif config.mode == Mode.EXPERIMENT:
             pass
         else:
             self._log.warning(f"Unknown mode: {config.mode}""")
