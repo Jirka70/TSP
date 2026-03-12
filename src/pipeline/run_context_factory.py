@@ -22,11 +22,6 @@ class RunContextFactory:
         except Exception:
             return None
 
-    @staticmethod
-    def _generate_seed() -> int:
-        # Generates a 32-bit random seed
-        return secrets.randbits(32)
-
     def create(
         self,
         config: ExperimentConfig,
@@ -35,7 +30,6 @@ class RunContextFactory:
     ) -> RunContext:
 
         run_id = str(uuid4())
-        random_seed = self._generate_seed()
         started_at = datetime.utcnow()
 
         git_commit_hash = self._resolve_git_commit_hash()
@@ -53,5 +47,4 @@ class RunContextFactory:
             experiment_name=experiment_name,
             pipeline_name=pipeline_name,
             git_commit_hash=git_commit_hash,
-            random_seed=random_seed,
         )
