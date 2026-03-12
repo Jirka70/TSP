@@ -62,5 +62,6 @@ def my_app(cfg):
 
     ex.run(experiment_config_mock)
 
+
 if __name__ == "__main__":
     my_app()
