@@ -12,6 +12,7 @@ from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputD
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
 from src.types.dto.training.sample_preparation_input_dto import SamplePreparationInputDTO
 from src.types.dto.training.training_input_dto import TrainingInputDTO
@@ -28,8 +29,9 @@ class ExperimentPipeline:
 
     def run(self, config: ExperimentConfig) -> None:
 
-        #run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
-        #self._data_loader.run(DatasetConfig(), run_ctx)
+        run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
+        raw_data: RawDataDTO = self._data_loader.run(config.dataset, run_ctx)
+        print(raw_data)
         """
         config_validation = self._config_validation_stage.run(config)
         if not config_validation.is_valid:

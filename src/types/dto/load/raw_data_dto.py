@@ -19,7 +19,7 @@ class RawDataDTO:
     List of EEG channel names
     """
 
-    metadata: dict[str, object]
+    metadata: dict[str, object] | None = None
     """
     Optional container for information about loaded data (dataset name, run id, etc.)
     """
