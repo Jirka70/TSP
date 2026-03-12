@@ -8,7 +8,5 @@ class AugmentationStage:
     def __init__(self, augmentor: IAugmentor) -> None:
         self._augmentor = augmentor
 
-    def run(
-        self, input_dto: AugmentationInputDTO, run_ctx: RunContext
-    ) -> AugmentedSamplesDTO:
+    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> AugmentedSamplesDTO:
         return self._augmentor.run(input_dto, run_ctx)

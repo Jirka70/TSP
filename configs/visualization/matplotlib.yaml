@@ -1,0 +1,5 @@
+backend: matplotlib
+width: 400
+height: 800
+save_confusion_matrix: true
+save_training_curve: true
