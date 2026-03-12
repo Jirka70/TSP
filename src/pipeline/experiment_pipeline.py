@@ -1,3 +1,4 @@
+from src.pipeline.context.run_context import RunContext
 from src.pipeline.run_context_factory import RunContextFactory
 from src.pipeline.stages.augmentation_stage import AugmentationStage
 from src.pipeline.stages.config_validation_stage import ConfigValidationStage
@@ -10,36 +11,25 @@ from src.pipeline.stages.sample_preparation_stage import SamplePreparationStage
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
-from src.types.dto.load.data_loading_input_dto import DataLoadingInputDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
 from src.types.dto.training.sample_preparation_input_dto import SamplePreparationInputDTO
 from src.types.dto.training.training_input_dto import TrainingInputDTO
+from src.types.interfaces.data_loader import IDataLoader
 
 
 class ExperimentPipeline:
     def __init__(
         self,
-        config_validation_stage: ConfigValidationStage,
-        run_context_factory: RunContextFactory,
-        data_loading_stage: DataLoadingStage,
-        raw_data_validation_stage: RawDataValidationStage,
-        preprocessing_stage: PreprocessingStage,
-        sample_preparation_stage: SamplePreparationStage,
-        augmentation_stage: AugmentationStage,
-        model_training_stage: ModelTrainingStage,
-        evaluation_stage: EvaluationStage,
+        data_loader: IDataLoader
     ) -> None:
-        self._config_validation_stage = config_validation_stage
-        self._run_context_factory = run_context_factory
-        self._data_loading_stage = data_loading_stage
-        self._raw_data_validation_stage = raw_data_validation_stage
-        self._preprocessing_stage = preprocessing_stage
-        self._sample_preparation_stage = sample_preparation_stage
-        self._augmentation_stage = augmentation_stage
-        self._model_training_stage = model_training_stage
-        self._evaluation_stage = evaluation_stage
+        self._data_loader = data_loader
+        self._run_context_factory = RunContextFactory()
 
     def run(self, config: ExperimentConfig) -> None:
+
+        run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
+        self._data_loader.run(run_ctx)
+        """
         config_validation = self._config_validation_stage.run(config)
         if not config_validation.is_valid:
             raise ValueError(config_validation.messages)
@@ -100,3 +90,4 @@ class ExperimentPipeline:
             metrics=valid_config.evaluation.metrics,
         )
         evaluation = self._evaluation_stage.run(evaluation_input, run_context)
+        """
