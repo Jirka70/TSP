@@ -2,6 +2,7 @@ defaults:
   - _self_
   - preprocessing: mne
   - epoching: default
+  - split: default
   - augmentation: none
   - model: eegnet
   - evaluation: default
