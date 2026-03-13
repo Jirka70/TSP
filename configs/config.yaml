@@ -4,7 +4,7 @@ defaults:
   - epoching: default
   - split: default
   - augmentation: none
-  - model: eegnet
+  - training: eegnet
   - evaluation: default
   - visualization: matplotlib
   - dataset: eegbci

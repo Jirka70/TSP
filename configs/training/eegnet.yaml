@@ -1,24 +1,24 @@
 # Model configuration for EEGNet.
 
-# Backend / model family identifier.
-# Type of model
+# Backend / training family identifier.
+# Type of training
 backend: eegnet
 
 # Number of target classes in the classification task.
 # Number of output classes (e. g. 0 -> left_hand, 1 -> right_hand)
 n_classes: 2
 
-# Number of EEG channels expected by the model.
+# Number of EEG channels expected by the training.
 # This should match the data after preprocessing / channel selection.
 n_channels: 64
 
 # Number of temporal samples per input window / epoch.
 # This should match the prepared sample shape.
-# In EEG classification model usually does not obtain entire continuous signal.Instead of it gets smaller parts of signal (a. k. a. "epochs" or "windows")
+# In EEG classification training usually does not obtain entire continuous signal.Instead of it gets smaller parts of signal (a. k. a. "epochs" or "windows")
 n_times: 256
 
-# Dropout rate used inside the model.
-# Reduces overfitting of model
+# Dropout rate used inside the training.
+# Reduces overfitting of training
 dropout: 0.25
 
 # Temporal kernel length used by the first convolutional block.

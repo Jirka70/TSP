@@ -1,6 +1,6 @@
 # Default evaluation configuration.
 
-# Metrics to compute after model inference.
+# Metrics to compute after training inference.
 metrics:
   - accuracy
   - f1_macro
