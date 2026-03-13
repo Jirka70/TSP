@@ -9,3 +9,4 @@ class DatasetSplitDTO:
     train_data: EpochingDataDTO
     validation_data: EpochingDataDTO | None
     test_data: EpochingDataDTO | None
+
