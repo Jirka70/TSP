@@ -6,6 +6,7 @@ import hydra
 from src.impl.data_loader.dummy_data_loader import DummyLoader
 from src.impl.epoching.dummy_epoching import DummyEpoching
 from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
+from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
 from src.types.dto.config.augmentation_config import AugmentationConfig
 from src.types.dto.config.dataset_config import DatasetConfig
@@ -14,6 +15,7 @@ from src.types.dto.config.evaluation_config import EvaluationConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.config.model_config import ModelConfig
 from src.types.dto.config.preprocessing_config import PreprocessingConfig
+from src.types.dto.config.split_config import SplitConfig
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -26,10 +28,13 @@ def my_app(cfg):
     dl = DummyLoader()
     preprocessing = DummyPreprocessing()
     epoching = DummyEpoching()
+    split = DummySplitter()
+    augmenation =
     ex = ExperimentPipeline(
         dl,
         preprocessing,
-        epoching
+        epoching,
+        split
     )
 
     experiment_config_mock = ExperimentConfig(
@@ -64,6 +69,15 @@ def my_app(cfg):
             drop_last_incomplete_epoch=False,
             skip_missing_events=True,
             picks=[]
+        ),
+        split=SplitConfig(
+            backend="",
+            enabled=True,
+            random_seed=42,
+            shuffle=True,
+            train_ratio=0.7,
+            validation_ratio=0.15,
+            test_ratio=0.15
         ),
         augmentation=AugmentationConfig(
             enabled=True,
