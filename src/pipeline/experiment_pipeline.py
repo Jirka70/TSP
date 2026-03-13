@@ -52,9 +52,11 @@ class ExperimentPipeline:
 
             splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoching_result.data)
             splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(splitting_input, run_ctx)
+            train_data = splitting_result.data.train_data # preparing training data for augmentation
 
-            augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, splitting_result.data)
+            augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, train_data)
             augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
+
 
         elif config.mode == Mode.EXPERIMENT:
             pass
