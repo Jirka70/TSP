@@ -8,6 +8,7 @@ from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.pipeline.experiment_pipeline import ExperimentPipeline
 from src.types.dto.config.augmentation_config import AugmentationConfig
 from src.types.dto.config.dataset_config import DatasetConfig
+from src.types.dto.config.epoching_config import EpochingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.config.model_config import ModelConfig
@@ -42,9 +43,24 @@ def my_app(cfg):
             l_freq=8.0,
             h_freq=30.0,
             notch_freq=50.0,
-            target_sfreq=128.0,
+            sampling_rate_hz=128.0,
             rereference="average",
             channel_selection=[""]
+        ),
+        epoching=EpochingConfig(
+            enabled=True,
+            backend="mne",
+            event_source="annotations",
+            event_mapping={},
+            event_labels={},
+            tmin=20,
+            tmax=40,
+            baseline=None,
+            preload=False,
+            reject_by_annotation=False,
+            drop_last_incomplete_epoch=False,
+            skip_missing_events=True,
+            picks=[]
         ),
         augmentation=AugmentationConfig(
             enabled=True,

@@ -19,7 +19,7 @@ notch_freq: 50.0
 # Target sampling frequency after resampling.
 # Set to null to keep the original sampling rate.
 # e.g. 128Hz
-target_sfreq: 128.0
+sampling_rate_hz: 128.0
 
 # EEG rereferencing strategy.
 # Common examples:
