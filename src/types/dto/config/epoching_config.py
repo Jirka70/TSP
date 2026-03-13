@@ -24,7 +24,7 @@ class EpochingConfig:
 
     event_labels: dict[str, int]
     """
-    Mapping of event name on classification label (for model-training purposes)
+    Mapping of event name on classification label (for training-training purposes)
     E.g. {"left_hand": 0, "right_hand": 1}
     """
 

@@ -7,7 +7,7 @@ class PreparedSamplesDTO:
 
     X: Any
     """
-    Input data for model (numpy array, torch tensor). Type is not specified implicitly...
+    Input data for training (numpy array, torch tensor). Type is not specified implicitly...
     """
 
     y: Any

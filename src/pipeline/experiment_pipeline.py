@@ -48,11 +48,11 @@ class ExperimentPipeline:
         epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(epoching_input, run_ctx)
 
         if config.mode == Mode.TRAINING.value:
-            self._log.info("Preparing data for model training because mode was set to 'training'")
+            self._log.info("Preparing data for training training because mode was set to 'training'")
 
             splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoching_result.data)
             splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(splitting_input, run_ctx)
-            train_data = splitting_result.data.train_data # preparing training data for augmentation
+            train_data = splitting_result.data.train_data  # preparing training data for augmentation
 
             augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, train_data)
             augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
