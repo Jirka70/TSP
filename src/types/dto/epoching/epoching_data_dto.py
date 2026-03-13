@@ -1,12 +1,12 @@
 # src/types/dto/epoching/epoching_data_dto.py
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
 @dataclass(frozen=True)
 class EpochingDataDTO:
-    epochs: Any
+    data: Any
     """
     Backendový objekt s epochami.
     Typicky mne.Epochs nebo jiná reprezentace.
