@@ -9,11 +9,6 @@ from abc import ABC, abstractmethod
 
 
 class IModelTrainer(ABC):
-
     @abstractmethod
-    def fit(self, X, y, run_context: RunContext):
-        pass
-
-    @abstractmethod
-    def predict(self, X, run_context: RunContext):
-        pass
+    def run(self):
+        raise NotImplementedError
