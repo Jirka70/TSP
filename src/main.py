@@ -4,6 +4,7 @@ from pathlib import Path
 import hydra
 
 from src.impl.data_loader.dummy_data_loader import DummyLoader
+from src.impl.epoching.dummy_epoching import DummyEpoching
 from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.pipeline.experiment_pipeline import ExperimentPipeline
 from src.types.dto.config.augmentation_config import AugmentationConfig
@@ -24,9 +25,11 @@ def my_app(cfg):
 
     dl = DummyLoader()
     preprocessing = DummyPreprocessing()
+    epoching = DummyEpoching()
     ex = ExperimentPipeline(
         dl,
-        preprocessing
+        preprocessing,
+        epoching
     )
 
     experiment_config_mock = ExperimentConfig(

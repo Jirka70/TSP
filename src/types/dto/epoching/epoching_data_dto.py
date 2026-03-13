@@ -1,11 +1,11 @@
-# src/types/dto/epoching/epochs_data_dto.py
+# src/types/dto/epoching/epoching_data_dto.py
 
 from dataclasses import dataclass, field
 from typing import Any
 
 
 @dataclass(frozen=True)
-class EpochsDataDTO:
+class EpochingDataDTO:
     epochs: Any
     """
     Backendový objekt s epochami.
@@ -28,4 +28,4 @@ class EpochsDataDTO:
     n_times: int
 
     channel_names: list[str]
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] | None = None
