@@ -3,6 +3,7 @@ from pathlib import Path
 
 import hydra
 
+from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.data_loader.dummy_data_loader import DummyLoader
 from src.impl.epoching.dummy_epoching import DummyEpoching
 from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
@@ -29,12 +30,13 @@ def my_app(cfg):
     preprocessing = DummyPreprocessing()
     epoching = DummyEpoching()
     split = DummySplitter()
-    augmenation =
+    augmentation = DummyAugmentor()
     ex = ExperimentPipeline(
         dl,
         preprocessing,
         epoching,
-        split
+        split,
+        augmentation
     )
 
     experiment_config_mock = ExperimentConfig(
