@@ -65,16 +65,41 @@ V budoucnu bude pro každý krok existovat více různých implementací, jejich
 Díky použití knihovny `hydra` se celá konfigurace při každém běhu automaticky uloží do složky `outputs/` spolu s logy z `stdout`. 
 
 ## Validace konfigurace
-Pro každou část konfiguračního souboru bude zvolen správný **validátor** podle klíče `backend`. 
-
-Pro každou implementaci kroku pipeline vytvoříme validátor (`DataLoaderValidator, PreprocessingValidator`), předáme mu vstupní `.yaml` a ten nám vrátí instanci obalovací třídy se zvalidovanou konfigurací daného kroku (`DataLoaderConfig, PreprocessingConfig`). Validátory budou využívat knihovnu `Pydantic`a budou kontrolovat:
+Validace konfigurace bude provedena pomocí knihovny `pydantic`. Ta umožňuje vytvořit "otisk" struktury `.yaml` konfigurace pomocí tříd v pythonu a automaticky umí zvalidovat:
 - existenci parametrů
 - datové typy
 - strukturu configu
 - hodnotové rozsahy
-- existence vstupních souborů
+- existence vstupních souborů (`FilePath`)
 
- Konfigurace všech kroků se uloží do instance třídy `ExperimentConfig`, která se předává do pipeline při spuštění experimentu. `ExperimentConfig` tedy obsahuje **zvalidovanou konfiguraci** pro všechny kroky pipeline.
+Pro každou část konfiguračního souboru se tedy vytvoří třída se stejnou strukturou atributů + omezeními které je potřeba zvalidovat.
+
+Konfiguračnímu souboru `preprocessing/mne.yaml`:
+```yaml
+backend: mne
+l_freq: 8.0
+h_freq: 30.0
+notch_freq: 50.0
+sampling_rate_hz: 128.0
+rereference: average
+```
+Odpovídá třída `PreprocessingConfigMNE`:
+```py
+class PreprocessingConfigMNE(BaseModel):
+    backend: Literal["mne"]
+    l_freq: float = Field(ge=0) # >= 0
+    h_freq: float = Field(ge=0) # >= 0
+    notch_freq: float | None
+    sampling_rate_hz: float | None
+    rereference: str | None
+```
+Na základě atributu `backend` dokáže `pydantic` automaticky detekovat která z implementací je aktuálně v konfiguraci, a zvaliduje jí podle správné třídy. V kořenové konfiguraci `ExperimentConfig` jsou nadefinované atributy pro každý krok pipeline s výčtem možností implementací.
+
+Např. u kroku augmentace jsou přípustné 2 implementace - basic a none. Implementace je vybrána na základě klíče `backend`:
+```py
+augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(discriminator="backend")
+```
+Po vytvoření celé struktury konfigurace je potřeba pouze zvalidot kořenovou konfiguraci `ExperimentConfig` a všechny její části se "rekurzivně" zvalidují. Tento krok zajišťuje třída `ExperimentConfigValidator`, která navíc při chybě validace poskytuje list `ValidationMessage`, které popisují chybné/chybějící části konfigurace.
 
 ## Implementace kroků pipeline
 Jak už bylo zmíněno, každý krok pipeline může mít více implementací (pro různé knihovny různé implementace). Druh implementace/knihovny bude vybrán v `config.yaml`. 
@@ -98,7 +123,10 @@ Celou *orchestraci* zajišťuje třída `ExperimentPipeline`, která postupně s
 
 V metodě `run()` přebírá již výše zmíněný `ExperimentConfig` a **instance všech kroků pipeline**. Instance bude potřeba povytvářet před během pipeline na základě hodnot `backend`.
 
-## Implementační poznámka :)
+
+----
+----
+#### Implementační poznámka (již částečně implementováno)
 Dynamické vytváření instancí validátorů a kroků pipeline lze zajistit pomocí hodnoty `backend`. To by šlo nejjednodušeji implementovat `dict`em, např.:
 ```py
 validators = {
