@@ -6,6 +6,7 @@ import hydra
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.data_loader.dummy_data_loader import DummyLoader
 from src.impl.epoching.dummy_epoching import DummyEpoching
+from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
@@ -32,12 +33,14 @@ def my_app(cfg):
     epoching = DummyEpoching()
     split = DummySplitter()
     augmentation = DummyAugmentor()
+    model_trainer = DummyModelTrainer()
     ex = ExperimentPipeline(
         dl,
         preprocessing,
         epoching,
         split,
-        augmentation
+        augmentation,
+        model_trainer
     )
 
     experiment_config_mock = ExperimentConfig(
