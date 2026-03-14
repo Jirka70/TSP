@@ -10,6 +10,4 @@ defaults:
   - dataset: eegbci
 
 mode: training
-
-reproducibility:
-  output_dir: ./outputs
+output_dir: ./outputs

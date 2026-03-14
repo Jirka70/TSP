@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
 
-@dataclass(frozen=True)
-class EvaluationConfig:
+
+class EvaluationConfig(BaseModel):
     metrics: list[str]

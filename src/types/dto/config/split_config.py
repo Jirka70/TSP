@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from typing import Literal
+
+from pydantic import BaseModel
 
 
-@dataclass(frozen=True)
-class SplitConfig:
-
+class SplitConfig(BaseModel):
+    backend: Literal["default"]
     enabled: bool
-    backend: str
 
     train_ratio: float
     validation_ratio: float

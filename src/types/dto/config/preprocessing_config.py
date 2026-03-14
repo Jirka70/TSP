@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from typing import Literal
 
+from pydantic import BaseModel
 
-@dataclass(frozen=True)
-class PreprocessingConfig:
-    backend: str
+class PreprocessingConfigMNE(BaseModel):
+    backend: Literal["mne"]
     l_freq: float | None
     h_freq: float | None
     notch_freq: float | None

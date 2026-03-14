@@ -67,7 +67,7 @@ Díky použití knihovny `hydra` se celá konfigurace při každém běhu automa
 ## Validace konfigurace
 Pro každou část konfiguračního souboru bude zvolen správný **validátor** podle klíče `backend`. 
 
-Pro každou část pipeline vytvoříme validátor (`DataLoaderValidator, PreprocessingValidator`), předáme mu vstupní `.yaml` a ten nám vrátí instanci obalovací třídy se zvalidovanou konfigurací daného kroku (`DataLoaderConfig, PreprocessingConfig`). Validátory budou využívat knihovnu `Pydantic`a budou kontrolovat:
+Pro každou implementaci kroku pipeline vytvoříme validátor (`DataLoaderValidator, PreprocessingValidator`), předáme mu vstupní `.yaml` a ten nám vrátí instanci obalovací třídy se zvalidovanou konfigurací daného kroku (`DataLoaderConfig, PreprocessingConfig`). Validátory budou využívat knihovnu `Pydantic`a budou kontrolovat:
 - existenci parametrů
 - datové typy
 - strukturu configu

@@ -1,11 +1,18 @@
 from dataclasses import dataclass
+from typing import Literal
+
+from pydantic import BaseModel
 
 
-@dataclass(frozen=True)
-class AugmentationConfig:
+class AugmentationConfigBasic(BaseModel):
+    backend: Literal["basic"]
     enabled: bool
-    backend: str
     copies_per_sample: int
     gaussian_noise_std: float
     max_time_shift: int
     channel_dropout_prob: float
+
+
+class AugmentationConfigNone(BaseModel):
+    backend: Literal[None]
+    enabled: bool

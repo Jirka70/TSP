@@ -1,22 +1,29 @@
 from dataclasses import dataclass
+from typing import Union
 
-from src.types.dto.config.augmentation_config import AugmentationConfig
+from pydantic import Field, BaseModel
+
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoching_config import EpochingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
 from src.types.dto.config.mode import Mode
 from src.types.dto.config.model.model_config import ModelConfig
-from src.types.dto.config.preprocessing_config import PreprocessingConfig
+from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
 from src.types.dto.config.split_config import SplitConfig
+from src.types.dto.config.root_config import RootConfig
+from src.types.dto.config.augmentation_config import AugmentationConfigBasic, AugmentationConfigNone
 
 
-@dataclass(frozen=True)
-class ExperimentConfig:
-    dataset: DatasetConfig
-    preprocessing: PreprocessingConfig
-    epoching: EpochingConfig
+@dataclass
+class ExperimentConfig(BaseModel):
+    mode: Mode
+    output_dir: str
+    # union enables multiple options which pydantic differetiates by looking at backend field
+    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(dicriminator="backend")
+    preprocessing: Union[PreprocessingConfigMNE] = Field(discriminator="backend")
+    epoching: Union[EpochingConfig] = Field(discriminator="backend")
     split: SplitConfig
-    augmentation: AugmentationConfig
+    augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(discriminator="backend")
     model: ModelConfig
     evaluation: EvaluationConfig
-    mode: Mode
+    dataset: DatasetConfig
