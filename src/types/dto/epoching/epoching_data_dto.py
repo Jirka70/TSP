@@ -1,5 +1,3 @@
-# src/types/dto/epoching/epoching_data_dto.py
-
 from dataclasses import dataclass
 from typing import Any
 
@@ -8,8 +6,7 @@ from typing import Any
 class EpochingDataDTO:
     data: Any
     """
-    Backendový objekt s epochami.
-    Typicky mne.Epochs nebo jiná reprezentace.
+    mne.Epochs or different representation.
     """
 
     labels: list[int]
