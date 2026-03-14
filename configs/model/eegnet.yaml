@@ -1,3 +1,7 @@
+defaults:
+  - training: default
+  - _self_
+
 # Model configuration for EEGNet.
 
 # Backend / training family identifier.
@@ -27,30 +31,15 @@ kernel_length: 64
 
 # Number of temporal filters in the first convolutional layer.
 # Neural network will learn [F1] temporal filters (alpha_rhythm, beta_rhythm, small movements, fast movements, ...)
-F1: 8
+f1: 8
 
 # Depth multiplier used in the depthwise convolution block.
 # One temporal filter (F1) could have more spatial filters (combination of signals from more electrodes)
 # Spatial filter creates a new signal as a combination of more electrodes)
-D: 2
+d: 2
 
 # Number of pointwise filters.
 # After F1 and D filter neural network has information about: which rhythms exist and where appears in the head
 # F2 filter combines these two filters (e g. beta_rhythm + right hemisphere = left hand movement)
 # F1 * D = F2
-F2: 16
-
-# Training-related parameters could be here,
-# or alternatively placed in a separate training config group.
-training:
-  # Number of training epochs.
-  epochs: 50
-
-  # Batch size used during training.
-  batch_size: 32
-
-  # Learning rate for the optimizer.
-  learning_rate: 0.001
-
-  # Optimizer name.
-  optimizer: adam
+f2: 16

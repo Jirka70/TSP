@@ -14,7 +14,8 @@ from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoching_config import EpochingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.config.model_config import ModelConfig
+from src.types.dto.config.model.model_config import ModelConfig
+from src.types.dto.config.model.training_config import TrainingConfig
 from src.types.dto.config.preprocessing_config import PreprocessingConfig
 from src.types.dto.config.split_config import SplitConfig
 
@@ -88,12 +89,21 @@ def my_app(cfg):
         model=ModelConfig(
             backend="eegnet",
             n_classes=2,
+            f1=12,
+            d=2,
+            f2=24,
+            dropout=2.3,
+            kernel_length=3,
+            n_channels=64,  
+            n_times=2,
+            training=TrainingConfig(batch_size=32, epochs=100, learning_rate=2.3, optimizer="adam")
         ),
         evaluation=EvaluationConfig(
             metrics=["accuracy", "f1_macro", "precision_macro", "recall_macro"],
         ),
         mode=cfg.mode
     )
+    print(cfg)
 
     ex.run(experiment_config_mock)
 
