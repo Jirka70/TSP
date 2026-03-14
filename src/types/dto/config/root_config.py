@@ -1,8 +1,7 @@
-from dataclasses import dataclass
 from typing import Union
 
 from src.types.dto.config.mode import Mode
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
 from src.types.dto.config.iconfig import IConfig

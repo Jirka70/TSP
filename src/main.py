@@ -1,21 +1,14 @@
 import logging
-from pathlib import Path
 
 import hydra
-from hydra.utils import instantiate
 
-from src.impl.augmentation.dummy_augmentor import DummyAugmentor
-from src.impl.data_loader.dummy_data_loader import DummyLoader
-from src.impl.epoching.dummy_epoching import DummyEpoching
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
-from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
 from validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
 log = logging.getLogger(__name__)
-
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def my_app(cfg):

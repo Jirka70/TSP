@@ -10,7 +10,6 @@ from src.types.dto.config.mode import Mode
 from src.types.dto.config.model.model_config import ModelConfig
 from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
 from src.types.dto.config.split_config import SplitConfig
-from src.types.dto.config.root_config import RootConfig
 from src.types.dto.config.augmentation_config import AugmentationConfigBasic, AugmentationConfigNone
 
 
