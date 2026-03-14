@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from impl.augmentation.dummy_augmentor import DummyAugmentor
 
 
 class AugmentationConfigBasic(BaseModel):

@@ -31,7 +31,7 @@ def my_app(cfg):
     ex_conf = validation_res.config
 
     dl = DummyLoader()
-    preprocessing = ex_conf.preprocessing.stage # DummyPreprocessing()
+    preprocessing = ex_conf.preprocessing.stage_instance()
     epoching = DummyEpoching()
     split = DummySplitter()
     augmentation = DummyAugmentor()
