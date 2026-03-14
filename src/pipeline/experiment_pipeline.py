@@ -9,6 +9,7 @@ from src.types.dto.config.mode import Mode
 from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
+from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.preprocessing.preprocessed_data_dto import PreprocessedDataDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
@@ -42,7 +43,8 @@ class ExperimentPipeline:
         self._model_trainer = model_trainer
 
     def run(self, config: ExperimentConfig) -> None:
-        run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
+        run_ctx: RunContext = self._run_context_factory.create(config, "test",
+                                                               "experiment_pipeline")
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
         preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(load_result.data, config.preprocessing)
@@ -63,8 +65,9 @@ class ExperimentPipeline:
 
             validation_data: EpochingDataDTO = splitting_result.data.validation_data
             training_input: TrainingInputDTO = TrainingInputDTO(config.model, augmentation_result.data, validation_data)
-            self._model_trainer.run(training_input, run_ctx)
+            model_training_result: StepResult[TrainedModelDTO] = self._model_trainer.run(training_input, run_ctx)
+
         elif config.mode == Mode.EXPERIMENT:
             pass
         else:
-            pass
+            self._log.error("Mode with name " + config.mode.value + " not found")
