@@ -10,14 +10,6 @@ from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
-from src.types.dto.config.dataset_config import DatasetConfig
-from src.types.dto.config.epoching_config import EpochingConfig
-from src.types.dto.config.evaluation_config import EvaluationConfig
-from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.config.model.model_config import ModelConfig
-from src.types.dto.config.model.training_config import TrainingConfig
-from src.types.dto.config.split_config import SplitConfig
-from src.types.dto.config.root_config import RootConfig
 from validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
@@ -28,8 +20,18 @@ log = logging.getLogger(__name__)
 def my_app(cfg):
     log.info("Experiment start")
 
+    validator = ExperimentConfigValidator()
+    validation_res = validator.validate(cfg)
+    if validation_res.is_valid:
+        log.info("Config successfully validated")
+    else:
+        log.error("Validation failed")
+        return
+
+    ex_conf = validation_res.config
+
     dl = DummyLoader()
-    preprocessing = DummyPreprocessing()
+    preprocessing = ex_conf.preprocessing.stage # DummyPreprocessing()
     epoching = DummyEpoching()
     split = DummySplitter()
     augmentation = DummyAugmentor()
@@ -43,13 +45,7 @@ def my_app(cfg):
         model_trainer
     )
 
-    validator = ExperimentConfigValidator()
-    validation_res = validator.validate(cfg)
-    if validation_res.is_valid:
-        log.info("Config successfully validated")
-        ex.run(validation_res.config)
-    else:
-        log.error("Validation failed")
+    ex.run(validation_res.config)
 
 if __name__ == "__main__":
     my_app()
