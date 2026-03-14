@@ -1,15 +1,16 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from pydantic import BaseModel, ImportString
 
-@dataclass(frozen=True)
-class EpochingConfig:
+
+class EpochingConfig(BaseModel):
+    backend: Literal["mne"]
     """
     Configuration of epoching step.
     """
 
     enabled: bool
-    backend: str
 
     event_source: Literal["annotations", "stim_channel"]
     """
@@ -48,3 +49,5 @@ class EpochingConfig:
     """
     Optional channel pick
     """
+
+    stage: ImportString

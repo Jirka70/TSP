@@ -1,11 +1,30 @@
-from abc import ABC, abstractmethod
+import logging
+from dataclasses import dataclass
+from typing import Any, Generic, TypeVar
 
-from src.pipeline.context.run_context import RunContext
+from pydantic import BaseModel
+from pydantic import ValidationError
+
+from pipeline.context.run_context import RunContext
+from src.types.dto.config.root_config import RootConfig
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.validation.contracts.validation_result import ValidationResult
+from validation.validation_message import ValidationMessage
+from validation.validation_result import ValidationResult
 
 
-class IConfigValidator(ABC):
-    @abstractmethod
-    def validate(self, config: ExperimentConfig, run_ctx: RunContext) -> ValidationResult:
-        raise NotImplementedError
+class ExperimentConfigValidator():
+    def validate(self, config_in: dict[str, Any]) -> ValidationResult:
+        log = logging.getLogger(__name__)
+
+        validation_msgs = []
+        ex_conf: ExperimentConfig | None = None
+
+        try:
+            ex_conf = ExperimentConfig.model_validate(config_in)
+        except ValidationError as e:
+            for msg in e.errors():
+                validation_msg = ValidationMessage(log=msg)
+                log.error(validation_msg)
+                validation_msgs.append(validation_msg)
+
+        return ValidationResult(messages=validation_msgs, config=ex_conf)

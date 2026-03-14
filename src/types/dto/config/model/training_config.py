@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
 
-@dataclass(frozen=True)
-class TrainingConfig:
+
+class TrainingConfig(BaseModel):
     epochs: int
     batch_size: int
     learning_rate: float

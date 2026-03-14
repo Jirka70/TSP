@@ -43,3 +43,5 @@ d: 2
 # F2 filter combines these two filters (e g. beta_rhythm + right hemisphere = left hand movement)
 # F1 * D = F2
 f2: 16
+
+stage: impl.model.dummy_model_trainer.DummyModelTrainer

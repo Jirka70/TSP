@@ -1,11 +1,13 @@
 from dataclasses import dataclass
+from typing import Literal
+
+from pydantic import BaseModel, ImportString
 
 from src.types.dto.config.model.training_config import TrainingConfig
 
 
-@dataclass(frozen=True)
-class ModelConfig:
-    backend: str
+class ModelConfig(BaseModel):
+    backend: Literal["eegnet"]
 
     n_classes: int
     n_channels: int
@@ -18,3 +20,5 @@ class ModelConfig:
     f2: int
 
     training: TrainingConfig
+
+    stage: ImportString

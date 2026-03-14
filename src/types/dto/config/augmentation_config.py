@@ -1,11 +1,22 @@
 from dataclasses import dataclass
+from typing import Literal, Type
+
+from pydantic import BaseModel, ConfigDict, ImportString
+
+import src.impl.augmentation.dummy_augmentor
 
 
-@dataclass(frozen=True)
-class AugmentationConfig:
+class AugmentationConfigBasic(BaseModel):
+    backend: Literal["basic"]
     enabled: bool
-    backend: str
     copies_per_sample: int
     gaussian_noise_std: float
     max_time_shift: int
     channel_dropout_prob: float
+
+    stage: ImportString = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
+
+
+class AugmentationConfigNone(BaseModel):
+    backend: Literal[None]
+    enabled: bool
