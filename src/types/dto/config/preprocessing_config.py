@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal, Type
 
-from pydantic import BaseModel, Field, ConfigDict, PrivateAttr
+from pydantic import BaseModel, Field, ConfigDict, PrivateAttr, ImportString
 
 from impl.preprocessing.dummy_preprocessing import DummyPreprocessing
 from src.types.interfaces.preprocessing import IPreprocessing
@@ -16,5 +16,4 @@ class PreprocessingConfigMNE(BaseModel):
     rereference: str | None
     channel_selection: list[str] | None
 
-    def stage_instance(self) -> IPreprocessing:
-        return DummyPreprocessing()
+    stage: ImportString

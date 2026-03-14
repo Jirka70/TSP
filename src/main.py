@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import hydra
+from hydra.utils import instantiate
 
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.data_loader.dummy_data_loader import DummyLoader
@@ -30,12 +31,13 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
-    dl = DummyLoader()
-    preprocessing = ex_conf.preprocessing.stage_instance()
-    epoching = DummyEpoching()
+    dl = ex_conf.dataset.stage()
+    preprocessing = ex_conf.preprocessing.stage()
+    epoching = ex_conf.epoching.stage()
     split = DummySplitter()
-    augmentation = DummyAugmentor()
+    augmentation = ex_conf.augmentation.stage()
     model_trainer = DummyModelTrainer()
+
     ex = ExperimentPipeline(
         dl,
         preprocessing,

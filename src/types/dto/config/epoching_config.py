@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ImportString
+
 
 class EpochingConfig(BaseModel):
     backend: Literal["mne"]
@@ -48,3 +49,5 @@ class EpochingConfig(BaseModel):
     """
     Optional channel pick
     """
+
+    stage: ImportString

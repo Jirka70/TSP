@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ImportString
 
 from src.types.dto.config.model.training_config import TrainingConfig
 
@@ -20,3 +20,5 @@ class ModelConfig(BaseModel):
     f2: int
 
     training: TrainingConfig
+
+    stage: ImportString

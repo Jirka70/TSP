@@ -7,3 +7,5 @@
 
   shuffle: true
   random_seed: 42
+
+  stage: impl.split.dummy_splitter.DummySplitter

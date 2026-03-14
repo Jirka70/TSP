@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ImportString
 
 
 class SplitConfig(BaseModel):
@@ -14,3 +14,5 @@ class SplitConfig(BaseModel):
 
     shuffle: bool
     random_seed: int
+
+    stage: ImportString

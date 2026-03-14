@@ -102,9 +102,7 @@ augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(dis
 Po vytvoření celé struktury konfigurace je potřeba pouze zvalidot kořenovou konfiguraci `ExperimentConfig` a všechny její části se "rekurzivně" zvalidují. Tento krok zajišťuje třída `ExperimentConfigValidator`, která navíc při chybě validace poskytuje list `ValidationMessage`, které popisují chybné/chybějící části konfigurace.
 
 ## Implementace kroků pipeline
-Jak už bylo zmíněno, každý krok pipeline může mít více implementací (pro různé knihovny různé implementace). Druh implementace/knihovny bude vybrán v `config.yaml`. 
-
-Specifické implementace kroků pipeline (`src/impl/*`) implementují rozhraní daného kroku (`src/types/interfaces`).
+Jak už bylo zmíněno, každý krok pipeline může mít více implementací (pro různé knihovny různé implementace). Druh implementace/knihovny bude vybrán v `config.yaml`. Jednotlivé implementace (`src/impl/*`) implementují rozhraní daného kroku (`src/types/interfaces`), díky čemuž se dají jednoduše nahrazovat.
 
 Jednoduchý příklad implementace DataLoaderu - načítání vstupních dat:
 ```py
@@ -113,7 +111,8 @@ class DummyLoader(IDataLoader):
         # ... načtení souborů ...
         return StepResult(foo, bar, [])
 ```
-Díky využití rozhraní pro každý krok samotná pipeline pracuje pouze s nimi a implementace se dají jednoduše nahraozovat.
+
+V aktuální verzi se instance kroků pipelina vytváří dynamicky na základě klíče `stage`, který obsahuje cestu k třídě daného kroku.
 
 ## Přenos dat mezi kroky pipeline
 Pro přenos dat z výstupu jednoho kroku na vstup následujícího kroku jsou využívány DTO - *data transfer objects* (viz `src/types/dto`). Každý krok má tedy nadefinovanou strukturu vstupních dat (DTO), kterou přebírá při spuštění.

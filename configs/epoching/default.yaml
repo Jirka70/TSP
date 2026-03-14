@@ -25,3 +25,5 @@ picks:
   - C3
   - Cz
   - C4
+
+stage: impl.epoching.dummy_epoching.DummyEpoching

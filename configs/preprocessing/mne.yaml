@@ -42,3 +42,5 @@ drop_bad_channels: false
 # - reject_annotations
 # - simple_threshold
 artifact_policy: null
+
+stage: impl.preprocessing.dummy_preprocessing.DummyPreprocessing

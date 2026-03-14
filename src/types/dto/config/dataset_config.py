@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ImportString
 
 
 class DatasetConfig(BaseModel):
@@ -12,3 +12,4 @@ class DatasetConfig(BaseModel):
     session_ids: list[int] | None
     run_ids: list[int] | None
     task: str
+    stage: ImportString

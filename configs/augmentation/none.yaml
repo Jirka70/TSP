@@ -5,3 +5,5 @@ enabled: false
 
 # Backend is null because no augmentation implementation is used.
 backend: null
+
+stage: null
