@@ -84,7 +84,11 @@ def my_app(cfg):
         ),
         augmentation=AugmentationConfig(
             enabled=True,
-            backend="torch"
+            backend="torch",
+            copies_per_sample=2,
+            gaussian_noise_std=0.01,
+            max_time_shift=10,
+            channel_dropout_prob=0.0
         ),
         model=ModelConfig(
             backend="eegnet",
@@ -94,7 +98,7 @@ def my_app(cfg):
             f2=24,
             dropout=2.3,
             kernel_length=3,
-            n_channels=64,  
+            n_channels=64,
             n_times=2,
             training=TrainingConfig(batch_size=32, epochs=100, learning_rate=2.3, optimizer="adam")
         ),
