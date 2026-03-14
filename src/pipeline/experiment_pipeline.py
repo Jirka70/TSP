@@ -9,6 +9,7 @@ from src.types.dto.config.mode import Mode
 from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
+from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.preprocessing.preprocessed_data_dto import PreprocessedDataDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
@@ -16,6 +17,7 @@ from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoching import IEpoching
+from src.types.interfaces.model_trainer import IModelTrainer
 from src.types.interfaces.preprocessing import IPreprocessing
 from src.types.interfaces.splitter import ISplitter
 
@@ -27,7 +29,8 @@ class ExperimentPipeline:
             preprocessing: IPreprocessing,
             epoching: IEpoching,
             splitting: ISplitter,
-            augmentation: IAugmentor
+            augmentation: IAugmentor,
+            model_trainer: IModelTrainer
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
@@ -36,6 +39,7 @@ class ExperimentPipeline:
         self._splitting = splitting
         self._log = logging.getLogger(__name__)
         self._augmentation = augmentation
+        self._model_trainer = model_trainer
 
     def run(self, config: ExperimentConfig) -> None:
         run_ctx: RunContext = self._run_context_factory.create(config, "test", "experiment_pipeline")
@@ -52,12 +56,14 @@ class ExperimentPipeline:
 
             splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoching_result.data)
             splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(splitting_input, run_ctx)
-            train_data = splitting_result.data.train_data  # preparing training data for augmentation
+            train_data: EpochingDataDTO = splitting_result.data.train_data  # preparing training data for augmentation
 
             augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, train_data)
             augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
 
-
+            validation_data: EpochingDataDTO = splitting_result.data.validation_data
+            training_input: TrainingInputDTO = TrainingInputDTO(config.model,train_data, validation_data)
+            self._model_trainer.run(training_input, run_ctx)
         elif config.mode == Mode.EXPERIMENT:
             pass
         else:
