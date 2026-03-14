@@ -18,12 +18,14 @@ from src.types.dto.config.augmentation_config import AugmentationConfigBasic, Au
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
-    # union enables multiple options which pydantic differetiates by looking at backend field
-    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(dicriminator="backend")
-    preprocessing: Union[PreprocessingConfigMNE] = Field(discriminator="backend")
-    epoching: Union[EpochingConfig] = Field(discriminator="backend")
     split: SplitConfig
-    augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(discriminator="backend")
     model: ModelConfig
     evaluation: EvaluationConfig
     dataset: DatasetConfig
+
+    # union enables multiple options which pydantic differentiates by looking at backend field
+    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(dicriminator="backend")
+    preprocessing: Union[PreprocessingConfigMNE] = Field(discriminator="backend")
+
+    epoching: Union[EpochingConfig] = Field(discriminator="backend")
+    augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(discriminator="backend")

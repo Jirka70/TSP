@@ -3,7 +3,7 @@ defaults:
   - preprocessing: mne
   - epoching: default
   - split: default
-  - augmentation: none
+  - augmentation: basic
   - model: eegnet
   - evaluation: default
   - visualization: matplotlib

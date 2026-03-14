@@ -18,7 +18,7 @@ from src.types.dto.config.model.model_config import ModelConfig
 from src.types.dto.config.model.training_config import TrainingConfig
 from src.types.dto.config.split_config import SplitConfig
 from src.types.dto.config.root_config import RootConfig
-from validation.impl.root_config_validator import ExperimentConfigValidator
+from validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -43,12 +43,13 @@ def my_app(cfg):
         model_trainer
     )
 
-    # experiment_config_test = ExperimentConfig()
-    v = ExperimentConfigValidator()
-    ex_conf = v.validate(cfg)
-
-    ex.run(ex_conf)
-
+    validator = ExperimentConfigValidator()
+    validation_res = validator.validate(cfg)
+    if validation_res.is_valid:
+        log.info("Config successfully validated")
+        ex.run(validation_res.config)
+    else:
+        log.error("Validation failed")
 
 if __name__ == "__main__":
     my_app()
