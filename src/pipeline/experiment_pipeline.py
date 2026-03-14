@@ -62,7 +62,7 @@ class ExperimentPipeline:
             augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
 
             validation_data: EpochingDataDTO = splitting_result.data.validation_data
-            training_input: TrainingInputDTO = TrainingInputDTO(config.model,train_data, validation_data)
+            training_input: TrainingInputDTO = TrainingInputDTO(config.model, augmentation_result.data, validation_data)
             self._model_trainer.run(training_input, run_ctx)
         elif config.mode == Mode.EXPERIMENT:
             pass
