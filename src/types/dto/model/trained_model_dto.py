@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 from src.types.dto.model.train_history import TrainingHistory
+from src.types.interfaces.model.model import IModel
 
 
 @dataclass(frozen=True)
 class TrainedModelDTO:
-    model: Any
+    model: IModel
     """
     Backend model object.
     E.g.. PyTorch model, sklearn model etc.

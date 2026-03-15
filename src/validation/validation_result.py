@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from src.types.dto.config.experiment_config import ExperimentConfig
-from validation.validation_message import ValidationMessage, ValidationMessageSeverity
+from src.validation.validation_message import ValidationMessage, ValidationMessageSeverity
 
 
 @dataclass(frozen=True)

@@ -5,10 +5,11 @@ import hydra
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
-from validation.config_validator import ExperimentConfigValidator
+from src.validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
 log = logging.getLogger(__name__)
+
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def my_app(cfg):
@@ -41,6 +42,7 @@ def my_app(cfg):
     )
 
     ex.run(validation_res.config)
+
 
 if __name__ == "__main__":
     my_app()
