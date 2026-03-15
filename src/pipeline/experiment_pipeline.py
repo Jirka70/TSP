@@ -8,6 +8,8 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.config.mode import Mode
 from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
+from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
@@ -18,6 +20,8 @@ from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoching import IEpoching
+from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.model.model import IModel
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.preprocessing import IPreprocessing
 from src.types.interfaces.splitter import ISplitter
@@ -31,7 +35,8 @@ class ExperimentPipeline:
             epoching: IEpoching,
             splitting: ISplitter,
             augmentation: IAugmentor,
-            model_trainer: IModelTrainer
+            model_trainer: IModelTrainer,
+            evaluator: IEvaluator
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
@@ -41,6 +46,7 @@ class ExperimentPipeline:
         self._log = logging.getLogger(__name__)
         self._augmentation = augmentation
         self._model_trainer = model_trainer
+        self._evaluator = evaluator
 
     def run(self, config: ExperimentConfig) -> None:
         run_ctx: RunContext = self._run_context_factory.create(config, "test",
@@ -66,6 +72,11 @@ class ExperimentPipeline:
             validation_data: EpochingDataDTO = splitting_result.data.validation_data
             training_input: TrainingInputDTO = TrainingInputDTO(config.model, augmentation_result.data, validation_data)
             model_training_result: StepResult[TrainedModelDTO] = self._model_trainer.run(training_input, run_ctx)
+
+            test_data: EpochingDataDTO = splitting_result.data.test_data
+            evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config.evaluation,
+                                                                      model_training_result.data, test_data)
+            evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
         elif config.mode == Mode.EXPERIMENT:
             pass

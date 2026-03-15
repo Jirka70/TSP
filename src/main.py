@@ -2,6 +2,7 @@ import logging
 
 import hydra
 
+from src.impl.evaluator.dummy_evaluator import DummyEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
@@ -31,6 +32,7 @@ def my_app(cfg):
     split = DummySplitter()
     augmentation = ex_conf.augmentation.stage()
     model_trainer = DummyModelTrainer()
+    evaluator = DummyEvaluator()
 
     ex = ExperimentPipeline(
         dl,
@@ -38,7 +40,8 @@ def my_app(cfg):
         epoching,
         split,
         augmentation,
-        model_trainer
+        model_trainer,
+        evaluator
     )
 
     ex.run(validation_res.config)
