@@ -1,5 +1,3 @@
-# src/types/dto/artifacts/save_artifacts_input_dto.py
-
 from dataclasses import dataclass
 
 from src.pipeline.context.run_context import RunContext
