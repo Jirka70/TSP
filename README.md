@@ -24,8 +24,9 @@ flowchart LR
 
     subgraph Validators
         VALID[Validation]
-        DLV([DataLoaderValidator])
-        Epoch([EpochValidator])
+        DLV([DataLoaderConfig])
+        other([...])
+        Epoch([EpochConfig])
     end
 
     DLV --o ExConf
@@ -85,10 +86,12 @@ rereference: average
 ```
 Odpovídá třída `PreprocessingConfigMNE`:
 ```py
-class PreprocessingConfigMNE(BaseModel):
+class PreprocessingConfigMNE(AStageConfig):
+    _target_class = "impl.preprocessing.dummy_preprocessing.DummyPreprocessing"
+
     backend: Literal["mne"]
-    l_freq: float = Field(ge=0) # >= 0
-    h_freq: float = Field(ge=0) # >= 0
+    l_freq: float = Field(ge=0)
+    h_freq: float = Field(ge=0)
     notch_freq: float | None
     sampling_rate_hz: float | None
     rereference: str | None
@@ -101,6 +104,9 @@ augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(dis
 ```
 Po vytvoření celé struktury konfigurace je potřeba pouze zvalidot kořenovou konfiguraci `ExperimentConfig` a všechny její části se "rekurzivně" zvalidují. Tento krok zajišťuje třída `ExperimentConfigValidator`, která navíc při chybě validace poskytuje list `ValidationMessage`, které popisují chybné/chybějící části konfigurace.
 
+---
+Kromě atributů shodných se vstupními `.yaml` konfiguracemi obsahují třídy s konfigurací i atribut `_target_class`. Ten obsahuje cestu k třídě, kterou konfiguruje jako řetězec (k zamezení cyclic dependencies). Po zvalidování konfigurace z jde jednoduše vytvořit instance třídy `_target_class` pomocí metody `AStageConfig.get_instance()` a není potřeba žádné další složité logiky (přiřazování správné třídy k danému configu).
+
 ## Implementace kroků pipeline
 Jak už bylo zmíněno, každý krok pipeline může mít více implementací (pro různé knihovny různé implementace). Druh implementace/knihovny bude vybrán v `config.yaml`. Jednotlivé implementace (`src/impl/*`) implementují rozhraní daného kroku (`src/types/interfaces`), díky čemuž se dají jednoduše nahrazovat.
 
@@ -112,7 +118,6 @@ class DummyLoader(IDataLoader):
         return StepResult(foo, bar, [])
 ```
 
-V aktuální verzi se instance kroků pipelina vytváří dynamicky na základě klíče `stage`, který obsahuje cestu k třídě daného kroku.
 
 ## Přenos dat mezi kroky pipeline
 Pro přenos dat z výstupu jednoho kroku na vstup následujícího kroku jsou využívány DTO - *data transfer objects* (viz `src/types/dto`). Každý krok má tedy nadefinovanou strukturu vstupních dat (DTO), kterou přebírá při spuštění.
@@ -120,32 +125,4 @@ Pro přenos dat z výstupu jednoho kroku na vstup následujícího kroku jsou vy
 ## Běh pipeline
 Celou *orchestraci* zajišťuje třída `ExperimentPipeline`, která postupně spouští kroky pipeline, vytváří DTO a předává je následujícím krokům.
 
-V metodě `run()` přebírá již výše zmíněný `ExperimentConfig` a **instance všech kroků pipeline**. Instance bude potřeba povytvářet před během pipeline na základě hodnot `backend`.
-
-
-----
-----
-#### Implementační poznámka (již částečně implementováno)
-Dynamické vytváření instancí validátorů a kroků pipeline lze zajistit pomocí hodnoty `backend`. To by šlo nejjednodušeji implementovat `dict`em, např.:
-```py
-validators = {
-    "mne": MneValidator,
-    "moabb": MoabbValidator
-}
-# ...
-validator = validators[cfg.preprocessing.backend]()
-```
-`Hydra` poskytuje klíč `_target_`, pomocí kterého lze dynamicky instancovat třídu dle jeho klíče - v každém konfigu dané implementace by byla navíc cesta ke třídě, kterou konfiguruje. Např `mne.yaml`:
-```yaml
-implementation:
- - _target_: src.impl.preprocessing.mne.MnePreprocessor
-# ...
-backend: mne
-l_freq: 8.0
-h_freq: 30.0
-```
-V Pythonu by potom stačilo:
-```py
-preprocessor = instantiate(cfg.preprocessing.implementation)
-```
-Více viz https://hydra.cc/docs/advanced/instantiate_objects/overview/
+V metodě `run()` přebírá již výše zmíněný `ExperimentConfig` a **instance všech kroků pipeline**. Dále zajišťuje i správné spouštění kroků na základě módu, ve kterém je pipeline spuštěna (training, experiment).
