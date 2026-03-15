@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
-from src.types.dto.augmentation.augmented_samples_dto import AugmentedSamplesDTO
+from src.types.dto.config.evaluation_config import EvaluationConfig
+from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 
 
 @dataclass(frozen=True)
 class EvaluationInputDTO:
+    config: EvaluationConfig
     trained_model: TrainedModelDTO
-    samples: AugmentedSamplesDTO
-    metrics: list[str]
+    test_data: EpochingDataDTO
