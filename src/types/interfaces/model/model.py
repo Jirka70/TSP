@@ -14,5 +14,6 @@ class IModel(ABC):
     def predict(self, x):
         raise NotImplementedError
 
-    def predict_proba(self, x):
+    @abstractmethod
+    def predict_class_probability(self, x):
         raise NotImplementedError
