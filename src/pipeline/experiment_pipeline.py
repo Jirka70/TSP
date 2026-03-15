@@ -18,7 +18,7 @@ from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoching import IEpoching
-from src.types.interfaces.model_trainer import IModelTrainer
+from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.preprocessing import IPreprocessing
 from src.types.interfaces.splitter import ISplitter
 
