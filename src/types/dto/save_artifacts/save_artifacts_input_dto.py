@@ -14,6 +14,5 @@ class SaveArtifactsInputDTO:
     """
     For saving whole pipeline configuration
     """
-    run_context: RunContext
     trained_model: TrainedModelDTO | None = None
     evaluation_result: EvaluationResultDTO | None = None
