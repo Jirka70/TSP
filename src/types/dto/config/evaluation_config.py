@@ -1,5 +1,8 @@
 from pydantic import BaseModel
 
+from src.types.dto.config.astageconfig import AStageConfig
 
-class EvaluationConfig(BaseModel):
+
+class EvaluationConfig(AStageConfig):
+    _target_class = "impl.evaluator.dummy_evaluator.DummyEvaluator"
     metrics: list[str]

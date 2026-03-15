@@ -4,8 +4,7 @@ from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.run_context_factory import RunContextFactory
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
-from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.config.mode import Mode
+from src.types.dto.config.experiment_config import ExperimentConfig, Mode
 from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO

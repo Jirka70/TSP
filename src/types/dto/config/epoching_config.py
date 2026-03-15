@@ -1,9 +1,13 @@
 from typing import Literal
 
-from pydantic import BaseModel, ImportString
+from pydantic import ImportString
+
+from src.types.dto.config.astageconfig import AStageConfig
 
 
-class EpochingConfig(BaseModel):
+class EpochingConfig(AStageConfig):
+    _target_class = "impl.epoching.dummy_epoching.DummyEpoching"
+
     backend: Literal["mne"]
     """
     Configuration of epoching step.
@@ -48,5 +52,3 @@ class EpochingConfig(BaseModel):
     """
     Optional channel pick
     """
-
-    stage: ImportString

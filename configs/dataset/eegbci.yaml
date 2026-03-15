@@ -26,5 +26,3 @@ run_ids:
 # - mi = motor imagery
 # - me = motor execution
 task: mi
-
-stage: impl.data_loader.dummy_data_loader.DummyLoader

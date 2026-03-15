@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Union
 
 from pydantic import Field, BaseModel
@@ -6,12 +7,16 @@ from pydantic import Field, BaseModel
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoching_config import EpochingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
-from src.types.dto.config.mode import Mode
 from src.types.dto.config.model.model_config import ModelConfig
 from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.split_config import SplitConfig
 from src.types.dto.config.augmentation_config import AugmentationConfigBasic, AugmentationConfigNone
+
+
+class Mode(str, Enum):
+    TRAINING = "training"
+    EXPERIMENT = "experiment"
 
 
 @dataclass

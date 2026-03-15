@@ -1,9 +1,14 @@
+import importlib
 from typing import Literal
 
-from pydantic import BaseModel, ImportString
+from pydantic import BaseModel
+
+from src.types.dto.config.astageconfig import AStageConfig
 
 
-class AugmentationConfigBasic(BaseModel):
+class AugmentationConfigBasic(AStageConfig):
+    _target_class = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
+
     backend: Literal["basic"]
     enabled: bool
     copies_per_sample: int
@@ -11,9 +16,9 @@ class AugmentationConfigBasic(BaseModel):
     max_time_shift: int
     channel_dropout_prob: float
 
-    stage: ImportString = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
-
 
 class AugmentationConfigNone(BaseModel):
+    _target_class = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
+
     backend: Literal[None]
     enabled: bool

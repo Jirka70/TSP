@@ -1,12 +1,12 @@
-from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel, ImportString
-
 from src.types.dto.config.model.training_config import TrainingConfig
+from src.types.dto.config.astageconfig import AStageConfig
 
 
-class ModelConfig(BaseModel):
+class ModelConfig(AStageConfig):
+    _target_class = "impl.model.dummy_model_trainer.DummyModelTrainer"
+
     backend: Literal["eegnet"]
 
     n_classes: int
@@ -20,5 +20,3 @@ class ModelConfig(BaseModel):
     f2: int
 
     training: TrainingConfig
-
-    stage: ImportString

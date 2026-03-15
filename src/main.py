@@ -26,13 +26,13 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
-    dl = ex_conf.dataset.stage()
-    preprocessing = ex_conf.preprocessing.stage()
-    epoching = ex_conf.epoching.stage()
-    split = DummySplitter()
-    augmentation = ex_conf.augmentation.stage()
-    model_trainer = DummyModelTrainer()
-    evaluator = DummyEvaluator()
+    dl = ex_conf.dataset.get_instance()
+    preprocessing = ex_conf.preprocessing.get_instance()
+    epoching = ex_conf.epoching.get_instance()
+    split = ex_conf.split.get_instance()
+    augmentation = ex_conf.augmentation.get_instance()
+    model_trainer = ex_conf.model.get_instance()
+    evaluator = ex_conf.evaluation.get_instance()
 
     ex = ExperimentPipeline(
         dl,

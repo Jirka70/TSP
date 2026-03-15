@@ -4,10 +4,10 @@ from src.types.dto.config.mode import Mode
 from pydantic import Field
 
 from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
-from src.types.dto.config.iconfig import IConfig
+from src.types.dto.config.iconfig import AStageConfig
 
 
-class RootConfig(IConfig):
+class RootConfig(AStageConfig):
     mode: Mode
     output_dir: str
 

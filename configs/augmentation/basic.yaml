@@ -16,5 +16,3 @@ max_time_shift: 10
 
 # Probability of dropping a channel during augmentation.
 channel_dropout_prob: 0.0
-
-stage: impl.augmentation.dummy_augmentor.DummyAugmentor

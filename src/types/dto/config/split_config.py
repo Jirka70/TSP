@@ -1,9 +1,12 @@
 from typing import Literal
 
-from pydantic import BaseModel, ImportString
+from pydantic import ImportString
+
+from src.types.dto.config.astageconfig import AStageConfig
 
 
-class SplitConfig(BaseModel):
+class SplitConfig(AStageConfig):
+    _target_class = "impl.split.dummy_splitter.DummySplitter"
     backend: Literal["default"]
     enabled: bool
 
@@ -13,5 +16,3 @@ class SplitConfig(BaseModel):
 
     shuffle: bool
     random_seed: int
-
-    stage: ImportString
