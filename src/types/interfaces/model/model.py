@@ -3,5 +3,16 @@ from abc import ABC, abstractmethod
 
 class IModel(ABC):
     @abstractmethod
-    def run(self):
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def fit(self, x, y) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def predict(self, x):
+        raise NotImplementedError
+
+    def predict_proba(self, x):
         raise NotImplementedError

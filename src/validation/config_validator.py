@@ -8,7 +8,7 @@ from src.validation.validation_message import ValidationMessage
 from src.validation.validation_result import ValidationResult
 
 
-class ExperimentConfigValidator():
+class ExperimentConfigValidator:
     def validate(self, config_in: dict[str, Any]) -> ValidationResult:
         log = logging.getLogger(__name__)
 
