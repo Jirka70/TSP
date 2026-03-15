@@ -58,7 +58,7 @@ flowchart LR
  - `Visualization` - vizualizace výsledků (gui, grafy)
 
 ## Konfigurace pipeline
-Konfigurační soubory se nacházejí ve složce `config/` a jsou uloženy v hierarchické struktuře `.yaml` souborů. Kořenový konfigurační soubor – `config.yaml` obsahuje reference na jednotlivé konfigurační soubory kroků pipeline. 
+Konfigurační soubory se nacházejí ve složce `config/` a jsou uloženy v hierarchické struktuře `.yaml` souborů. Kořenový konfigurační soubor `config.yaml` obsahuje reference na jednotlivé konfigurační soubory kroků pipeline. 
 Při spuštění nahradí `hydra` tyto reference obsahem `.yaml` souborů (klíč = složka, hodnota = soubor). Např. pro `preprocessing: mne` uloží do klíče preprocessing obsah souboru `preprocessing/mne.yaml`.
 
 V budoucnu bude pro každý krok existovat více různých implementací, jejichž konfigurace půjdou tímto způsobem lehce nahrazovat. Zároveň je potřeba, aby každý konfigurační soubor obsahoval jeho název, protože nahrazením hodnoty `mne` obsahem souboru ztratíme informaci o zvolení právě této implementace. Aktuálně je tato hodnota v všech souborech uložena pod klíčem `backend`.
@@ -105,7 +105,7 @@ augmentation: Union[AugmentationConfigBasic, AugmentationConfigNone] = Field(dis
 Po vytvoření celé struktury konfigurace je potřeba pouze zvalidot kořenovou konfiguraci `ExperimentConfig` a všechny její části se "rekurzivně" zvalidují. Tento krok zajišťuje třída `ExperimentConfigValidator`, která navíc při chybě validace poskytuje list `ValidationMessage`, které popisují chybné/chybějící části konfigurace.
 
 ---
-Kromě atributů shodných se vstupními `.yaml` konfiguracemi obsahují třídy s konfigurací i atribut `_target_class`. Ten obsahuje cestu k třídě, kterou konfiguruje jako řetězec (k zamezení cyclic dependencies). Po zvalidování konfigurace z jde jednoduše vytvořit instance třídy `_target_class` pomocí metody `AStageConfig.get_instance()` a není potřeba žádné další složité logiky (přiřazování správné třídy k danému configu).
+Kromě atributů shodných se vstupními `.yaml` konfiguracemi obsahují třídy s konfigurací i atribut `_target_class`. Ten obsahuje cestu k třídě, kterou konfiguruje jako řetězec (k zamezení cyclic dependencies). Po zvalidování konfigurace z ní jde jednoduše vytvořit instance třídy `_target_class` pomocí metody `AStageConfig.get_instance()` a není potřeba žádné další složité logiky (přiřazování správné třídy k danému configu).
 
 ## Implementace kroků pipeline
 Jak už bylo zmíněno, každý krok pipeline může mít více implementací (pro různé knihovny různé implementace). Druh implementace/knihovny bude vybrán v `config.yaml`. Jednotlivé implementace (`src/impl/*`) implementují rozhraní daného kroku (`src/types/interfaces`), díky čemuž se dají jednoduše nahrazovat.
