@@ -1,6 +1,5 @@
 import logging
 
-from src.impl.model.dummy_model import DummyModel
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
