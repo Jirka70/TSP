@@ -2,6 +2,9 @@ from src.types.interfaces.model.model import IModel
 
 
 class DummyModel(IModel):
+    def get_state_dict(self):
+        pass
+
     def name(self) -> str:
         return ""
 

@@ -17,3 +17,7 @@ class IModel(ABC):
     @abstractmethod
     def predict_class_probability(self, x):
         raise NotImplementedError
+
+    @abstractmethod
+    def get_state_dict(self) -> object:
+        raise NotImplementedError

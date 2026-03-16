@@ -20,7 +20,6 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoching import IEpoching
 from src.types.interfaces.evaluator import IEvaluator
-from src.types.interfaces.model.model import IModel
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.preprocessing import IPreprocessing
 from src.types.interfaces.splitter import ISplitter
