@@ -77,7 +77,7 @@ class ExperimentPipeline:
                                                                       model_training_result.data, test_data)
             evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
-        elif config.mode == Mode.EXPERIMENT:
+        elif config.mode == Mode.EXPERIMENT.value:
             pass
         else:
             self._log.error("Mode with name " + config.mode.value + " not found")
