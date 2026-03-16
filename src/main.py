@@ -33,6 +33,7 @@ def my_app(cfg):
     augmentation = ex_conf.augmentation.get_instance()
     model_trainer = ex_conf.model.get_instance()
     evaluator = ex_conf.evaluation.get_instance()
+    saver = ex_conf.save_artifacts.get_instance()
 
     ex = ExperimentPipeline(
         dl,
@@ -41,7 +42,8 @@ def my_app(cfg):
         split,
         augmentation,
         model_trainer,
-        evaluator
+        evaluator,
+        saver
     )
 
     ex.run(validation_res.config)

@@ -1,12 +1,11 @@
-# src/types/dto/config/artifacts_config.py
-
 from dataclasses import dataclass
 
-from pydantic import BaseModel
+from src.types.dto.config.astageconfig import AStageConfig
 
 
 @dataclass(frozen=True)
-class SaveArtifactsConfig(BaseModel):
+class SaveArtifactsConfig(AStageConfig):
+    _target_class = "impl.artifacts_saver.artifacts_saver.ArtifactSaver"
     save_model: bool
     save_metrics: bool
     save_config: bool

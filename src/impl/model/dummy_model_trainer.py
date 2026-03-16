@@ -14,5 +14,5 @@ class DummyModelTrainer(IModelTrainer):
         log = logging.getLogger(__name__)
         log.info("Running dummy model trainer")
         model: IModel = DummyModel()
-        data: TrainedModelDTO = TrainedModelDTO(model, model_name="pepa zetek")
+        data: TrainedModelDTO = TrainedModelDTO(model, model_name="eegnet")
         return StepResult(data)

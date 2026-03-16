@@ -1,10 +1,10 @@
 from typing import Union
 
-from src.types.dto.config.mode import Mode
 from pydantic import Field
 
+from src.types.dto.config.astageconfig import AStageConfig
+from src.types.dto.config.experiment_config import Mode
 from src.types.dto.config.preprocessing_config import PreprocessingConfigMNE
-from src.types.dto.config.iconfig import AStageConfig
 
 
 class RootConfig(AStageConfig):

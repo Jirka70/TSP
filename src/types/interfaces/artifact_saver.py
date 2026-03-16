@@ -7,9 +7,6 @@ from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 
 
 class IArtifactSaver(ABC):
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
 
     @abstractmethod
     def run(

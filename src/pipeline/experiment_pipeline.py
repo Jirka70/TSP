@@ -1,5 +1,7 @@
 import logging
+from pathlib import Path
 
+from src.impl.model.pytorch_serializer import PyTorchSerializer
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.run_context_factory import RunContextFactory
@@ -14,12 +16,15 @@ from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.preprocessing.preprocessed_data_dto import PreprocessedDataDTO
 from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
+from src.types.dto.save_artifacts.save_artifacts_input_dto import SaveArtifactsInputDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 from src.types.dto.split.split_input_dto import SplitInputDTO
+from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoching import IEpoching
 from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.model.model import IModel
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.preprocessing import IPreprocessing
 from src.types.interfaces.splitter import ISplitter
@@ -34,7 +39,8 @@ class ExperimentPipeline:
             splitting: ISplitter,
             augmentation: IAugmentor,
             model_trainer: IModelTrainer,
-            evaluator: IEvaluator
+            evaluator: IEvaluator,
+            artifact_saver: IArtifactSaver
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
@@ -45,6 +51,7 @@ class ExperimentPipeline:
         self._augmentation = augmentation
         self._model_trainer = model_trainer
         self._evaluator = evaluator
+        self._artifact_saver = artifact_saver
 
     def run(self, config: ExperimentConfig) -> None:
         run_ctx: RunContext = self._run_context_factory.create(config, "test",
@@ -75,6 +82,13 @@ class ExperimentPipeline:
             evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config.evaluation,
                                                                       model_training_result.data, test_data)
             evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
+
+            trained_model = model_training_result.data
+            save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(config.save_artifacts, config,
+                                                                                output_path=Path("ahoj"),
+                                                                                trained_model=trained_model,
+                                                                                model_serializer=PyTorchSerializer())
+            self._artifact_saver.run(save_artifacts_input, run_ctx)
 
         elif config.mode == Mode.EXPERIMENT.value:
             pass
