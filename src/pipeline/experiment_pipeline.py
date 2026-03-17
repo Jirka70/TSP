@@ -84,10 +84,12 @@ class ExperimentPipeline:
             evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
             trained_model = model_training_result.data
-            save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(config.save_artifacts, config,
-                                                                                output_path=Path("ahoj"),
-                                                                                trained_model=trained_model,
-                                                                                model_serializer=PyTorchSerializer())
+            save_artifacts_input: SaveArtifactsInputDTO \
+                = SaveArtifactsInputDTO(config.save_artifacts, config,
+                                        output_path=Path("ahoj.txt"),
+                                        evaluation_result=evaluation_result.data,
+                                        trained_model=trained_model,
+                                        model_serializer=PyTorchSerializer())
             self._artifact_saver.run(save_artifacts_input, run_ctx)
 
         elif config.mode == Mode.EXPERIMENT.value:

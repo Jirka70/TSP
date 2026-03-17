@@ -12,6 +12,7 @@ from src.types.interfaces.model.model_serializer import IModelSerializer
 class SaveArtifactsInputDTO:
     config: SaveArtifactsConfig
     experiment_config: ExperimentConfig
+    evaluation_result: EvaluationResultDTO
     """
     For saving whole pipeline configuration
     """
