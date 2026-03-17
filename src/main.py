@@ -2,10 +2,8 @@ import logging
 
 import hydra
 
-from src.impl.evaluator.dummy_evaluator import DummyEvaluator
-from src.impl.model.dummy_model_trainer import DummyModelTrainer
-from src.impl.split.dummy_splitter import DummySplitter
 from src.pipeline.experiment_pipeline import ExperimentPipeline
+from src.types.dto.config.experiment_config import Mode
 from src.validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
@@ -34,6 +32,11 @@ def my_app(cfg):
     model_trainer = ex_conf.model.get_instance()
     evaluator = ex_conf.evaluation.get_instance()
     saver = ex_conf.save_artifacts.get_instance()
+
+
+
+    if ex_conf.mode == Mode.TRAINING.value:
+        print("mrdat devky")
 
     ex = ExperimentPipeline(
         dl,
