@@ -10,5 +10,5 @@ defaults:
   - dataset: eegbci
   - save_artifacts: default
 
-mode: training
+mode: experiment
 output_dir: ./outputs
