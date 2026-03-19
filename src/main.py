@@ -2,6 +2,7 @@ import logging
 
 import hydra
 
+from pipeline.stage_factory import StageFactory, StageType
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
@@ -26,16 +27,20 @@ def my_app(cfg):
         log.error("Validation failed")
         return
 
+
     ex_conf = validation_res.config
 
-    dl = ex_conf.dataset.get_instance()
-    preprocessing = ex_conf.preprocessing.get_instance()
-    epoching = ex_conf.epoching.get_instance()
-    split = ex_conf.split.get_instance()
-    augmentation = ex_conf.augmentation.get_instance()
-    model_trainer = ex_conf.model.get_instance()
-    evaluator = ex_conf.evaluation.get_instance()
-    saver = ex_conf.save_artifacts.get_instance()
+    sf = StageFactory(ex_conf)
+
+    dl = sf.create_data_loader()
+    preprocessing = sf.create_preprocessing_stage()
+    epoching = sf.create_epoching_stage()
+    split = sf.create_split_stage()
+    augmentation = sf.create_augmentation_stage()
+    model_trainer = sf.create_model_trainer_stage()
+    evaluator = sf.create_evaluator_stage()
+    saver = sf.create_saver()
+
     run_ctx_factory: RunContextFactory = RunContextFactory()
 
     pipeline: IPipeline

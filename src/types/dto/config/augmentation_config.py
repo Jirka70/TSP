@@ -7,8 +7,6 @@ from src.types.dto.config.astageconfig import AStageConfig
 
 
 class AugmentationConfigBasic(AStageConfig):
-    _target_class = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
-
     backend: Literal["basic"]
     enabled: bool
     copies_per_sample: int
@@ -18,7 +16,5 @@ class AugmentationConfigBasic(AStageConfig):
 
 
 class AugmentationConfigNone(BaseModel):
-    _target_class = "src.impl.augmentation.dummy_augmentor.DummyAugmentor"
-
     backend: Literal[None]
     enabled: bool

@@ -1,3 +1,4 @@
+backend: default
 # Default evaluation configuration.
 
 # Metrics to compute after training experiment.
