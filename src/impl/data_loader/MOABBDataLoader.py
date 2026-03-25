@@ -20,7 +20,7 @@ class MOABBDataLoader(IDataLoader):
             data_class = getattr(moabb_datasets, name)
             return data_class()
         except AttributeError:
-            return ValueError(f"Dataset {name} was not found")
+            raise ValueError(f"Dataset {name} was not found")
 
     def _matches_optional_filter(self, value: str | int, allowed_values: list[str | int] | None) -> bool:
         if allowed_values is None:
@@ -66,7 +66,7 @@ class MOABBDataLoader(IDataLoader):
             paradigm_class = getattr(moabb_paradigms, name)
             return paradigm_class()
         except AttributeError:
-            return ValueError(f"Paradigm {name} was not found")
+            raise ValueError(f"Paradigm {name} was not found")
 
     def run(self, input: DatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
         dataset_name: str = input.name
