@@ -15,14 +15,16 @@ class MOABBDataLoader(IDataLoader):
     https://moabb.neurotechx.com/docs/generated/moabb.datasets.Yang2025.html
     """
 
-    def _create_dataset(self, name: str):
+    @staticmethod
+    def _create_dataset(name: str):
         try:
             data_class = getattr(moabb_datasets, name)
             return data_class()
         except AttributeError:
             raise ValueError(f"Dataset {name} was not found")
 
-    def _matches_optional_filter(self, value: str | int, allowed_values: list[str | int] | None) -> bool:
+    @staticmethod
+    def _matches_optional_filter(value: str | int, allowed_values: list[str | int] | None) -> bool:
         if allowed_values is None:
             return True
 
@@ -61,21 +63,19 @@ class MOABBDataLoader(IDataLoader):
 
         return recordings
 
-    def _create_paradigm(self, name: str):
+    @staticmethod
+    def _create_paradigm(name: str):
         try:
             paradigm_class = getattr(moabb_paradigms, name)
             return paradigm_class()
         except AttributeError:
             raise ValueError(f"Paradigm {name} was not found")
 
-    def run(self, input: DatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
-        dataset_name: str = input.name
-        paradigm_name: str = input.paradigm
+    def run(self, config: DatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
+        dataset_name: str = config.name
 
         dataset = self._create_dataset(dataset_name)
-        paradigm = self._create_paradigm(paradigm_name)
-
-        recordings = self._load_raw_recordings(dataset, config=input)
+        recordings = self._load_raw_recordings(dataset, config=config)
 
         res: RawDataDTO = RawDataDTO(recordings)
         return StepResult(res)

@@ -28,7 +28,6 @@ def my_app(cfg):
         log.error("Validation failed")
         return
 
-
     ex_conf = validation_res.config
 
     sf = StageFactory(ex_conf)
