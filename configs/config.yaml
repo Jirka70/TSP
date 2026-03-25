@@ -1,0 +1,14 @@
+defaults:
+  - _self_
+  - preprocessing: mne
+  - epoching: default
+  - split: default
+  - augmentation: basic
+  - model: eegnet
+  - evaluation: default
+  - visualization: matplotlib
+  - dataset: eegbci
+  - save_artifacts: default
+
+mode: experiment
+output_dir: ./outputs
