@@ -3,6 +3,7 @@ import logging
 import hydra
 
 from pipeline.stage_factory import StageFactory, StageType
+from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
