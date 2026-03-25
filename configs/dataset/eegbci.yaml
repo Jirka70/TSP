@@ -21,8 +21,5 @@ run_ids:
   - 8
   - 12
 
-# Experimental task type.
-# Example values:
-# - mi = motor imagery
-# - me = motor execution
-task: mi
+paradigm: LeftRightImagery
+

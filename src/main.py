@@ -33,7 +33,7 @@ def my_app(cfg):
 
     sf = StageFactory(ex_conf)
 
-    dl = sf.create_data_loader()
+    """dl = sf.create_data_loader()
     preprocessing = sf.create_preprocessing_stage()
     epoching = sf.create_epoching_stage()
     split = sf.create_split_stage()
@@ -53,7 +53,10 @@ def my_app(cfg):
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
 
-    pipeline.run(ex_conf, run_ctx)
+    pipeline.run(ex_conf, run_ctx)"""
+    dataloader = MOABBDataLoader()
+    dataloader.run(ex_conf.dataset, RunContextFactory().create(ex_conf, "", ""))
+
 
 
 if __name__ == "__main__":

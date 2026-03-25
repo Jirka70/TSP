@@ -10,4 +10,4 @@ class DatasetConfig(AStageConfig):
     subject_ids: list[int]
     session_ids: list[int] | None
     run_ids: list[int] | None
-    task: str
+    paradigm: str
