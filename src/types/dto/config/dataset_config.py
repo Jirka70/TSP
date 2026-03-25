@@ -5,7 +5,8 @@ from src.types.dto.config.astageconfig import AStageConfig
 
 
 class DatasetConfig(AStageConfig):
-    name: Literal["eegbci"]
+    backend: Literal["eegbci"]
+    name: str
     path: Path
     subject_ids: list[int]
     session_ids: list[int] | None

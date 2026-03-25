@@ -55,8 +55,8 @@ def my_app(cfg):
 
     pipeline.run(ex_conf, run_ctx)"""
     dataloader = MOABBDataLoader()
-    dataloader.run(ex_conf.dataset, RunContextFactory().create(ex_conf, "", ""))
-
+    data = dataloader.run(ex_conf.dataset, RunContextFactory().create(ex_conf, "", ""))
+    print(data)
 
 
 if __name__ == "__main__":
