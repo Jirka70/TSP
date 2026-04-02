@@ -8,15 +8,20 @@ a unified BCI benchmark pipeline.
 """
 
 import logging
+from pathlib import Path
 
 import mne
 from moabb.paradigms import MotorImagery
+from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.temporary_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.temporary_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.interfaces.preprocessing import IPreprocessing
+
+# Temporary config before the changes happen
+_CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
 
 class ParadigmPreprocessor(IPreprocessing):
@@ -54,48 +59,45 @@ class ParadigmPreprocessor(IPreprocessing):
         log = logging.getLogger(__name__)
         log.info("Orchestrating MOABB Motor Imagery paradigm")
 
-        paradigm_config = {
-            "events": ["left_hand", "right_hand"],
-            "fmin": 8.0,
-            "fmax": 35.0,
-            "tmin": 0.0,
-            "tmax": 4.0,
-            "baseline": (-0.5, 0.0),
-            "resample": 128.0,
-        }
+        cfg = OmegaConf.load(_CONFIG_PATH)
 
         try:
             # Currently not using the paradigm - everything done manually - might change later
-            paradigm = MotorImagery(**paradigm_config)
+            paradigm = MotorImagery(
+                events=list(cfg.events),
+                fmin=cfg.fmin,
+                fmax=cfg.fmax,
+                tmin=cfg.tmin,
+                tmax=cfg.tmax,
+                resample=cfg.resample,
+            )
             log.info(paradigm)
             # This part of the code
 
             raw = input_dto.signal
 
-            log.info(f"Band-pass filtering: {paradigm_config['fmin']}-{paradigm_config['fmax']} Hz")
-            raw.filter(
-                l_freq=paradigm_config["fmin"], h_freq=paradigm_config["fmax"], fir_design="firwin", skip_by_annotation="edge"
-            )
+            log.info(f"Band-pass filtering: {cfg.fmin}-{cfg.fmax} Hz")
+            raw.filter(l_freq=cfg.fmin, h_freq=cfg.fmax, fir_design="firwin", skip_by_annotation="edge")
 
             events, event_id = mne.events_from_annotations(raw)
 
-            event_id_filtered = {k: v for k, v in event_id.items() if k in paradigm_config["events"]}
+            event_id_filtered = {k: v for k, v in event_id.items() if k in cfg.events}
 
-            log.info(f"Creating epochs (segmentation) with tmin={paradigm_config['tmin']}, tmax={paradigm_config['tmax']}")
+            log.info(f"Creating epochs (segmentation) with tmin={cfg.tmin}, tmax={cfg.tmax}")
             epochs = mne.Epochs(
                 raw,
                 events=events,
                 event_id=event_id_filtered,
-                tmin=paradigm_config["tmin"],
-                tmax=paradigm_config["tmax"],
-                baseline=paradigm_config["baseline"],
-                reject_by_annotation=True,
-                preload=True,
+                tmin=cfg.tmin,
+                tmax=cfg.tmax,
+                baseline=tuple(cfg.baseline) if cfg.baseline is not None else None,
+                reject_by_annotation=cfg.reject_by_annotation,
+                preload=cfg.preload,
             )
 
-            if paradigm_config.get("resample"):
-                log.info(f"Resampling epochs to {paradigm_config['resample']} Hz [cite: 89, 90]")
-                epochs.resample(paradigm_config["resample"])
+            if cfg.resample:
+                log.info(f"Resampling epochs to {cfg.resample} Hz")
+                epochs.resample(cfg.resample)
 
             log.info(f"Successfully created {len(epochs)} epochs")
             return StepResult(EpochPreprocessedDTO(signal=epochs))
