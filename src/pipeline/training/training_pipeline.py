@@ -32,15 +32,15 @@ from src.types.interfaces.splitter import ISplitter
 
 class TrainingPipeline(IPipeline):
     def __init__(
-            self,
-            data_loader: IDataLoader,
-            preprocessing: IPreprocessing,
-            epoching: IEpoching,
-            splitting: ISplitter,
-            augmentation: IAugmentor,
-            model_trainer: IModelTrainer,
-            evaluator: IEvaluator,
-            artifact_saver: IArtifactSaver
+        self,
+        data_loader: IDataLoader,
+        preprocessing: IPreprocessing,
+        epoching: IEpoching,
+        splitting: ISplitter,
+        augmentation: IAugmentor,
+        model_trainer: IModelTrainer,
+        evaluator: IEvaluator,
+        artifact_saver: IArtifactSaver,
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
@@ -54,37 +54,64 @@ class TrainingPipeline(IPipeline):
         self._artifact_saver = artifact_saver
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
-        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
+        load_result: StepResult[RawDataDTO] = self._data_loader.run(
+            config.dataset, run_ctx
+        )
 
-        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(load_result.data, config.preprocessing)
-        preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(preprocessing_input, run_ctx)
+        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(
+            load_result.data, config.preprocessing
+        )
+        preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(
+            preprocessing_input, run_ctx
+        )
 
-        epoching_input: EpochingInputDTO = EpochingInputDTO(config.epoching, preprocessing_result.data)
-        epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(epoching_input, run_ctx)
+        epoching_input: EpochingInputDTO = EpochingInputDTO(
+            config.epoching, preprocessing_result.data
+        )
+        epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(
+            epoching_input, run_ctx
+        )
 
-        splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoching_result.data)
-        splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(splitting_input, run_ctx)
-        train_data: EpochingDataDTO = splitting_result.data.train_data  # preparing training data for augmentation
+        splitting_input: SplitInputDTO = SplitInputDTO(
+            config.split, epoching_result.data
+        )
+        splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(
+            splitting_input, run_ctx
+        )
+        train_data: EpochingDataDTO = (
+            splitting_result.data.train_data
+        )  # preparing training data for augmentation
 
-        augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, train_data)
-        augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
+        augmentation_input: AugmentationInputDTO = AugmentationInputDTO(
+            config.augmentation, train_data
+        )
+        augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(
+            augmentation_input, run_ctx
+        )
 
         validation_data: EpochingDataDTO = splitting_result.data.validation_data
-        training_input: TrainingInputDTO = TrainingInputDTO(config.model, augmentation_result.data, validation_data)
-        model_training_result: StepResult[TrainedModelDTO] = self._model_trainer.run(training_input, run_ctx)
+        training_input: TrainingInputDTO = TrainingInputDTO(
+            config.model, augmentation_result.data, validation_data
+        )
+        model_training_result: StepResult[TrainedModelDTO] = self._model_trainer.run(
+            training_input, run_ctx
+        )
 
         test_data: EpochingDataDTO = splitting_result.data.test_data
-        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config.evaluation,
-                                                                  model_training_result.data, test_data)
-        evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
+        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(
+            config.evaluation, model_training_result.data, test_data
+        )
+        evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(
+            evaluation_input, run_ctx
+        )
 
         trained_model = model_training_result.data
-        save_artifacts_input: SaveArtifactsInputDTO \
-            = SaveArtifactsInputDTO(config.save_artifacts, config,
-                                    output_path=Path("ahoj.txt"),
-                                    evaluation_result=evaluation_result.data,
-                                    trained_model=trained_model,
-                                    model_serializer=PyTorchSerializer())
+        save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
+            config.save_artifacts,
+            config,
+            output_path=Path("ahoj.txt"),
+            evaluation_result=evaluation_result.data,
+            trained_model=trained_model,
+            model_serializer=PyTorchSerializer(),
+        )
         self._artifact_saver.run(save_artifacts_input, run_ctx)
-
-

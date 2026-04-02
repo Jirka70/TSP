@@ -2,7 +2,7 @@ import logging
 
 import hydra
 
-from pipeline.stage_factory import StageFactory, StageType
+from pipeline.stage_factory import StageFactory
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
@@ -27,7 +27,6 @@ def my_app(cfg):
         log.error("Validation failed")
         return
 
-
     ex_conf = validation_res.config
 
     sf = StageFactory(ex_conf)
@@ -46,7 +45,16 @@ def my_app(cfg):
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, preprocessing, epoching, split, augmentation, model_trainer, evaluator, saver)
+        pipeline = TrainingPipeline(
+            dl,
+            preprocessing,
+            epoching,
+            split,
+            augmentation,
+            model_trainer,
+            evaluator,
+            saver,
+        )
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         pipeline = ExperimentPipeline(dl, preprocessing, epoching)
     else:

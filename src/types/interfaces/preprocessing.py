@@ -8,5 +8,7 @@ from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInp
 
 class IPreprocessing(ABC):
     @abstractmethod
-    def run(self, input_dto: PreprocessingInputDTO, run_ctx: RunContext) -> StepResult[PreprocessedDataDTO]:
+    def run(
+        self, input_dto: PreprocessingInputDTO, run_ctx: RunContext
+    ) -> StepResult[PreprocessedDataDTO]:
         raise NotImplementedError

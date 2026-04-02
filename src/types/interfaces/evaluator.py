@@ -8,5 +8,7 @@ from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
 
 class IEvaluator(ABC):
     @abstractmethod
-    def run(self, input_dto: EvaluationInputDTO, run_ctx: RunContext) -> StepResult[EvaluationResultDTO]:
+    def run(
+        self, input_dto: EvaluationInputDTO, run_ctx: RunContext
+    ) -> StepResult[EvaluationResultDTO]:
         raise NotImplementedError

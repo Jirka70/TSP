@@ -5,9 +5,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class ArtifactRef:
-    """
-    Reference on saved artifact of current experiment.
-    """
+    """Reference on saved artifact of current experiment."""
 
     name: str
     """

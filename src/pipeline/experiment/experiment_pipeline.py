@@ -13,21 +13,31 @@ from src.types.interfaces.preprocessing import IPreprocessing
 
 
 class ExperimentPipeline(IPipeline):
-
     def __init__(
-            self,
-            data_loader: IDataLoader,
-            preprocessing: IPreprocessing,
-            epoching: IEpoching):
+        self,
+        data_loader: IDataLoader,
+        preprocessing: IPreprocessing,
+        epoching: IEpoching,
+    ):
         self._data_loader = data_loader
         self._preprocessing = preprocessing
         self._epoching = epoching
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
-        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
+        load_result: StepResult[RawDataDTO] = self._data_loader.run(
+            config.dataset, run_ctx
+        )
 
-        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(load_result.data, config.preprocessing)
-        preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(preprocessing_input, run_ctx)
+        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(
+            load_result.data, config.preprocessing
+        )
+        preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(
+            preprocessing_input, run_ctx
+        )
 
-        epoching_input: EpochingInputDTO = EpochingInputDTO(config.epoching, preprocessing_result.data)
-        epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(epoching_input, run_ctx)
+        epoching_input: EpochingInputDTO = EpochingInputDTO(
+            config.epoching, preprocessing_result.data
+        )
+        epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(
+            epoching_input, run_ctx
+        )

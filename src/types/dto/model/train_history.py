@@ -3,9 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class TrainingHistory:
-    """
-    History of training
-    """
+    """History of training"""
 
     train_loss: list[float] = field(default_factory=list)
     validation_loss: list[float] = field(default_factory=list)

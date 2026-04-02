@@ -7,11 +7,8 @@ from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 
 
 class IArtifactSaver(ABC):
-
     @abstractmethod
     def run(
-        self,
-        input_dto: SaveArtifactsInputDTO,
-        run_ctx: RunContext
+        self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext
     ) -> StepResult[SavedArtifactsDTO]:
         raise NotImplementedError

@@ -6,7 +6,6 @@ from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 
 
 class IModelSerializer(ABC):
-
     @abstractmethod
     def supports(self, model_name: str) -> bool:
         raise NotImplementedError
