@@ -21,7 +21,7 @@ from src.types.dto.temporary_preprocessing.epoch_preprocessing_input_dto import 
 from src.types.interfaces.preprocessing import IPreprocessing
 
 # Temporary config before the changes happen
-_CONFIG_PATH = Path(__file__).parent / "config.yaml"
+_CONFIG_PATH = Path(__file__).parent / "config_paradigm.yaml"
 
 
 class ParadigmPreprocessor(IPreprocessing):
