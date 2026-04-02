@@ -1,0 +1,8 @@
+high_pass_filter:
+  l_freq: 1.0
+
+notch_filter:
+  freqs: [50]
+
+annotate_break:
+  min_break_duration: 1.0

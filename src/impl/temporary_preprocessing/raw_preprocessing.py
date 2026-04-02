@@ -8,14 +8,18 @@ introduce mathematical or signal artifacts if applied to segmented data.
 """
 
 import logging
+from pathlib import Path
 
 import mne
+from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.temporary_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.temporary_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
 from src.types.interfaces.preprocessing import IPreprocessing
+
+_CONFIG_PATH = Path(__file__).parent / "raw_preprocessing_config.yaml"
 
 
 class RawPreprocessor(IPreprocessing):
@@ -56,6 +60,7 @@ class RawPreprocessor(IPreprocessing):
             for entry into the MOABB paradigm.
         """
         log = logging.getLogger(__name__)
+        cfg = OmegaConf.load(_CONFIG_PATH)
         log.info("Starting processing of continuous EEG data (MNE.Raw)")
 
         # Copy continuous signal to avoid modifying the original data
@@ -69,10 +74,10 @@ class RawPreprocessor(IPreprocessing):
             log.info("No bad channels detected for interpolation")
 
         # High-pass and Notch filtration
-        log.info("Applying frequency filters: HPF 1.0 Hz and Notch 50 Hz")
+        log.info(f"Applying frequency filters: HPF {cfg.high_pass_filter.l_freq} Hz and Notch {list(cfg.notch_filter.freqs)} Hz")
 
-        raw_data_copy.filter(l_freq=1.0, h_freq=None, fir_design="firwin", skip_by_annotation="edge")
-        raw_data_copy.notch_filter(freqs=[50], fir_design="firwin")
+        raw_data_copy.filter(l_freq=cfg.high_pass_filter.l_freq, h_freq=None, fir_design="firwin", skip_by_annotation="edge")
+        raw_data_copy.notch_filter(freqs=list(cfg.notch_filter.freqs), fir_design="firwin")
 
         # Spatial transformation - Current Source Density (CSD)
         log.info("Computing Current Source Density (Surface Laplacian)")
@@ -84,7 +89,7 @@ class RawPreprocessor(IPreprocessing):
             log.warning(f"CSD skipped: Invalid channel types or insufficient sensors. Error: {e}")
 
         # Automatic annotation of large artifacts
-        annotations, _ = mne.preprocessing.annotate_break(raw_data_copy, min_break_duration=1.0)
+        annotations, _ = mne.preprocessing.annotate_break(raw_data_copy, min_break_duration=cfg.annotate_break.min_break_duration)
 
         log.info("Continuous preprocessing completed successfully")
 
