@@ -9,11 +9,10 @@ from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
 
 
 class IEpoching(ABC):
-
     @abstractmethod
     def run(
-            self,
-            input_dto: EpochingInputDTO,
-            run_ctx: RunContext,
+        self,
+        input_dto: EpochingInputDTO,
+        run_ctx: RunContext,
     ) -> StepResult[EpochingDataDTO]:
         raise NotImplementedError
