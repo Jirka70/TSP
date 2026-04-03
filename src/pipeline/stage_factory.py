@@ -1,12 +1,12 @@
 from enum import Enum
 
-from impl.paradigm.dummy_epoching import DummyEpoching
 from impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from impl.augmentation.dummy_augmentor import DummyAugmentor
 from impl.data_loader.dummy_data_loader import DummyLoader
 from impl.epoch_preprocessing.dummy_preprocessing import DummyPreprocessing
 from impl.evaluator.dummy_evaluator import DummyEvaluator
 from impl.model.dummy_model_trainer import DummyModelTrainer
+from impl.paradigm.dummy_epoching import DummyEpoching
 from impl.split.dummy_splitter import DummySplitter
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
