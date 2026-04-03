@@ -87,7 +87,7 @@ rereference: average
 Odpovídá třída `PreprocessingConfigMNE`:
 ```py
 class PreprocessingConfigMNE(AStageConfig):
-    _target_class = "impl.preprocessing.dummy_preprocessing.DummyPreprocessing"
+    _target_class = "impl.epoch_preprocessing.dummy_preprocessing.DummyPreprocessing"
 
     backend: Literal["mne"]
     l_freq: float = Field(ge=0)

@@ -10,7 +10,7 @@ from src.types.interfaces.epoching import IEpoching
 class DummyEpoching(IEpoching):
     def run(self, input_dto: EpochingInputDTO, run_ctx: RunContext) -> StepResult[EpochingDataDTO]:
         log = logging.getLogger(__name__)
-        log.info("Running dummy epoching")
+        log.info("Running dummy paradigm")
         data: EpochingDataDTO = EpochingDataDTO(data="",
                                                 labels=[],
                                                 event_names=[],

@@ -8,7 +8,7 @@ from impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from impl.augmentation.dummy_augmentor import DummyAugmentor
 from impl.evaluator.dummy_evaluator import DummyEvaluator
 from impl.model.dummy_model_trainer import DummyModelTrainer
-from impl.preprocessing.dummy_preprocessing import DummyPreprocessing
+from impl.epoch_preprocessing.dummy_preprocessing import DummyPreprocessing
 from impl.split.dummy_splitter import DummySplitter
 from impl.epoching.dummy_epoching import DummyEpoching
 from impl.data_loader.dummy_data_loader import DummyLoader
@@ -25,8 +25,8 @@ from src.types.interfaces.artifact_saver import IArtifactSaver
 
 class StageType(Enum):
     DATA_LOADER = 'data_loader'
-    PREPROCESSING = 'preprocessing'
-    EPOCHING = 'epoching'
+    PREPROCESSING = 'epoch_preprocessing'
+    EPOCHING = 'paradigm'
     SPLIT = 'split'
     AUGMENTATION = 'augmentation'
     MODEL_TRAINER = 'model_trainer'

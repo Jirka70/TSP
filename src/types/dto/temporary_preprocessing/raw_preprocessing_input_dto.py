@@ -1,5 +1,5 @@
 """
-This module defines Data Transfer Objects (DTOs) for the preprocessing pipeline.
+This module defines Data Transfer Objects (DTOs) for the epoch_preprocessing pipeline.
 
 It ensures consistent data structures are passed between the ingestion and processing layers.
 """

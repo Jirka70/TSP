@@ -1,5 +1,5 @@
 """
-Module for fundamental preprocessing of continuous EEG data (MNE.Raw).
+Module for fundamental epoch_preprocessing of continuous EEG data (MNE.Raw).
 
 This processing stage operates on the uninterrupted time record from the beginning
 to the end of the experiment. The goal is to cleanse the data of global
@@ -19,12 +19,12 @@ from src.types.dto.temporary_preprocessing.raw_preprocessed_dto import RawPrepro
 from src.types.dto.temporary_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
 from src.types.interfaces.preprocessing import IPreprocessing
 
-_CONFIG_PATH = Path(__file__).parent / "raw_preprocessing_config.yaml"
+_CONFIG_PATH = Path(__file__).parent / "raw_preprocessing.yaml"
 
 
 class RawPreprocessor(IPreprocessing):
     """
-    Implements a preprocessing strategy for the mne.io.Raw data structure.
+    Implements a epoch_preprocessing strategy for the mne.io.Raw data structure.
 
     This class handles operations that require temporal stability or are
     sensitive to discontinuities. Key responsibilities include the
@@ -49,7 +49,7 @@ class RawPreprocessor(IPreprocessing):
            conduction and better localize signals to the sensorimotor cortex.
         5. Algorithmic or manual annotation of macroscopic artifacts (e.g.,
            movement) using 'BAD_' labels for automatic rejection during
-           the epoching process.
+           the paradigm process.
 
         Args:
             input_dto: DTO containing the raw EEG signal and hardware metadata.
@@ -91,6 +91,6 @@ class RawPreprocessor(IPreprocessing):
         # Automatic annotation of large artifacts
         annotations, _ = mne.preprocessing.annotate_break(raw_data_copy, min_break_duration=cfg.annotate_break.min_break_duration)
 
-        log.info("Continuous preprocessing completed successfully")
+        log.info("Continuous epoch_preprocessing completed successfully")
 
         return StepResult(RawPreprocessedDTO(signal=raw_data_copy))

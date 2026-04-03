@@ -1,5 +1,5 @@
 """
-This module handles advanced preprocessing techniques applied directly to segmented epochs.
+This module handles advanced epoch_preprocessing techniques applied directly to segmented epochs.
 
 It includes spatial filtering, artifact rejection (ICA),and feature enhancement methods to prepare data for classification.
 """
@@ -18,7 +18,7 @@ from src.types.dto.temporary_preprocessing.epoch_preprocessing_input_dto import 
 from src.types.interfaces.preprocessing import IPreprocessing
 
 # Temporary config file
-_CONFIG_PATH = Path(__file__).parent / "epoch_transforms_config.yaml"
+_CONFIG_PATH = Path(__file__).parent / "epoch_preprocessing.yaml"
 
 
 class EpochPreprocessor(IPreprocessing):
@@ -52,7 +52,7 @@ class EpochPreprocessor(IPreprocessing):
         epochs = input_dto.signal
         cfg = OmegaConf.load(_CONFIG_PATH)
 
-        log.info(f"Starting advanced epoch preprocessing for {len(epochs)} epochs")
+        log.info(f"Starting advanced epoch epoch_preprocessing for {len(epochs)} epochs")
 
         try:
             # --- 1. ICA: Artifact Rejection ---
@@ -81,9 +81,9 @@ class EpochPreprocessor(IPreprocessing):
             log.info(f"CSP transformation complete. New data shape: {x_transformed.shape}")
 
             # Signal is numpy.ndarray (features)
-            log.info("Epoch preprocessing completed successfully.")
+            log.info("Epoch epoch_preprocessing completed successfully.")
             return StepResult(EpochPreprocessedDTO(signal=x_transformed))
 
         except Exception as e:
-            log.error(f"Failed during advanced epoch preprocessing: {e}")
+            log.error(f"Failed during advanced epoch epoch_preprocessing: {e}")
             raise

@@ -7,7 +7,7 @@ from typing import Any
 class PipelineStepMeta:
     step_name: str
     """
-    e.g. 'validation' or 'preprocessing'.
+    e.g. 'validation' or 'epoch_preprocessing'.
     """
 
     implementation_name: str

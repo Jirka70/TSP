@@ -13,7 +13,7 @@ backend: eegnet
 n_classes: 2
 
 # Number of EEG channels expected by the training.
-# This should match the data after preprocessing / channel selection.
+# This should match the data after epoch_preprocessing / channel selection.
 n_channels: 64
 
 # Number of temporal samples per input window / epoch.

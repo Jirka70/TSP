@@ -5,7 +5,7 @@ from src.types.dto.config.astageconfig import AStageConfig
 class EpochingConfig(AStageConfig):
     backend: Literal["mne"]
     """
-    Configuration of epoching step.
+    Configuration of paradigm step.
     """
 
     enabled: bool

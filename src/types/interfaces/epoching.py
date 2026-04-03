@@ -1,4 +1,4 @@
-# src/types/interfaces/epoching/i_epoching.py
+# src/types/interfaces/paradigm/i_epoching.py
 
 from abc import ABC, abstractmethod
 

@@ -1,6 +1,6 @@
 # Preprocessing configuration using the MNE backend.
 
-# Backend identifier used to select the preprocessing implementation.
+# Backend identifier used to select the epoch_preprocessing implementation.
 backend: mne
 
 # Low cutoff frequency for band-pass filtering.

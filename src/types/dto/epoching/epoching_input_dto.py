@@ -1,4 +1,4 @@
-# src/types/dto/epoching/epoching_input_dto.py
+# src/types/dto/paradigm/epoching_input_dto.py
 
 from dataclasses import dataclass
 
