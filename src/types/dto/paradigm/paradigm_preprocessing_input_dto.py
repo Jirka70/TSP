@@ -8,6 +8,8 @@ processing signals within a defined experimental or algorithmic paradigm.
 from dataclasses import dataclass
 from typing import Any
 
+from src.types.dto.config.paradigm_config import ParadigmConfig
+
 
 @dataclass(frozen=True)
 class ParadigmPreprocessingInputDTO:
@@ -22,5 +24,7 @@ class ParadigmPreprocessingInputDTO:
     Attributes:
         signal (Any): The input signal data associated with the paradigm.
     """
+
+    paradigm_preprocessing_config: ParadigmConfig
 
     signal: Any

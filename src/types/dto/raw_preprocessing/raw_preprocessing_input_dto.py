@@ -7,6 +7,8 @@ It ensures consistent data structures are passed between the ingestion and proce
 from dataclasses import dataclass
 from typing import Any
 
+from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
+
 
 @dataclass(frozen=True)
 class RawPreprocessingInputDto:
@@ -19,5 +21,7 @@ class RawPreprocessingInputDto:
     Attributes:
         signal (Any): The raw signal data to be preprocessed.
     """
+
+    raw_preprocessing_config: RawPreprocessingConfig
 
     signal: Any

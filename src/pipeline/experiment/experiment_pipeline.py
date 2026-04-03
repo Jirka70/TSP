@@ -2,32 +2,40 @@ from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.pipeline import IPipeline
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
-from src.types.dto.epoching.epoching_input_dto import EpochingInputDTO
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
-from src.types.dto.preprocessing.preprocessed_data_dto import PreprocessedDataDTO
-from src.types.dto.preprocessing.preprocessing_input_dto import PreprocessingInputDTO
+from src.types.dto.paradigm.paradigm_preprocessed_dto import ParadigmPreprocessedDTO
+from src.types.dto.paradigm.paradigm_preprocessing_input_dto import ParadigmPreprocessingInputDTO
+from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
+from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
 from src.types.interfaces.data_loader import IDataLoader
-from src.types.interfaces.epoching import IEpoching
-from src.types.interfaces.preprocessing import IPreprocessing
+from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
+from src.types.interfaces.paradigm import IParadigm
+from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 
 
 class ExperimentPipeline(IPipeline):
-
     def __init__(
-            self,
-            data_loader: IDataLoader,
-            preprocessing: IPreprocessing,
-            epoching: IEpoching):
+        self,
+        data_loader: IDataLoader,
+        raw_preprocessing: IRawPreprocessing,
+        paradigm: IParadigm,
+        epoch_preprocessing: IEpochPreprocessing,
+    ):
         self._data_loader = data_loader
-        self._preprocessing = preprocessing
-        self._epoching = epoching
+        self._raw_preprocessing = raw_preprocessing
+        self._paradigm = paradigm
+        self._epoch_preprocessing = epoch_preprocessing
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        preprocessing_input: PreprocessingInputDTO = PreprocessingInputDTO(load_result.data, config.preprocessing)
-        preprocessing_result: StepResult[PreprocessedDataDTO] = self._preprocessing.run(preprocessing_input, run_ctx)
+        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(load_result.data, config.raw_preprocessing)
+        raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
-        epoching_input: EpochingInputDTO = EpochingInputDTO(config.epoching, preprocessing_result.data)
-        epoching_result: StepResult[EpochingDataDTO] = self._epoching.run(epoching_input, run_ctx)
+        paradigm_input: ParadigmPreprocessingInputDTO = ParadigmPreprocessingInputDTO(raw_preprocessing_result.data, config.paradigm)
+        paradigm_result: StepResult[ParadigmPreprocessedDTO] = self._paradigm.run(paradigm_input, run_ctx)
+
+        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(paradigm_result.data, config.epoch_preprocessing)
+        epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)

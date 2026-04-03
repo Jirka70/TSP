@@ -1,62 +1,59 @@
-import matplotlib
+import logging
 
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
-from mne.preprocessing import ICA
-from moabb.datasets import BNCI2014_001
-from moabb.paradigms import LeftRightImagery
+import hydra
 
-# 1. Setup Dataset
-dataset = BNCI2014_001()
-subject_id = 1
-# Get raw data to perform "Before Trial" cleaning
-data = dataset.get_data(subjects=[subject_id])
-session = list(data[subject_id].keys())[0]
-run = list(data[subject_id][session].keys())[0]
-raw = data[subject_id][session][run]
-raw.load_data()
+from src.pipeline.context.run_context import RunContext
+from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
+from src.pipeline.pipeline import IPipeline
+from src.pipeline.run_context_factory import RunContextFactory
+from src.pipeline.stage_factory import StageFactory
+from src.pipeline.training.training_pipeline import TrainingPipeline
+from src.types.dto.config.experiment_config import Mode
+from src.validation.config_validator import ExperimentConfigValidator
 
-# --- STEP 1: BEFORE TRIAL (RAW) PREPROCESSING ---
-# A. High-pass filter (0.5 Hz is standard to remove DC drift)
-raw.filter(l_freq=0.5, h_freq=None, fir_design="firwin")
+# A logger for this file
+log = logging.getLogger(__name__)
 
-# B. Notch filter (50Hz power line noise)
-raw.notch_filter(freqs=[50.0])
 
-# C. Automated Bad Channel Detection
-# We use the standard deviation to find flat or extremely noisy channels
-raw.info["bads"] = []
-# For demonstration, let's use MNE's find_bad_channels_maxwell-style logic or simple variance
-# Here we will plot to let you manually inspect, or use a simple threshold:
-print(f"Initial Channels: {raw.ch_names}")
+@hydra.main(version_base=None, config_path="../configs", config_name="config")
+def my_app(cfg):
+    log.info("Experiment start")
 
-# --- STEP 2: USE PARADIGM (EPOCHING) ---
-# We use LeftRightImagery which defines the 8-32Hz band and time window
-paradigm = LeftRightImagery(fmin=8, fmax=32)
-# get_data returns: X (numpy), labels, and meta.
-# However, to use ICA on EPOCHS, we need the MNE Epochs object:
-epochs, labels, meta = paradigm.get_data(
-    dataset=dataset, subjects=[subject_id], return_epochs=True
-)
+    validator = ExperimentConfigValidator()
+    validation_res = validator.validate(cfg)
+    if validation_res.is_valid:
+        log.info("Config successfully validated")
+    else:
+        log.error("Validation failed")
+        return
 
-# --- STEP 3: ICA FILTER ON EPOCHS ---
-# ICA is used to remove artifacts like eye blinks (EOG)
-ica = ICA(n_components=15, random_state=97, max_iter=800)
-ica.fit(epochs)
+    ex_conf = validation_res.config
 
-# Visualize ICA components to identify artifacts
-ica.plot_components()
-# Typically, you would exclude components here, e.g., ica.exclude = [0]
-# For this script, we apply it to clean the signal
-epochs_cleaned = ica.apply(epochs.copy())
+    sf = StageFactory(ex_conf)
 
-# --- STEP 4: VISUALIZATION ---
-# A. Compare Raw vs Cleaned Epochs
-print("Visualizing Cleaned Epochs...")
-epochs_cleaned.plot(title="Cleaned Motor Imagery Epochs", n_epochs=5)
+    dl = sf.create_data_loader()
+    raw_preprocessing = sf.create_raw_preprocessing_stage()
+    paradigm = sf.create_paradigm_stage()
+    epoch_preprocessing = sf.create_epoch_preprocessing_stage()
+    split = sf.create_split_stage()
+    augmentation = sf.create_augmentation_stage()
+    model_trainer = sf.create_model_trainer_stage()
+    evaluator = sf.create_evaluator_stage()
+    saver = sf.create_saver()
 
-# B. Visualize the Power Spectral Density (PSD)
-epochs_cleaned.compute_psd().plot()
-plt.suptitle("PSD of Cleaned Data (8-32 Hz Focus)")
+    run_ctx_factory: RunContextFactory = RunContextFactory()
 
-plt.show()
+    pipeline: IPipeline
+    run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
+    if ex_conf.mode == Mode.TRAINING.value:
+        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, evaluator, saver)
+    elif ex_conf.mode == Mode.EXPERIMENT.value:
+        pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
+    else:
+        raise ValueError(f"Mode {ex_conf.mode} is not supported")
+
+    pipeline.run(ex_conf, run_ctx)
+
+
+if __name__ == "__main__":
+    my_app()

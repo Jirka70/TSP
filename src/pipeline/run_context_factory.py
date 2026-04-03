@@ -1,7 +1,5 @@
-import secrets
 import subprocess
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 from src.pipeline.context.run_context import RunContext
@@ -10,7 +8,7 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 
 class RunContextFactory:
     @staticmethod
-    def _resolve_git_commit_hash() -> Optional[str]:
+    def _resolve_git_commit_hash() -> str | None:
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "HEAD"],
@@ -42,7 +40,9 @@ class RunContextFactory:
             run_id=run_id,
             started_at=started_at,
             dataset_name=config.dataset.name,
-            preprocessing_backend=config.preprocessing.backend,
+            raw_preprocessing_backend=config.raw_preprocessing.backend,
+            paradigm_backend=config.paradigm.backend,
+            epoch_preprocessing_backend=config.epoch_preprocessing.backend,
             augmentation_backend=augmentation_backend,
             experiment_name=experiment_name,
             pipeline_name=pipeline_name,

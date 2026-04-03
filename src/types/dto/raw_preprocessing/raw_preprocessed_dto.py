@@ -1,10 +1,3 @@
-"""
-This module contains Data Transfer Objects (DTOs) for storing processed data.
-
-It facilitates the structured transfer of signals that have already undergone
-initial epoch_preprocessing steps.
-"""
-
 from dataclasses import dataclass
 from typing import Any
 

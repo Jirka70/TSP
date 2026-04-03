@@ -1,12 +1,3 @@
-"""
-Module for fundamental epoch_preprocessing of continuous EEG data (MNE.Raw).
-
-This processing stage operates on the uninterrupted time record from the beginning
-to the end of the experiment. The goal is to cleanse the data of global
-defects and perform spatial/frequency transformations that would otherwise
-introduce mathematical or signal artifacts if applied to segmented data.
-"""
-
 import logging
 from pathlib import Path
 
@@ -15,14 +6,14 @@ from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.temporary_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
-from src.types.dto.temporary_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
-from src.types.interfaces.preprocessing import IPreprocessing
+from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
+from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
+from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 
-_CONFIG_PATH = Path(__file__).parent / "raw_preprocessing.yaml"
+_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
-class RawPreprocessor(IPreprocessing):
+class RawPreprocessor(IRawPreprocessing):
     """
     Implements a epoch_preprocessing strategy for the mne.io.Raw data structure.
 

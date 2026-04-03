@@ -16,15 +16,15 @@ from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.temporary_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.temporary_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.interfaces.preprocessing import IPreprocessing
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
+from src.types.interfaces.paradigm import IParadigm
 
 # Temporary config before the changes happen
-_CONFIG_PATH = Path(__file__).parent / "paradigm.yaml"
+_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
-class ParadigmPreprocessor(IPreprocessing):
+class ParadigmPreprocessor(IParadigm):
     """
     Orchestrates the transition from Raw signal to segmented Epochs using MOABB.
 

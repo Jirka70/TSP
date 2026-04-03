@@ -8,6 +8,8 @@ the processing pipeline.
 from dataclasses import dataclass
 from typing import Any
 
+from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
+
 
 @dataclass(frozen=True)
 class EpochPreprocessingInputDTO:
@@ -21,5 +23,7 @@ class EpochPreprocessingInputDTO:
     Attributes:
         signal (Any): The signal data corresponding to the epoch(s).
     """
+
+    epoch_preprocessing_config: EpochPreprocessingConfig
 
     signal: Any

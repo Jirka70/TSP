@@ -3,26 +3,29 @@ from enum import Enum
 from impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from impl.augmentation.dummy_augmentor import DummyAugmentor
 from impl.data_loader.dummy_data_loader import DummyLoader
-from impl.epoch_preprocessing.dummy_preprocessing import DummyPreprocessing
+from impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from impl.evaluator.dummy_evaluator import DummyEvaluator
 from impl.model.dummy_model_trainer import DummyModelTrainer
-from impl.paradigm.dummy_epoching import DummyEpoching
+from impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
+from impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from impl.split.dummy_splitter import DummySplitter
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
-from src.types.interfaces.epoching import IEpoching
+from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.model.model_trainer import IModelTrainer
-from src.types.interfaces.preprocessing import IPreprocessing
+from src.types.interfaces.paradigm import IParadigm
+from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
 
 
 class StageType(Enum):
     DATA_LOADER = "data_loader"
-    PREPROCESSING = "epoch_preprocessing"
-    EPOCHING = "paradigm"
+    RAW_PREPROCESSING = "raw_preprocessing"
+    PARADIGM = "paradigm"
+    EPOCH_PREPROCESSING = "epoch_preprocessing"
     SPLIT = "split"
     AUGMENTATION = "augmentation"
     MODEL_TRAINER = "model_trainer"
@@ -33,10 +36,9 @@ class StageType(Enum):
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
         StageType.DATA_LOADER: {"eegbci": DummyLoader},
-        StageType.PREPROCESSING: {"mne": DummyPreprocessing},
-        StageType.EPOCHING: {
-            "mne": DummyEpoching,
-        },
+        StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
+        StageType.PARADIGM: {"testing": ParadigmPreprocessor},
+        StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
         StageType.SPLIT: {"default": DummySplitter},
         StageType.AUGMENTATION: {
             "basic": DummyAugmentor,
@@ -57,11 +59,14 @@ class StageFactory:
     def create_data_loader(self) -> IDataLoader:
         return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.name]()
 
-    def create_preprocessing_stage(self) -> IPreprocessing:
-        return StageFactory._targets[StageType.PREPROCESSING][self._config.preprocessing.backend]()
+    def create_raw_preprocessing_stage(self) -> IRawPreprocessing:
+        return StageFactory._targets[StageType.RAW_PREPROCESSING][self._config.raw_preprocessing.backend]()
 
-    def create_epoching_stage(self) -> IEpoching:
-        return StageFactory._targets[StageType.EPOCHING][self._config.epoching.backend]()
+    def create_paradigm_stage(self) -> IParadigm:
+        return StageFactory._targets[StageType.PARADIGM][self._config.paradigm.backend]()
+
+    def create_epoch_preprocessing_stage(self) -> IEpochPreprocessing:
+        return StageFactory._targets[StageType.EPOCH_PREPROCESSING][self._config.epoch_preprocessing.backend]()
 
     def create_split_stage(self) -> ISplitter:
         return StageFactory._targets[StageType.SPLIT][self._config.split.backend]()

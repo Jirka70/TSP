@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 # ============================================================
@@ -22,8 +21,10 @@ class RunContext:
     run_id: str
     started_at: datetime
     dataset_name: str
-    preprocessing_backend: str
+    raw_preprocessing_backend: str
+    paradigm_backend: str
+    epoch_preprocessing_backend: str
     augmentation_backend: str | None
     experiment_name: str  # experiment name (e. g. "left_right_subject_01")
     pipeline_name: str  # name of the entire pipeline (e. g. "training_pipeline_<version>")
-    git_commit_hash: Optional[str]
+    git_commit_hash: str | None

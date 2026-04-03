@@ -1,3 +1,5 @@
+backend: testing
+
 events:
   - left_hand
   - right_hand

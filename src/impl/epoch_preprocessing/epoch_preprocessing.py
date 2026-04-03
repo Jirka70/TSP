@@ -13,15 +13,15 @@ from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.temporary_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.temporary_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.interfaces.preprocessing import IPreprocessing
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
+from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 
 # Temporary config file
-_CONFIG_PATH = Path(__file__).parent / "epoch_preprocessing.yaml"
+_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
-class EpochPreprocessor(IPreprocessing):
+class EpochPreprocessor(IEpochPreprocessing):
     """
     Performs high-level signal cleaning and transformation on MNE Epochs.
 

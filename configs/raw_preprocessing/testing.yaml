@@ -1,3 +1,5 @@
+backend: testing
+
 high_pass_filter:
   l_freq: 1.0
 

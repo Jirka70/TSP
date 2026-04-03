@@ -1,7 +1,8 @@
 defaults:
   - _self_
-  - preprocessing: mne
-  - epoching: default
+  - raw_preprocessing: testing
+  - paradigm: testing
+  - epoch_preprocessing: testing
   - split: default
   - augmentation: basic
   - model: eegnet

@@ -1,3 +1,5 @@
+backend: testing
+
 ica:
   n_components: 15
   random_state: 42
