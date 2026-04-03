@@ -1,6 +1,7 @@
 from enum import Enum
 
 from impl.artifacts_saver.artifacts_saver import ArtifactSaver
+from impl.augmentation.basic_augmentor import BasicAugmentor
 from impl.augmentation.dummy_augmentor import DummyAugmentor
 from impl.data_loader.dummy_data_loader import DummyLoader
 from impl.epoching.dummy_epoching import DummyEpoching
@@ -39,7 +40,7 @@ class StageFactory:
         },
         StageType.SPLIT: {"default": DummySplitter},
         StageType.AUGMENTATION: {
-            "basic": DummyAugmentor,
+            "basic": BasicAugmentor,
             None: DummyAugmentor,  # :)
         },
         StageType.MODEL_TRAINER: {
@@ -58,34 +59,22 @@ class StageFactory:
         return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.name]()
 
     def create_preprocessing_stage(self) -> IPreprocessing:
-        return StageFactory._targets[StageType.PREPROCESSING][
-            self._config.preprocessing.backend
-        ]()
+        return StageFactory._targets[StageType.PREPROCESSING][self._config.preprocessing.backend]()
 
     def create_epoching_stage(self) -> IEpoching:
-        return StageFactory._targets[StageType.EPOCHING][
-            self._config.epoching.backend
-        ]()
+        return StageFactory._targets[StageType.EPOCHING][self._config.epoching.backend]()
 
     def create_split_stage(self) -> ISplitter:
         return StageFactory._targets[StageType.SPLIT][self._config.split.backend]()
 
     def create_augmentation_stage(self) -> IAugmentor:
-        return StageFactory._targets[StageType.AUGMENTATION][
-            self._config.augmentation.backend
-        ]()
+        return StageFactory._targets[StageType.AUGMENTATION][self._config.augmentation.backend]()
 
     def create_model_trainer_stage(self) -> IModelTrainer:
-        return StageFactory._targets[StageType.MODEL_TRAINER][
-            self._config.model.backend
-        ]()
+        return StageFactory._targets[StageType.MODEL_TRAINER][self._config.model.backend]()
 
     def create_evaluator_stage(self) -> IEvaluator:
-        return StageFactory._targets[StageType.EVALUATOR][
-            self._config.evaluation.backend
-        ]()
+        return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
 
     def create_saver(self) -> IArtifactSaver:
-        return StageFactory._targets[StageType.SAVER][
-            self._config.save_artifacts.backend
-        ]()
+        return StageFactory._targets[StageType.SAVER][self._config.save_artifacts.backend]()
