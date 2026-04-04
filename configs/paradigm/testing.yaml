@@ -7,10 +7,10 @@ events:
 fmin: 8.0
 fmax: 35.0
 
-tmin: 0.0
+tmin: -0.5
 tmax: 4.0
 
-baseline: [-0.5, 0.0]
+baseline: [ -0.5, 0.0 ]
 
 resample: 128.0
 
