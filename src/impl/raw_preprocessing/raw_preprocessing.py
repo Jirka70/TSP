@@ -1,16 +1,12 @@
 import logging
-from pathlib import Path
 
 import mne
-from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
-
-_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
 class RawPreprocessor(IRawPreprocessing):
@@ -51,7 +47,7 @@ class RawPreprocessor(IRawPreprocessing):
             for entry into the MOABB paradigm.
         """
         log = logging.getLogger(__name__)
-        cfg = OmegaConf.load(_CONFIG_PATH)
+        cfg = input_dto.raw_preprocessing_config
         log.info("Starting processing of continuous EEG data (MNE.Raw)")
 
         # Copy continuous signal to avoid modifying the original data
@@ -80,7 +76,12 @@ class RawPreprocessor(IRawPreprocessing):
             log.warning(f"CSD skipped: Invalid channel types or insufficient sensors. Error: {e}")
 
         # Automatic annotation of large artifacts
-        annotations, _ = mne.preprocessing.annotate_break(raw_data_copy, min_break_duration=cfg.annotate_break.min_break_duration)
+        annotations = mne.preprocessing.annotate_break(
+            raw_data_copy,
+            min_break_duration=cfg.annotate_break.min_break_duration,
+            t_start_after_previous=0.0,
+            t_stop_before_next=0.0,
+        )
 
         log.info("Continuous epoch_preprocessing completed successfully")
 

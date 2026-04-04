@@ -5,20 +5,15 @@ It includes spatial filtering, artifact rejection (ICA),and feature enhancement 
 """
 
 import logging
-from pathlib import Path
 
 from mne.decoding import CSP
 from mne.preprocessing import ICA
-from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
-
-# Temporary config file
-_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
 class EpochPreprocessor(IEpochPreprocessing):
@@ -49,8 +44,8 @@ class EpochPreprocessor(IEpochPreprocessing):
             StepResult containing the refined and cleaned Epochs.
         """
         log = logging.getLogger(__name__)
-        epochs = input_dto.signal
-        cfg = OmegaConf.load(_CONFIG_PATH)
+        epochs = input_dto.signal.signal
+        cfg = input_dto.epoch_preprocessing_config
 
         log.info(f"Starting advanced epoch epoch_preprocessing for {len(epochs)} epochs")
 

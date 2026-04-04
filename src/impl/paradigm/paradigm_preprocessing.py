@@ -8,20 +8,16 @@ a unified BCI benchmark pipeline.
 """
 
 import logging
-from pathlib import Path
 
 import mne
 from moabb.paradigms import MotorImagery
-from omegaconf import OmegaConf
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
+from src.types.dto.paradigm.paradigm_preprocessed_dto import ParadigmPreprocessedDTO
+from src.types.dto.paradigm.paradigm_preprocessing_input_dto import ParadigmPreprocessingInputDTO
 from src.types.interfaces.paradigm import IParadigm
-
-# Temporary config before the changes happen
-_CONFIG_PATH = Path(__file__).parent / "testing.yaml"
 
 
 class ParadigmPreprocessor(IParadigm):
@@ -34,7 +30,7 @@ class ParadigmPreprocessor(IParadigm):
     metadata by enforcing the return of MNE.Epochs objects.
     """
 
-    def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
+    def run(self, input_dto: ParadigmPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[ParadigmPreprocessedDTO]:
         r"""
         Executes the segmentation and standardizing pipeline via MOABB.
 
@@ -59,7 +55,7 @@ class ParadigmPreprocessor(IParadigm):
         log = logging.getLogger(__name__)
         log.info("Orchestrating MOABB Motor Imagery paradigm")
 
-        cfg = OmegaConf.load(_CONFIG_PATH)
+        cfg = input_dto.paradigm_preprocessing_config
 
         try:
             # Currently not using the paradigm - everything done manually - might change later
@@ -74,7 +70,7 @@ class ParadigmPreprocessor(IParadigm):
             log.info(paradigm)
             # This part of the code
 
-            raw = input_dto.signal
+            raw = input_dto.signal.signal
 
             log.info(f"Band-pass filtering: {cfg.fmin}-{cfg.fmax} Hz")
             raw.filter(l_freq=cfg.fmin, h_freq=cfg.fmax, fir_design="firwin", skip_by_annotation="edge")
