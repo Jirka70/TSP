@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
+    AugmentationConfigTorchEEG,
 )
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoching_config import EpochingConfig
@@ -36,6 +37,4 @@ class ExperimentConfig(BaseModel):
     preprocessing: PreprocessingConfigMNE = Field(discriminator="backend")
 
     epoching: EpochingConfig = Field(discriminator="backend")
-    augmentation: AugmentationConfigBasic | AugmentationConfigNone = Field(
-        discriminator="backend"
-    )
+    augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")

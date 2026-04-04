@@ -21,13 +21,13 @@ def my_app(cfg):
 
     validator = ExperimentConfigValidator()
     validation_res = validator.validate(cfg)
-    if validation_res.is_valid:
-        log.info("Config successfully validated")
-    else:
-        log.error("Validation failed")
+    ex_conf = validation_res.config
+
+    if not validation_res.is_valid or ex_conf is None:
+        log.error("Configuration validation failed. Check logs for details. Exiting.")
         return
 
-    ex_conf = validation_res.config
+    log.info("Config successfully validated")
 
     sf = StageFactory(ex_conf)
 
