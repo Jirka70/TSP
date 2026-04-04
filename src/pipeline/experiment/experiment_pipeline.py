@@ -31,11 +31,11 @@ class ExperimentPipeline(IPipeline):
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(load_result.data, config.raw_preprocessing)
+        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.signal)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
-        paradigm_input: ParadigmPreprocessingInputDTO = ParadigmPreprocessingInputDTO(raw_preprocessing_result.data, config.paradigm)
+        paradigm_input: ParadigmPreprocessingInputDTO = ParadigmPreprocessingInputDTO(config.paradigm, raw_preprocessing_result.data)
         paradigm_result: StepResult[ParadigmPreprocessedDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
-        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(paradigm_result.data, config.epoch_preprocessing)
+        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
         epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)

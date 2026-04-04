@@ -62,7 +62,7 @@ class TrainingPipeline(IPipeline):
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(config.raw_preprocessing, load_result.data)
+        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.signal)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
         paradigm_input: ParadigmPreprocessingInputDTO = ParadigmPreprocessingInputDTO(config.paradigm, raw_preprocessing_result.data)
