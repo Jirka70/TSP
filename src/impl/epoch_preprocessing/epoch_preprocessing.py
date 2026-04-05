@@ -1,10 +1,13 @@
 import logging
 
+import mne
+import numpy as np
 from mne.decoding import CSP
 from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
@@ -38,18 +41,20 @@ class EpochPreprocessor(IEpochPreprocessing):
             StepResult containing the refined and cleaned Epochs.
         """
         log = logging.getLogger(__name__)
-        epochs = input_dto.signal.signal
-        cfg = input_dto.epoch_preprocessing_config
+        epochs: mne.Epochs = input_dto.signal.signal
+        cfg: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
         log.info(f"Starting advanced epoch epoch_preprocessing for {len(epochs)} epochs")
 
         try:
             # --- 1. ICA: Artifact Rejection ---
             log.info("Fitting ICA to decompose signal components.")
-            ica = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
+            ica: ICA = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
             ica.fit(epochs)
 
             # Automatically identify EOG-related components based on correlation with EOG channels
+            eog_indices: list[int]
+            scores: np.ndarray
             eog_indices, scores = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
             log.info(f"ICA: Identified {len(eog_indices)} artifact components to exclude: {eog_indices}")
 
@@ -59,13 +64,13 @@ class EpochPreprocessor(IEpochPreprocessing):
             # --- 2. CSP: Common Spatial Patterns ---
             # CSP labels
             log.info("Applying Common Spatial Patterns (CSP) for spatial filtering.")
-            labels = epochs.events[:, -1]
+            labels: np.ndarray = epochs.events[:, -1]
 
             # CSP
-            csp = CSP(n_components=cfg.csp.n_components, reg=cfg.csp.reg, log=cfg.csp.log, norm_trace=cfg.csp.norm_trace)
+            csp: CSP = CSP(n_components=cfg.csp.n_components, reg=cfg.csp.reg, log=cfg.csp.log, norm_trace=cfg.csp.norm_trace)
 
             # get_data() returns numpy array
-            x_transformed = csp.fit_transform(epochs.get_data(copy=False), labels)
+            x_transformed: np.ndarray = csp.fit_transform(epochs.get_data(copy=False), labels)
 
             log.info(f"CSP transformation complete. New data shape: {x_transformed.shape}")
 

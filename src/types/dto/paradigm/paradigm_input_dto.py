@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
 
 from src.types.dto.config.paradigm_config import ParadigmConfig
+from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 
 
 @dataclass(frozen=True)
@@ -16,9 +16,9 @@ class ParadigmInputDTO:
 
     Attributes:
         paradigm_config (ParadigmConfig): The paradigm configuration.
-        signal (Any): The input signal data associated with the paradigm.
+        signal (RawPreprocessedDTO): The preprocessed raw signal to segment into epochs.
     """
 
     paradigm_preprocessing_config: ParadigmConfig
 
-    signal: Any
+    signal: RawPreprocessedDTO

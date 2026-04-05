@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
+
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -12,7 +13,8 @@ class EpochPreprocessedDTO:
     analysis or machine learning tasks.
 
     Attributes:
-        signal (Any): The preprocessed signal data for the epoch(s).
+        signal (np.ndarray): The preprocessed signal data for the epoch(s), shaped
+            (n_epochs, n_csp_components) after CSP transformation.
     """
 
-    signal: Any
+    signal: np.ndarray

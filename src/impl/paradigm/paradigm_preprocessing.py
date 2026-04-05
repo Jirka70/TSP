@@ -1,11 +1,13 @@
 import logging
 
 import mne
+import mne.io
+import numpy as np
 from moabb.paradigms import MotorImagery
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
 from src.types.interfaces.paradigm import IParadigm
@@ -46,11 +48,11 @@ class ParadigmPreprocessor(IParadigm):
         log = logging.getLogger(__name__)
         log.info("Orchestrating MOABB Motor Imagery paradigm")
 
-        cfg = input_dto.paradigm_preprocessing_config
+        cfg: ParadigmConfig = input_dto.paradigm_preprocessing_config
 
         try:
             # Currently not using the paradigm - everything done manually - might change later
-            paradigm = MotorImagery(
+            paradigm: MotorImagery = MotorImagery(
                 events=list(cfg.events),
                 fmin=cfg.fmin,
                 fmax=cfg.fmax,
@@ -61,17 +63,19 @@ class ParadigmPreprocessor(IParadigm):
             log.info(paradigm)
             # This part of the code
 
-            raw = input_dto.signal.signal
+            raw: mne.io.Raw = input_dto.signal.signal
 
             log.info(f"Band-pass filtering: {cfg.fmin}-{cfg.fmax} Hz")
             raw.filter(l_freq=cfg.fmin, h_freq=cfg.fmax, fir_design="firwin", skip_by_annotation="edge")
 
+            events: np.ndarray
+            event_id: dict[str, int]
             events, event_id = mne.events_from_annotations(raw)
 
-            event_id_filtered = {k: v for k, v in event_id.items() if k in cfg.events}
+            event_id_filtered: dict[str, int] = {k: v for k, v in event_id.items() if k in cfg.events}
 
             log.info(f"Creating epochs (segmentation) with tmin={cfg.tmin}, tmax={cfg.tmax}")
-            epochs = mne.Epochs(
+            epochs: mne.Epochs = mne.Epochs(
                 raw,
                 events=events,
                 event_id=event_id_filtered,
@@ -87,7 +91,7 @@ class ParadigmPreprocessor(IParadigm):
                 epochs.resample(cfg.resample)
 
             log.info(f"Successfully created {len(epochs)} epochs")
-            return StepResult(EpochPreprocessedDTO(signal=epochs))
+            return StepResult(ParadigmResultDTO(signal=epochs))
 
         except ValueError as e:
             log.error(f"Error in paradigm event selection or frequency range: {e}")

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
+
+import mne.io
 
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 
@@ -14,9 +15,9 @@ class RawPreprocessingInputDTO:
 
     Attributes:
         raw_preprocessing_config (RawPreprocessingConfig): The raw preprocessing config.
-        signal (Any): The raw signal data to be preprocessed.
+        signal (mne.io.Raw): The raw signal data to be preprocessed.
     """
 
     raw_preprocessing_config: RawPreprocessingConfig
 
-    signal: Any
+    signal: mne.io.Raw

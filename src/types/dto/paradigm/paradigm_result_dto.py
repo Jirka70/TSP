@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
+
+import mne
 
 
 @dataclass(frozen=True)
@@ -12,7 +13,7 @@ class ParadigmResultDTO:
     state guarantees that the preprocessed results remain constant.
 
     Attributes:
-        signal (Any): The preprocessed signal data relevant to the paradigm.
+        signal (mne.Epochs): The segmented epochs produced by the paradigm stage.
     """
 
-    signal: Any
+    signal: mne.Epochs

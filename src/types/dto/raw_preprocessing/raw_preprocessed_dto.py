@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
+
+import mne.io
 
 
 @dataclass(frozen=True)
@@ -12,7 +13,7 @@ class RawPreprocessedDTO:
     analysis or storage.
 
     Attributes:
-        signal (Any): The preprocessed signal data, typically filtered or normalized.
+        signal (mne.io.Raw): The preprocessed signal data, filtered and re-referenced.
     """
 
-    signal: Any
+    signal: mne.io.Raw

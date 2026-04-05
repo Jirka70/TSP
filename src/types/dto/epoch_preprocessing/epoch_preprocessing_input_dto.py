@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
 
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
+from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
 
 
 @dataclass(frozen=True)
@@ -15,9 +15,9 @@ class EpochPreprocessingInputDTO:
 
     Attributes:
         epoch_preprocessing_config (EpochPreprocessingConfig): The configuration.
-        signal (Any): The signal data corresponding to the epoch(s).
+        signal (ParadigmResultDTO): The signal data corresponding to the epoch(s).
     """
 
     epoch_preprocessing_config: EpochPreprocessingConfig
 
-    signal: Any
+    signal: ParadigmResultDTO

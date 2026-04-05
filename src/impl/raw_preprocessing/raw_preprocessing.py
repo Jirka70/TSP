@@ -1,9 +1,11 @@
 import logging
 
 import mne
+import mne.io
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
@@ -47,11 +49,11 @@ class RawPreprocessor(IRawPreprocessing):
             for entry into the MOABB paradigm.
         """
         log = logging.getLogger(__name__)
-        cfg = input_dto.raw_preprocessing_config
+        cfg: RawPreprocessingConfig = input_dto.raw_preprocessing_config
         log.info("Starting processing of continuous EEG data (MNE.Raw)")
 
         # Copy continuous signal to avoid modifying the original data
-        raw_data_copy = input_dto.signal.copy()
+        raw_data_copy: mne.io.Raw = input_dto.signal.copy()
 
         # Identification and interpolation of bad channels
         if raw_data_copy.info["bads"]:
@@ -76,7 +78,7 @@ class RawPreprocessor(IRawPreprocessing):
             log.warning(f"CSD skipped: Invalid channel types or insufficient sensors. Error: {e}")
 
         # Automatic annotation of large artifacts
-        annotations = mne.preprocessing.annotate_break(
+        annotations: mne.Annotations = mne.preprocessing.annotate_break(
             raw_data_copy,
             min_break_duration=cfg.annotate_break.min_break_duration,
             t_start_after_previous=0.0,
