@@ -1,10 +1,3 @@
-"""
-This module contains Data Transfer Objects (DTOs) for epoch-based epoch_preprocessing.
-
-It defines the structures required to feed segmented signal data (epochs) into
-the processing pipeline.
-"""
-
 from dataclasses import dataclass
 from typing import Any
 
@@ -21,6 +14,7 @@ class EpochPreprocessingInputDTO:
     the raw epoch data remains unaltered throughout the epoch_preprocessing stage.
 
     Attributes:
+        epoch_preprocessing_config (EpochPreprocessingConfig): The configuration.
         signal (Any): The signal data corresponding to the epoch(s).
     """
 

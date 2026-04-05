@@ -5,10 +5,10 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
-from src.types.dto.paradigm.paradigm_preprocessed_dto import ParadigmPreprocessedDTO
-from src.types.dto.paradigm.paradigm_preprocessing_input_dto import ParadigmPreprocessingInputDTO
+from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
+from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
-from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
+from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.paradigm import IParadigm
@@ -31,11 +31,11 @@ class ExperimentPipeline(IPipeline):
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        raw_preprocessing_input: RawPreprocessingInputDto = RawPreprocessingInputDto(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.signal)
+        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.signal)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
-        paradigm_input: ParadigmPreprocessingInputDTO = ParadigmPreprocessingInputDTO(config.paradigm, raw_preprocessing_result.data)
-        paradigm_result: StepResult[ParadigmPreprocessedDTO] = self._paradigm.run(paradigm_input, run_ctx)
+        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
+        paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
         epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
         epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)

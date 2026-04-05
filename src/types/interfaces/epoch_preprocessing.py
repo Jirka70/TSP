@@ -7,6 +7,15 @@ from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import Epoc
 
 
 class IEpochPreprocessing(ABC):
+    """An interface for the epoch preprocessing step in the pipeline."""
+
     @abstractmethod
     def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
+        """
+        Runs the paradigm step in the pipeline.
+
+        Args:
+            input_dto (EpochPreprocessingInputDTO): The epoch preprocessing DTO.
+            run_ctx (RunContext): The context to run the epoch preprocessing step.
+        """
         raise NotImplementedError

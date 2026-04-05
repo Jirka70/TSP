@@ -5,7 +5,7 @@ import mne
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
-from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDto
+from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 
 
@@ -21,7 +21,7 @@ class RawPreprocessor(IRawPreprocessing):
     of Motor Imagery activity.
     """
 
-    def run(self, input_dto: RawPreprocessingInputDto, run_ctx: RunContext) -> StepResult[RawPreprocessedDTO]:
+    def run(self, input_dto: RawPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[RawPreprocessedDTO]:
         r"""
         Executes the continuous signal cleaning pipeline.
 

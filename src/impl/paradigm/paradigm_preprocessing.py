@@ -1,12 +1,3 @@
-"""
-Module for the MOABB-based paradigm orchestration and data segmentation.
-
-This stage translates continuous EEG signals into standardized, segmented
-epochs. It utilizes the MOABB framework to define experimental paradigms,
-applying time-delimitation, baseline correction, and resampling as part of
-a unified BCI benchmark pipeline.
-"""
-
 import logging
 
 import mne
@@ -15,8 +6,8 @@ from moabb.paradigms import MotorImagery
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.paradigm.paradigm_preprocessed_dto import ParadigmPreprocessedDTO
-from src.types.dto.paradigm.paradigm_preprocessing_input_dto import ParadigmPreprocessingInputDTO
+from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
+from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
 from src.types.interfaces.paradigm import IParadigm
 
 
@@ -30,7 +21,7 @@ class ParadigmPreprocessor(IParadigm):
     metadata by enforcing the return of MNE.Epochs objects.
     """
 
-    def run(self, input_dto: ParadigmPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[ParadigmPreprocessedDTO]:
+    def run(self, input_dto: ParadigmInputDTO, run_ctx: RunContext) -> StepResult[ParadigmResultDTO]:
         r"""
         Executes the segmentation and standardizing pipeline via MOABB.
 

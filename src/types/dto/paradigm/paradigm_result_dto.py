@@ -1,15 +1,9 @@
-"""
-This module provides Data Transfer Objects (DTOs) for storing the results of  paradigm-specific epoch_preprocessing.
-
-It ensures that processed signals are maintained in a structured, immutable format for further consumption.
-"""
-
 from dataclasses import dataclass
 from typing import Any
 
 
 @dataclass(frozen=True)
-class ParadigmPreprocessedDTO:
+class ParadigmResultDTO:
     """
     A data transfer object representing the output of a paradigm-specific epoch_preprocessing stage.
 

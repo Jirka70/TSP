@@ -1,9 +1,3 @@
-"""
-This module handles advanced epoch_preprocessing techniques applied directly to segmented epochs.
-
-It includes spatial filtering, artifact rejection (ICA),and feature enhancement methods to prepare data for classification.
-"""
-
 import logging
 
 from mne.decoding import CSP

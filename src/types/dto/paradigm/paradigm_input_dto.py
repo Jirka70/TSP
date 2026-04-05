@@ -1,10 +1,3 @@
-"""
-This module defines the Data Transfer Objects (DTOs) for paradigm-specific epoch_preprocessing tasks.
-
-It encapsulates the input structures required for
-processing signals within a defined experimental or algorithmic paradigm.
-"""
-
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,7 +5,7 @@ from src.types.dto.config.paradigm_config import ParadigmConfig
 
 
 @dataclass(frozen=True)
-class ParadigmPreprocessingInputDTO:
+class ParadigmInputDTO:
     """
     A data transfer object carrying the input signal for a paradigm-based epoch_preprocessing routine.
 
@@ -22,6 +15,7 @@ class ParadigmPreprocessingInputDTO:
     execution.
 
     Attributes:
+        paradigm_config (ParadigmConfig): The paradigm configuration.
         signal (Any): The input signal data associated with the paradigm.
     """
 
