@@ -4,7 +4,7 @@ requires-python = ">=3.10"
 
 [tool.ruff]
 # Matches your requirement for line length
-line-length = 130
+line-length = 250
 target-version = "py310"
 
 [tool.ruff.lint]
@@ -22,7 +22,7 @@ select = [
 ]
 
 # Specific rules to ignore
-ignore = ["D212"]
+ignore = ["D212", "D100"]
 
 [tool.ruff.lint.pydocstyle]
 # Enforce Google-style docstrings (Args, Returns, Raises)

@@ -3,12 +3,8 @@ import logging
 import hydra
 
 from pipeline.stage_factory import StageFactory
-from src.pipeline.context.run_context import RunContext
-from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
-from src.pipeline.pipeline import IPipeline
+from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.pipeline.run_context_factory import RunContextFactory
-from src.pipeline.training.training_pipeline import TrainingPipeline
-from src.types.dto.config.experiment_config import Mode
 from src.validation.config_validator import ExperimentConfigValidator
 
 # A logger for this file
@@ -31,7 +27,7 @@ def my_app(cfg):
 
     sf = StageFactory(ex_conf)
 
-    dl = sf.create_data_loader()
+    """dl = sf.create_data_loader()
     preprocessing = sf.create_preprocessing_stage()
     epoching = sf.create_epoching_stage()
     split = sf.create_split_stage()
@@ -60,7 +56,10 @@ def my_app(cfg):
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
 
-    pipeline.run(ex_conf, run_ctx)
+    pipeline.run(ex_conf, run_ctx)"""
+    dataloader = MOABBDataLoader()
+    data = dataloader.run(ex_conf.dataset, RunContextFactory().create(ex_conf, "", ""))
+    print(data)
 
 
 if __name__ == "__main__":
