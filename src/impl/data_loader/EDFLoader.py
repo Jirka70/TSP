@@ -7,4 +7,5 @@ from src.types.interfaces.data_loader import IDataLoader
 
 class EDFLoader(IDataLoader):
     def run(self, input: DatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
-        pass
+        # TODO implement method
+        raise NotImplementedError
