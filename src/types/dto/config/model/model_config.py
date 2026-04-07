@@ -1,7 +1,7 @@
 from typing import Literal
 
-from src.types.dto.config.model.training_config import TrainingConfig
 from src.types.dto.config.astageconfig import AStageConfig
+from src.types.dto.config.model.training_config import TrainingConfig
 
 
 class ModelConfig(AStageConfig):

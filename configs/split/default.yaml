@@ -1,9 +1,9 @@
-  enabled: true
-  backend: default
+enabled: true
+backend: default
 
-  train_ratio: 0.7
-  validation_ratio: 0.15
-  test_ratio: 0.15
+train_ratio: 0.7
+validation_ratio: 0.15
+test_ratio: 0.15
 
-  shuffle: true
-  random_seed: 42
+shuffle: true
+random_seed: 42

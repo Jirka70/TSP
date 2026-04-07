@@ -6,6 +6,5 @@ from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 
 @dataclass(frozen=True)
 class SplitInputDTO:
-
     config: SplitConfig
     data: EpochingDataDTO

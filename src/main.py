@@ -41,7 +41,16 @@ def my_app(cfg):
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, preprocessing, epoching, split, augmentation, model_trainer, evaluator, saver)
+        pipeline = TrainingPipeline(
+            dl,
+            preprocessing,
+            epoching,
+            split,
+            augmentation,
+            model_trainer,
+            evaluator,
+            saver,
+        )
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         pipeline = ExperimentPipeline(dl, preprocessing, epoching)
     else:

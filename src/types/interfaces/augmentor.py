@@ -8,5 +8,7 @@ from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 
 class IAugmentor(ABC):
     @abstractmethod
-    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[EpochingDataDTO]:
+    def run(
+        self, input_dto: AugmentationInputDTO, run_ctx: RunContext
+    ) -> StepResult[EpochingDataDTO]:
         raise NotImplementedError

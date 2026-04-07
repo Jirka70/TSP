@@ -9,3 +9,6 @@ class RawDataDTO:
     """
     Loaded EEG signal with metadata
     """
+
+    Optional container for information about loaded data (dataset name, run id, etc.)
+    """

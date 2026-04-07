@@ -8,7 +8,9 @@ from src.types.interfaces.evaluator import IEvaluator
 
 
 class DummyEvaluator(IEvaluator):
-    def run(self, input_dto: EvaluationInputDTO, run_ctx: RunContext) -> StepResult[EvaluationResultDTO]:
+    def run(
+        self, input_dto: EvaluationInputDTO, run_ctx: RunContext
+    ) -> StepResult[EvaluationResultDTO]:
         log = logging.getLogger(__name__)
         log.info("Running dummy evaluator")
         result: EvaluationResultDTO = EvaluationResultDTO({})
