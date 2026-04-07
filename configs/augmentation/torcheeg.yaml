@@ -1,0 +1,36 @@
+# TorchEEG-based augmentation configuration for EEG samples.
+
+# Whether to enable augmentation. If false, the augmentation stage is skipped.
+enabled: true
+
+# Backend identifier used to select the augmentation implementation.
+# Must be 'torcheeg' for this configuration.
+backend: torcheeg
+
+# Number of augmented variants generated per original sample.
+copies_per_sample: 5
+
+# Standard deviation of Gaussian noise added to the signal.
+gaussian_noise_std: 0.01
+
+# Probability of applying a random mask to a segment of the signal.
+# This corresponds to the RandomMask transform in TorchEEG.
+mask_prob: 0.3
+
+# The ratio of the signal to be masked when RandomMask is applied (e.g., 0.1 for 10%).
+mask_ratio: 0.1
+
+# Probability of cyclically shifting the signal in the time dimension.
+shift_prob: 0.2
+
+# Probability of inverting the sign (phase flip) of the signal.
+sign_flip_prob: 0.2
+
+# Probability of scaling the amplitude of the signal.
+scale_prob: 0.3
+
+# Minimum factor for amplitude scaling (e.g. 0.9).
+scale_min: 0.9
+
+# Maximum factor for amplitude scaling (e.g. 1.1).
+scale_max: 1.1

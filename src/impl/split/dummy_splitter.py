@@ -9,16 +9,22 @@ from src.types.interfaces.splitter import ISplitter
 
 
 class DummySplitter(ISplitter):
-    def run(self, input_dto: SplitInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
+    def run(
+        self, input_dto: SplitInputDTO, run_ctx: RunContext
+    ) -> StepResult[DatasetSplitDTO]:
         log = logging.getLogger(__name__)
         log.info("Running dummy splitter")
-        epochingData: EpochingDataDTO = EpochingDataDTO(data="",
-                                                        labels=[],
-                                                        event_names=[],
-                                                        sampling_rate_hz=12,
-                                                        n_epochs=2,
-                                                        n_channels=64,
-                                                        n_times=2,
-                                                        channel_names=[""])
-        data: DatasetSplitDTO = DatasetSplitDTO(epochingData, epochingData, epochingData)
+        epochingData: EpochingDataDTO = EpochingDataDTO(
+            data="",
+            labels=[],
+            event_names=[],
+            sampling_rate_hz=12,
+            n_epochs=2,
+            n_channels=64,
+            n_times=2,
+            channel_names=[""],
+        )
+        data: DatasetSplitDTO = DatasetSplitDTO(
+            epochingData, epochingData, epochingData
+        )
         return StepResult(data)

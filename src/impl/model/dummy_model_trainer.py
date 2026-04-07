@@ -10,7 +10,9 @@ from src.types.interfaces.model.model_trainer import IModelTrainer
 
 
 class DummyModelTrainer(IModelTrainer):
-    def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainedModelDTO]:
+    def run(
+        self, input_dto: TrainingInputDTO, run_ctx: RunContext
+    ) -> StepResult[TrainedModelDTO]:
         log = logging.getLogger(__name__)
         log.info("Running dummy model trainer")
         model: IModel = DummyModel()

@@ -7,11 +7,10 @@ from src.types.dto.split.split_input_dto import SplitInputDTO
 
 
 class ISplitter(ABC):
-
     @abstractmethod
     def run(
-            self,
-            input_dto: SplitInputDTO,
-            run_ctx: RunContext,
+        self,
+        input_dto: SplitInputDTO,
+        run_ctx: RunContext,
     ) -> StepResult[DatasetSplitDTO]:
         raise NotImplementedError

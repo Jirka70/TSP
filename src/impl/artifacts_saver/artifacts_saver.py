@@ -13,7 +13,9 @@ class UnsupportedModelSerializerError(Exception):
 
 
 class ArtifactSaver(IArtifactSaver):
-    def run(self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext) -> StepResult[SavedArtifactsDTO]:
+    def run(
+        self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext
+    ) -> StepResult[SavedArtifactsDTO]:
         log = logging.getLogger(__name__)
         log.info("Saving trained model")
         serializer: IModelSerializer = input_dto.model_serializer
@@ -21,8 +23,12 @@ class ArtifactSaver(IArtifactSaver):
         model_name = trained_model.model_name
 
         if not serializer.supports(model_name):
-            raise UnsupportedModelSerializerError(f"Model serializer {serializer.__class__.__name__} "
-                                                  f"does not support model {model_name}")
+            raise UnsupportedModelSerializerError(
+                f"Model serializer {serializer.__class__.__name__} "
+                f"does not support model {model_name}"
+            )
 
-        saved_artifacts: SavedArtifactsDTO = serializer.save(trained_model, input_dto.output_path)
+        saved_artifacts: SavedArtifactsDTO = serializer.save(
+            trained_model, input_dto.output_path
+        )
         return StepResult(saved_artifacts)

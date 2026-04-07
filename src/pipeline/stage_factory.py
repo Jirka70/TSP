@@ -1,14 +1,16 @@
 from enum import Enum
 
-from impl.artifacts_saver.artifacts_saver import ArtifactSaver
-from impl.augmentation.dummy_augmentor import DummyAugmentor
-from impl.data_loader.dummy_data_loader import DummyLoader
-from impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from impl.evaluator.dummy_evaluator import DummyEvaluator
-from impl.model.dummy_model_trainer import DummyModelTrainer
-from impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
-from impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
-from impl.split.dummy_splitter import DummySplitter
+from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
+from src.impl.augmentation.basic_augmentor import BasicAugmentor
+from src.impl.augmentation.dummy_augmentor import DummyAugmentor
+from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
+from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
+from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
+from src.impl.evaluator.dummy_evaluator import DummyEvaluator
+from src.impl.model.dummy_model_trainer import DummyModelTrainer
+from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
+from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
+from src.impl.split.dummy_splitter import DummySplitter
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
@@ -35,14 +37,15 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"eegbci": DummyLoader},
+        StageType.DATA_LOADER: {"eegbci": MOABBDataLoader},
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
         StageType.SPLIT: {"default": DummySplitter},
         StageType.AUGMENTATION: {
-            "basic": DummyAugmentor,
-            None: DummyAugmentor,  # :)
+            "basic": BasicAugmentor,
+            "torcheeg": TorchEEGAugmentor,
+            None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
             "eegnet": DummyModelTrainer,

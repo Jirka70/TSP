@@ -8,6 +8,9 @@ from src.types.dto.model.training_input_dto import TrainingInputDTO
 
 class IModelTrainer(ABC):
     @abstractmethod
-    def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext,
+    def run(
+        self,
+        input_dto: TrainingInputDTO,
+        run_ctx: RunContext,
     ) -> StepResult[TrainedModelDTO]:
         raise NotImplementedError

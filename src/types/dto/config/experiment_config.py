@@ -3,7 +3,11 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from src.types.dto.config.augmentation_config import AugmentationConfigBasic, AugmentationConfigNone
+from src.types.dto.config.augmentation_config import (
+    AugmentationConfigBasic,
+    AugmentationConfigNone,
+    AugmentationConfigTorchEEG,
+)
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
@@ -35,4 +39,4 @@ class ExperimentConfig(BaseModel):
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
 
-    augmentation: AugmentationConfigBasic | AugmentationConfigNone = Field(discriminator="backend")
+    augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")

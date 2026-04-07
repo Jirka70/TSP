@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TypeVar, Generic
+from typing import Generic, TypeVar
 
 from src.pipeline.context.pipeline_step_meta import PipelineStepMeta
 
