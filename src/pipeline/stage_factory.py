@@ -60,7 +60,7 @@ class StageFactory:
         self._config = config
 
     def create_data_loader(self) -> IDataLoader:
-        return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.name]()
+        return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.backend]()
 
     def create_raw_preprocessing_stage(self) -> IRawPreprocessing:
         return StageFactory._targets[StageType.RAW_PREPROCESSING][self._config.raw_preprocessing.backend]()

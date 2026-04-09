@@ -12,16 +12,22 @@ Flow:
         -> RiemannianModelTrainer.run()
         -> stratified 5-fold cross-validation report
 """
+
 import logging
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import mne
-import numpy as np
 import moabb.datasets as moabb_datasets
+import numpy as np
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score
+
+from src.impl.model.riemannian_trainer import RiemannianModelTrainer
+from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
+from src.types.dto.model.trained_model_dto import TrainedModelDTO
+from src.types.dto.model.training_input_dto import TrainingInputDTO
 
 # ---------------------------------------------------------------------------
 # Make sure the project root is on sys.path when running the script directly
@@ -29,12 +35,6 @@ from sklearn.metrics import accuracy_score
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.impl.model.riemannian_trainer import RiemannianModelTrainer
-from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
-from src.types.dto.model.trained_model_dto import TrainedModelDTO
-from src.types.dto.model.training_input_dto import TrainingInputDTO
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 SUBJECT_ID = 1
 # None = load every session and every run the dataset provides
 RUN_IDS: list[int] | None = None
-EVENTS = {"left_hand": 1, "right_hand": 2}   # BNCI2014_001 event codes
+EVENTS = {"left_hand": 1, "right_hand": 2}  # BNCI2014_001 event codes
 FMIN, FMAX = 8.0, 35.0
 TMIN, TMAX = -0.5, 4.0
 BASELINE = (-0.5, 0.0)
@@ -95,10 +95,7 @@ def raw_to_epochs(raw: mne.io.Raw) -> mne.Epochs:
     event_id_filtered = {k: v for k, v in event_id.items() if k in EVENTS}
 
     if not event_id_filtered:
-        raise RuntimeError(
-            f"None of the expected events {list(EVENTS)} found in raw. "
-            f"Available: {list(event_id)}"
-        )
+        raise RuntimeError(f"None of the expected events {list(EVENTS)} found in raw. Available: {list(event_id)}")
 
     epochs = mne.Epochs(
         raw,
@@ -119,10 +116,7 @@ def raw_to_epochs(raw: mne.io.Raw) -> mne.Epochs:
 # ---------------------------------------------------------------------------
 def epochs_to_dto(epochs: mne.Epochs) -> EpochingDataDTO:
     labels: list[int] = list(epochs.events[:, 2])
-    event_names: list[str] = [
-        next(k for k, v in epochs.event_id.items() if v == lbl)
-        for lbl in labels
-    ]
+    event_names: list[str] = [next(k for k, v in epochs.event_id.items() if v == lbl) for lbl in labels]
 
     return EpochingDataDTO(
         data=epochs,
@@ -162,9 +156,7 @@ def split_dto(
     ratio: float,
     seed: int = RANDOM_SEED,
 ) -> tuple[EpochingDataDTO, EpochingDataDTO]:
-    raw_data: np.ndarray = (
-        dto.data.get_data() if hasattr(dto.data, "get_data") else dto.data
-    )
+    raw_data: np.ndarray = dto.data.get_data() if hasattr(dto.data, "get_data") else dto.data
 
     indices = np.arange(dto.n_epochs)
     rng = np.random.default_rng(seed)
@@ -204,10 +196,13 @@ def test_riemannian_trainer() -> None:
     full_dto = epochs_to_dto(all_epochs)
     log.info(
         "EpochingDataDTO: n_epochs=%d  n_channels=%d  n_times=%d  sfreq=%.1f",
-        full_dto.n_epochs, full_dto.n_channels, full_dto.n_times, full_dto.sampling_rate_hz,
+        full_dto.n_epochs,
+        full_dto.n_channels,
+        full_dto.n_times,
+        full_dto.sampling_rate_hz,
     )
 
-    X: np.ndarray = all_epochs.get_data()          # (n_epochs, n_ch, n_times)
+    X: np.ndarray = all_epochs.get_data()  # (n_epochs, n_ch, n_times)
     y: np.ndarray = np.array(full_dto.labels)
 
     mock_run_ctx = MagicMock()
@@ -244,12 +239,16 @@ def test_riemannian_trainer() -> None:
 
     for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), start=1):
         fold_train = make_dto_from_array(
-            X[train_idx], y[train_idx].tolist(),
-            [full_dto.event_names[i] for i in train_idx], full_dto,
+            X[train_idx],
+            y[train_idx].tolist(),
+            [full_dto.event_names[i] for i in train_idx],
+            full_dto,
         )
         fold_val = make_dto_from_array(
-            X[val_idx], y[val_idx].tolist(),
-            [full_dto.event_names[i] for i in val_idx], full_dto,
+            X[val_idx],
+            y[val_idx].tolist(),
+            [full_dto.event_names[i] for i in val_idx],
+            full_dto,
         )
 
         fold_result = RiemannianModelTrainer().run(

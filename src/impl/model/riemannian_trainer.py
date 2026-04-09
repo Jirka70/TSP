@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
@@ -72,36 +72,8 @@ class RiemannianModel(IModel):
         return {"pipeline": self._pipeline}
 
 
-def _extract_epochs_array(epoch_dto: EpochingDataDTO) -> np.ndarray:
-    """
-    Extract a 3-D ``(n_epochs, n_channels, n_times)`` numpy array from
-    an ``EpochingDataDTO``.
-
-    Handles two cases:
-    - ``data`` is an ``mne.Epochs`` object  → call ``.get_data()``.
-    - ``data`` is already a numpy ndarray:
-        - 3-D  → used as-is.
-        - 2-D  → cannot be used by PyRiemann; raises ``ValueError``.
-    """
-    data = epoch_dto.data
-
-    # mne.Epochs (duck-typed: has get_data())
-    if hasattr(data, "get_data"):
-        return data.get_data()
-
-    arr = np.asarray(data)
-
-    if arr.ndim == 3:
-        return arr
-
-    raise ValueError(
-        f"RiemannianModelTrainer requires raw epoch data with shape "
-        f"(n_epochs, n_channels, n_times), but received a {arr.ndim}-D array "
-        f"of shape {arr.shape}. "
-        "If CSP was applied in a previous step, the projected features cannot "
-        "be used with PyRiemann's Covariances estimator. "
-        "Re-configure the pipeline to skip CSP or use a different trainer."
-    )
+def _extract_epochs_array(epoch_dto: EpochPreprocessedDTO) -> np.ndarray:
+    return np.asarray(epoch_dto.signal)
 
 
 class RiemannianModelTrainer(IModelTrainer):

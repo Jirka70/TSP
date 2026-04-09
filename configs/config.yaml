@@ -4,12 +4,12 @@ defaults:
   - paradigm: testing
   - epoch_preprocessing: testing
   - split: default
-  - augmentation: basic
+  - augmentation: torcheeg
   - model: eegnet
   - evaluation: default
   - visualization: matplotlib
   - dataset: eegbci
   - save_artifacts: default
 
-mode: experiment
+mode: training
 output_dir: ./outputs

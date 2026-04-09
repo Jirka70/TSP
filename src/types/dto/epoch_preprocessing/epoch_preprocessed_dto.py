@@ -15,6 +15,8 @@ class EpochPreprocessedDTO:
     Attributes:
         signal (np.ndarray): The preprocessed signal data for the epoch(s), shaped
             (n_epochs, n_csp_components) after CSP transformation.
+        labels (np.ndarray): Integer class label for each epoch, shaped (n_epochs,).
     """
 
     signal: np.ndarray
+    labels: np.ndarray
