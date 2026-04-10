@@ -13,8 +13,9 @@ flowchart LR
     subgraph Experiment Pipeline
         direction LR
         DL[DataLoader]
-        Preprc[Preprocessing]
-        Ep[Epoch]
+        RPreprc[Raw_Preprocessing]
+        Prdgm[Paradigm]
+        EPreprc[Epoch_Preprocessing]
         Spl[Split]
         Aug[Augmentation]
         Train[Model Training]
@@ -36,9 +37,10 @@ flowchart LR
     YAML[.yaml] --> VALID[Validation]
     VALID --> ExConf[ExperimentConfig]
     ExConf --> DL
-    DL --> Preprc
-    Preprc --> Ep
-    Ep --> Spl
+    DL --> RPreprc
+    RPreprc --> Prdgm
+    Prdgm --> EPreprc
+    EPreprc --> Spl
     Spl --> Aug
     Aug --> Train
     Train --> Sv
@@ -51,8 +53,9 @@ flowchart LR
 - `.yaml` - struktura konfiguračních souborů (zpracovány knihovnou `hydra`)
 - `Validate` - validace konfiguračních souborů (využití `Pydantic`)
 - `DataLoader` - načtení datasetů
-- `Preprocessing` - počáteční zpracování datasetů, vyčištění od šumu apod.
-- `Epoch` - epochování, rozdělení na časové úseky měření
+- `Raw_Preprocessing` - počáteční zpracování datasetů, vyčištění od šumu apod.
+- `Paradigm` - využití moabb paradigm (epochování, základní filtrace, apod.)
+- `Epoch_Preprocessing` - volitelný preprocessing na již epochovaných datech
 - `Split` - rozdělení na trénovací, testovací data
 - `Augmentation` - augmentace, generování nových datasetů pomocí transformací
 - `Model Training` - trénování modelu
@@ -65,7 +68,7 @@ flowchart LR
 Konfigurační soubory se nacházejí ve složce `config/` a jsou uloženy v hierarchické struktuře `.yaml` souborů. Kořenový
 konfigurační soubor `config.yaml` obsahuje reference na jednotlivé konfigurační soubory kroků pipeline.
 Při spuštění nahradí `hydra` tyto reference obsahem `.yaml` souborů (klíč = složka, hodnota = soubor). Např. pro
-`preprocessing: mne` uloží do klíče preprocessing obsah souboru `preprocessing/mne.yaml`.
+`raw_preprocessing: testing` uloží do klíče preprocessing obsah souboru `raw_preprocessing/testing.yaml`.
 
 V budoucnu bude pro každý krok existovat více různých implementací, jejichž konfigurace půjdou tímto způsobem lehce
 nahrazovat. Zároveň je potřeba, aby každý konfigurační soubor obsahoval jeho název, protože nahrazením hodnoty `mne`
@@ -89,29 +92,27 @@ konfigurace pomocí tříd v pythonu a automaticky umí zvalidovat:
 Pro každou část konfiguračního souboru se tedy vytvoří třída se stejnou strukturou atributů + omezeními které je potřeba
 zvalidovat.
 
-Konfiguračnímu souboru `preprocessing/mne.yaml`:
+Konfiguračnímu souboru `raw_preprocessing/testing.yaml`:
 
 ```yaml
-backend: mne
-l_freq: 8.0
-h_freq: 30.0
-notch_freq: 50.0
-sampling_rate_hz: 128.0
-rereference: average
+backend: testing
+high_pass_filter:
+  l_freq: 1.0
+notch_filter:
+  freqs: [ 50 ]
+annotate_break:
+  min_break_duration: 2.0
 ```
 
-Odpovídá třída `PreprocessingConfigMNE`:
+Odpovídá třída `RawPreprocessingConfig`:
 
 ```py
-class PreprocessingConfigMNE(AStageConfig):
-    _target_class = "impl.epoch_preprocessing.dummy_preprocessing.DummyPreprocessing"
+class RawPreprocessingConfig(AStageConfig):
+    backend: Literal["testing"]
+    high_pass_filter: HighPassFilterConfig
+    notch_filter: NotchFilterConfig
+    annotate_break: AnnotateBreakConfig
 
-    backend: Literal["mne"]
-    l_freq: float = Field(ge=0)
-    h_freq: float = Field(ge=0)
-    notch_freq: float | None
-    sampling_rate_hz: float | None
-    rereference: str | None
 ```
 
 Na základě atributu `backend` dokáže `pydantic` automaticky detekovat která z implementací je aktuálně v konfiguraci, a
