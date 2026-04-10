@@ -17,7 +17,7 @@ class AnnotateBreakConfig(BaseModel):
     min_break_duration: float
 
 
-# TODO: Maybe named it like MNE (using mne, later it can use different library)
+# TODO: Maybe named it like MNE (using mne, later it can use different library) + targer class
 class RawPreprocessingConfig(AStageConfig):
     backend: Literal["testing"]
     high_pass_filter: HighPassFilterConfig
