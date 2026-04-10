@@ -114,3 +114,4 @@ Thumbs.db
 .env.*
 *.tmp
 *.bak
+.claude/settings.local.json

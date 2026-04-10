@@ -7,13 +7,14 @@ import numpy as np
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
-from src.types.interfaces.augmentor import EpochingDataDTO, IAugmentor
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.interfaces.augmentor import IAugmentor
 
 
 class BasicAugmentor(IAugmentor):
     """Augmentor applying basic transformations like noise, shift, and dropout."""
 
-    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[EpochingDataDTO]:
+    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
         """Execute basic augmentation on the input data."""
         log = logging.getLogger(__name__)
         config = input_dto.augmentationConfig
@@ -25,20 +26,12 @@ class BasicAugmentor(IAugmentor):
 
         log.info(f"Running BasicAugmentor: {config.copies_per_sample} copies per sample")
 
-        # Extract raw data to numpy array
-        raw_data = input_dto.epoch_data.data
-        if hasattr(raw_data, "get_data"):
-            x = raw_data.get_data()
-        else:
-            x = np.array(raw_data)
-
+        x = input_dto.epoch_data.signal
         original_labels = input_dto.epoch_data.labels
-        original_events = input_dto.epoch_data.event_names
 
         # Initialize lists with original data
         augmented_x_list = [x]
-        augmented_labels = list(original_labels)
-        augmented_events = list(original_events)
+        augmented_labels = [original_labels]
 
         # Main augmentation loop
         for _ in range(config.copies_per_sample):
@@ -57,7 +50,7 @@ class BasicAugmentor(IAugmentor):
                     size=x_aug.shape[0],
                 )
                 for i, shift in enumerate(shifts):
-                    x_aug[i] = np.roll(x_aug[i], shift, axis=1)
+                    x_aug[i] = np.roll(x_aug[i], shift, axis=-1)
 
             # Apply channel dropout
             if config.channel_dropout_prob > 0.0:
@@ -66,26 +59,12 @@ class BasicAugmentor(IAugmentor):
                 x_aug = x_aug * dropout_mask
 
             augmented_x_list.append(x_aug)
-            augmented_labels.extend(original_labels)
-            augmented_events.extend(original_events)
+            augmented_labels.append(original_labels)
 
-        # Combine into final array
-        final_data = np.vstack(augmented_x_list)
-        new_n_epochs = final_data.shape[0]
+        # Combine into final arrays
+        final_signal = np.vstack(augmented_x_list)
+        final_labels = np.concatenate(augmented_labels)
 
-        log.info(f"Augmentation complete. Expanded epochs from {x.shape[0]} to {new_n_epochs}")
+        log.info(f"Augmentation complete. Expanded epochs from {x.shape[0]} to {final_signal.shape[0]}")
 
-        # Pack back to DTO
-        epoching_data = EpochingDataDTO(
-            data=final_data,
-            labels=augmented_labels,
-            event_names=augmented_events,
-            sampling_rate_hz=input_dto.epoch_data.sampling_rate_hz,
-            n_epochs=new_n_epochs,
-            n_channels=input_dto.epoch_data.n_channels,
-            n_times=input_dto.epoch_data.n_times,
-            channel_names=input_dto.epoch_data.channel_names,
-            metadata=input_dto.epoch_data.metadata,
-        )
-
-        return StepResult(epoching_data)
+        return StepResult(EpochPreprocessedDTO(signal=final_signal, labels=final_labels))

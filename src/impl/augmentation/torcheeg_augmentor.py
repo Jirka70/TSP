@@ -11,7 +11,8 @@ from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
 from src.types.dto.config.augmentation_config import AugmentationConfigTorchEEG
-from src.types.interfaces.augmentor import EpochingDataDTO, IAugmentor
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.interfaces.augmentor import IAugmentor
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class TorchEEGAugmentor(IAugmentor):
     library to the input EEG epochs.
     """
 
-    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[EpochingDataDTO]:
+    def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
         """Applies torcheeg-based augmentations to the epoch data."""
         config: AugmentationConfigTorchEEG = input_dto.augmentationConfig
 
@@ -53,20 +54,11 @@ class TorchEEGAugmentor(IAugmentor):
             config.copies_per_sample,
         )
 
-        raw_data = input_dto.epoch_data.data
-        # Handle MNE Epochs objects which have a get_data() method
-        if hasattr(raw_data, "get_data"):
-            x_np = raw_data.get_data(copy=False)
-        else:
-            x_np = np.array(raw_data)
-
-        # Original metadata
+        x_np = input_dto.epoch_data.signal
         original_labels = input_dto.epoch_data.labels
-        original_events = input_dto.epoch_data.event_names
 
         augmented_x_list = [x_np]
-        augmented_labels = list(original_labels)
-        augmented_events = list(original_events)
+        augmented_labels = [original_labels]
 
         # Build the TorchEEG transformation pipeline (Compose)
         transform_list = []
@@ -109,29 +101,16 @@ class TorchEEGAugmentor(IAugmentor):
 
             # Add the newly augmented batch to the output list
             augmented_x_list.append(np.array(epoch_augmented_list))
-            augmented_labels.extend(original_labels)
-            augmented_events.extend(original_events)
+            augmented_labels.append(original_labels)
 
         # Concatenate and package back into a DTO
-        final_data = np.vstack(augmented_x_list)
-        new_n_epochs = final_data.shape[0]
+        final_signal = np.vstack(augmented_x_list)
+        final_labels = np.concatenate(augmented_labels)
 
         log.info(
             "TorchEEG Augmentation complete. Original epochs: %d -> Total epochs: %d.",
             x_np.shape[0],
-            new_n_epochs,
+            final_signal.shape[0],
         )
 
-        epoching_data = EpochingDataDTO(
-            data=final_data,
-            labels=augmented_labels,
-            event_names=augmented_events,
-            sampling_rate_hz=input_dto.epoch_data.sampling_rate_hz,
-            n_epochs=new_n_epochs,
-            n_channels=input_dto.epoch_data.n_channels,
-            n_times=input_dto.epoch_data.n_times,
-            channel_names=input_dto.epoch_data.channel_names,
-            metadata=input_dto.epoch_data.metadata,
-        )
-
-        return StepResult(epoching_data)
+        return StepResult(EpochPreprocessedDTO(signal=final_signal, labels=final_labels))

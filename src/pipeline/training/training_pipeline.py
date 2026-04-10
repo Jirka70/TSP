@@ -10,7 +10,6 @@ from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputD
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.dto.epoching.epoching_data_dto import EpochingDataDTO
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
 from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
@@ -62,7 +61,7 @@ class TrainingPipeline(IPipeline):
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.signal)
+        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(raw_preprocessing_config=config.raw_preprocessing, signal=load_result.data.data[0].raw)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
         paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
@@ -73,16 +72,16 @@ class TrainingPipeline(IPipeline):
 
         splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoch_preprocessing_result.data)
         splitting_result: StepResult[DatasetSplitDTO] = self._splitting.run(splitting_input, run_ctx)
-        train_data: EpochingDataDTO = splitting_result.data.train_data  # preparing training data for augmentation
+        train_data: EpochPreprocessedDTO = splitting_result.data.train_data  # preparing training data for augmentation
 
         augmentation_input: AugmentationInputDTO = AugmentationInputDTO(config.augmentation, train_data)
-        augmentation_result: StepResult[EpochingDataDTO] = self._augmentation.run(augmentation_input, run_ctx)
+        augmentation_result: StepResult[EpochPreprocessedDTO] = self._augmentation.run(augmentation_input, run_ctx)
 
-        validation_data: EpochingDataDTO = splitting_result.data.validation_data
+        validation_data: EpochPreprocessedDTO | None = splitting_result.data.validation_data
         training_input: TrainingInputDTO = TrainingInputDTO(config.model, augmentation_result.data, validation_data)
         model_training_result: StepResult[TrainedModelDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        test_data: EpochingDataDTO = splitting_result.data.test_data
+        test_data: EpochPreprocessedDTO | None = splitting_result.data.test_data
         evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config.evaluation, model_training_result.data, test_data)
         evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 

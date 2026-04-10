@@ -76,7 +76,7 @@ class EpochPreprocessor(IEpochPreprocessing):
 
             # Signal is numpy.ndarray (features)
             log.info("Epoch epoch_preprocessing completed successfully.")
-            return StepResult(EpochPreprocessedDTO(signal=x_transformed))
+            return StepResult(EpochPreprocessedDTO(signal=x_transformed, labels=labels))
 
         except Exception as e:
             log.error(f"Failed during advanced epoch epoch_preprocessing: {e}")
