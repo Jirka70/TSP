@@ -2,12 +2,11 @@ import logging
 
 import hydra
 
-from pipeline.stage_factory import StageFactory
-from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
 from src.pipeline.run_context_factory import RunContextFactory
+from src.pipeline.stage_factory import StageFactory
 from src.pipeline.training.training_pipeline import TrainingPipeline
 from src.types.dto.config.experiment_config import Mode
 from src.validation.config_validator import ExperimentConfigValidator
@@ -22,19 +21,20 @@ def my_app(cfg):
 
     validator = ExperimentConfigValidator()
     validation_res = validator.validate(cfg)
-    ex_conf = validation_res.config
-
-    if not validation_res.is_valid or ex_conf is None:
-        log.error("Configuration validation failed. Check logs for details. Exiting.")
+    if validation_res.is_valid:
+        log.info("Config successfully validated")
+    else:
+        log.error("Validation failed")
         return
 
-    log.info("Config successfully validated")
+    ex_conf = validation_res.config
 
     sf = StageFactory(ex_conf)
 
     dl = sf.create_data_loader()
-    preprocessing = sf.create_preprocessing_stage()
-    epoching = sf.create_epoching_stage()
+    raw_preprocessing = sf.create_raw_preprocessing_stage()
+    paradigm = sf.create_paradigm_stage()
+    epoch_preprocessing = sf.create_epoch_preprocessing_stage()
     split = sf.create_split_stage()
     augmentation = sf.create_augmentation_stage()
     model_trainer = sf.create_model_trainer_stage()
@@ -46,25 +46,13 @@ def my_app(cfg):
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(
-            dl,
-            preprocessing,
-            epoching,
-            split,
-            augmentation,
-            model_trainer,
-            evaluator,
-            saver,
-        )
+        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, evaluator, saver)
     elif ex_conf.mode == Mode.EXPERIMENT.value:
-        pipeline = ExperimentPipeline(dl, preprocessing, epoching)
+        pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
 
     pipeline.run(ex_conf, run_ctx)
-    dataloader = MOABBDataLoader()
-    data = dataloader.run(ex_conf.dataset, RunContextFactory().create(ex_conf, "", ""))
-    print(data)
 
 
 if __name__ == "__main__":
