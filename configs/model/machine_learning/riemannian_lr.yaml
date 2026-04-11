@@ -1,0 +1,14 @@
+# Unique identifier used by the ModelFactory to instantiate the specific pipeline
+model_name: "riemannian_lr"
+
+# Backend / training family identifier.
+# Type of training
+backend: "sklearn"
+
+# Model-specific hyperparameters passed directly to the factory
+parameters:
+  estimator: "oas"
+  metric: "riemann"
+  penalty: "elasticnet"
+  l1_ratio: 0.5
+  random_state: 42
