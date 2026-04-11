@@ -7,7 +7,11 @@ from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.dummy_evaluator import DummyEvaluator
+from src.impl.evaluator.sklearn_evaluator import SklearnEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
+from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
+from src.impl.model.pytorch_serializer import PyTorchSerializer
+from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from src.impl.split.dummy_splitter import DummySplitter
@@ -17,6 +21,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
@@ -33,6 +38,7 @@ class StageType(Enum):
     MODEL_TRAINER = "model_trainer"
     EVALUATOR = "evaluator"
     SAVER = "saver"
+    MODEL_SERIALIZER = "serializer"
 
 
 class StageFactory:
@@ -49,9 +55,17 @@ class StageFactory:
         },
         StageType.MODEL_TRAINER: {
             "eegnet": DummyModelTrainer,
+            "sklearn": GenericSklearnTrainer,
         },
-        StageType.EVALUATOR: {"default": DummyEvaluator},
+        StageType.EVALUATOR: {
+            "default": DummyEvaluator,
+            "sklearn": SklearnEvaluator,
+        },
         StageType.SAVER: {"default": ArtifactSaver},
+        StageType.MODEL_SERIALIZER: {
+            "sklearn": SklearnModelSerializer,
+            "eegnet": PyTorchSerializer,
+        },
     }
 
     _config: ExperimentConfig = None
@@ -85,3 +99,6 @@ class StageFactory:
 
     def create_saver(self) -> IArtifactSaver:
         return StageFactory._targets[StageType.SAVER][self._config.save_artifacts.backend]()
+
+    def create_model_serializer(self) -> IModelSerializer:
+        return StageFactory._targets[StageType.MODEL_SERIALIZER][self._config.model.backend]()

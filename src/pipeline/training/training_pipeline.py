@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 
-from src.impl.model.pytorch_serializer import PyTorchSerializer
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.pipeline import IPipeline
@@ -27,6 +26,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
@@ -45,6 +45,7 @@ class TrainingPipeline(IPipeline):
         model_trainer: IModelTrainer,
         evaluator: IEvaluator,
         artifact_saver: IArtifactSaver,
+        model_serializer: IModelSerializer,
     ) -> None:
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
@@ -57,6 +58,7 @@ class TrainingPipeline(IPipeline):
         self._model_trainer = model_trainer
         self._evaluator = evaluator
         self._artifact_saver = artifact_saver
+        self._model_serializer = model_serializer
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
@@ -92,6 +94,7 @@ class TrainingPipeline(IPipeline):
             output_path=Path("ahoj.txt"),
             evaluation_result=evaluation_result.data,
             trained_model=trained_model,
-            model_serializer=PyTorchSerializer(),
+            model_serializer=self._model_serializer,
         )
+
         self._artifact_saver.run(save_artifacts_input, run_ctx)
