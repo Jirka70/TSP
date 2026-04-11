@@ -5,8 +5,8 @@ defaults:
   - epoch_preprocessing: testing
   - split: default
   - augmentation: torcheeg
-  - model: eegnet
-  - evaluation: default
+  - model: machine_learning/csp_lda
+  - evaluation: sklearn
   - visualization: matplotlib
   - dataset: eegbci
   - save_artifacts: default

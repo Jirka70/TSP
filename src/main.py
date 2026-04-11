@@ -40,13 +40,14 @@ def my_app(cfg):
     model_trainer = sf.create_model_trainer_stage()
     evaluator = sf.create_evaluator_stage()
     saver = sf.create_saver()
+    model_serializer = sf.create_model_serializer()
 
     run_ctx_factory: RunContextFactory = RunContextFactory()
 
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, evaluator, saver)
+        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, evaluator, saver, model_serializer)
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
     else:
