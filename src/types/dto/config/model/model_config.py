@@ -1,4 +1,5 @@
-from typing import Literal
+from dataclasses import field
+from typing import Any, Literal
 
 from src.types.dto.config.astageconfig import AStageConfig
 from src.types.dto.config.model.training_config import TrainingConfig
@@ -20,3 +21,10 @@ class ModelConfig(AStageConfig):
     f2: int
 
     training: TrainingConfig
+
+
+class SklearnModelConfig(AStageConfig):
+    backend: Literal["sklearn"]
+    model_name: str
+
+    parameters: dict[str, Any] = field(default_factory=dict)
