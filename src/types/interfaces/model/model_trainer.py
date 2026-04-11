@@ -7,10 +7,31 @@ from src.types.dto.model.training_input_dto import TrainingInputDTO
 
 
 class IModelTrainer(ABC):
+    """
+    Abstract interface defining the contract for model training stages.
+
+    Implementations of this interface are responsible for taking preprocessed
+    data and model configurations to produce a trained model instance ready
+    for evaluation and deployment.
+    """
+
     @abstractmethod
-    def run(
-        self,
-        input_dto: TrainingInputDTO,
-        run_ctx: RunContext,
-    ) -> StepResult[TrainedModelDTO]:
+    def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainedModelDTO]:
+        """
+        Executes the model training process within the pipeline context.
+
+        This method orchestrates model initialization (typically via a factory),
+        data preparation, the training loop (fitting), and the generation of
+        training metrics/history.
+
+        Args:
+            input_dto (TrainingInputDTO): DTO containing model configuration,
+                augmented training data, and optional validation data.
+            run_ctx (RunContext): Metadata and execution context for the
+                current pipeline run.
+
+        Returns:
+            StepResult[TrainedModelDTO]: An object wrapping the trained model,
+                its unique name, and comprehensive training history.
+        """
         raise NotImplementedError
