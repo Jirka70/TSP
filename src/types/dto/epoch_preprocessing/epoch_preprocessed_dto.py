@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import numpy as np
+from src.types.dto.load.recording import RecordingDTO
 
 
 @dataclass(frozen=True)
@@ -18,5 +18,4 @@ class EpochPreprocessedDTO:
         labels (np.ndarray): Integer class label for each epoch, shaped (n_epochs,).
     """
 
-    signal: np.ndarray
-    labels: np.ndarray
+    data: list[RecordingDTO]

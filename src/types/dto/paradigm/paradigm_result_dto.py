@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import mne
+from src.types.dto.load.recording import RecordingDTO
 
 
 @dataclass(frozen=True)
@@ -13,7 +13,7 @@ class ParadigmResultDTO:
     state guarantees that the preprocessed results remain constant.
 
     Attributes:
-        signal (mne.Epochs): The segmented epochs produced by the paradigm stage.
+        data (mne.Epochs): The segmented epochs produced by the paradigm stage.
     """
 
-    signal: mne.Epochs
+    data: list[RecordingDTO]

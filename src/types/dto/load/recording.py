@@ -4,7 +4,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class RecordingDTO:
-    raw: Any
+    data: Any
     dataset_name: str
     subject_id: int | str
     session_id: str | None

@@ -20,4 +20,4 @@ class EpochPreprocessingInputDTO:
 
     epoch_preprocessing_config: EpochPreprocessingConfig
 
-    signal: ParadigmResultDTO
+    data: ParadigmResultDTO

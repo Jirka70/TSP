@@ -1,9 +1,9 @@
+import copy
+import dataclasses
 import logging
 
 import mne
 import mne.io
-import numpy as np
-from moabb.paradigms import MotorImagery
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
@@ -46,52 +46,84 @@ class ParadigmPreprocessor(IParadigm):
             StepResult containing segmented MNE.Epochs for advanced refinement.
         """
         log = logging.getLogger(__name__)
-        log.info("Orchestrating MOABB Motor Imagery paradigm")
+        log.info(f"Orchestrating MOABB Motor Imagery paradigm for {len(input_dto.data.data)} recordings")
 
         cfg: ParadigmConfig = input_dto.paradigm_preprocessing_config
+        processed_items = []
 
         try:
-            # Currently not using the paradigm - everything done manually - might change later
-            paradigm: MotorImagery = MotorImagery(
-                events=list(cfg.events),
-                fmin=cfg.fmin,
-                fmax=cfg.fmax,
-                tmin=cfg.tmin,
-                tmax=cfg.tmax,
-                resample=cfg.resample,
-            )
-            log.info(paradigm)
-            # This part of the code
+            # We iterate through all data entries (runs)
+            for i, entry in enumerate(input_dto.data.data):
+                log.info(f"Segmenting recording index: {i}")
 
-            raw: mne.io.Raw = input_dto.signal.signal
+                # Access the Raw signal from the current entry
+                raw: mne.io.Raw = entry.data
 
-            log.info(f"Band-pass filtering: {cfg.fmin}-{cfg.fmax} Hz")
-            raw.filter(l_freq=cfg.fmin, h_freq=cfg.fmax, fir_design="firwin", skip_by_annotation="edge")
+                # 1. Band-pass filtering
+                # Note: We filter on the copy or the object depending on your pipeline's
+                # memory strategy. Here we work with the object directly as it's a new step.
+                log.info(f"Applying band-pass filter ({cfg.fmin}-{cfg.fmax} Hz) to index {i}")
+                raw.filter(l_freq=cfg.fmin, h_freq=cfg.fmax, fir_design="firwin", skip_by_annotation="edge")
 
-            events: np.ndarray
-            event_id: dict[str, int]
-            events, event_id = mne.events_from_annotations(raw)
+                # 2. Event extraction from annotations
+                events, event_id = mne.events_from_annotations(raw)
 
-            event_id_filtered: dict[str, int] = {k: v for k, v in event_id.items() if k in cfg.events}
+                # Filter event_id to include only requested events from config
+                event_id_filtered = {k: v for k, v in event_id.items() if k in cfg.events}
 
-            log.info(f"Creating epochs (segmentation) with tmin={cfg.tmin}, tmax={cfg.tmax}")
-            epochs: mne.Epochs = mne.Epochs(
-                raw,
-                events=events,
-                event_id=event_id_filtered,
-                tmin=cfg.tmin,
-                tmax=cfg.tmax,
-                baseline=tuple(cfg.baseline) if cfg.baseline is not None else None,
-                reject_by_annotation=cfg.reject_by_annotation,
-                preload=cfg.preload,
-            )
+                if not event_id_filtered:
+                    log.warning(f"No matching events found for index {i}. Skipping epoching.")
+                    continue
 
-            if cfg.resample:
-                log.info(f"Resampling epochs to {cfg.resample} Hz")
-                epochs.resample(cfg.resample)
+                # 3. Epoching (Segmentation)
+                log.info(f"Creating epochs for index {i} with tmin={cfg.tmin}, tmax={cfg.tmax}")
+                epochs: mne.Epochs = mne.Epochs(
+                    raw,
+                    events=events,
+                    event_id=event_id_filtered,
+                    tmin=cfg.tmin,
+                    tmax=cfg.tmax,
+                    baseline=tuple(cfg.baseline) if cfg.baseline is not None else None,
+                    reject_by_annotation=cfg.reject_by_annotation,
+                    preload=cfg.preload,
+                )
 
-            log.info(f"Successfully created {len(epochs)} epochs")
-            return StepResult(ParadigmResultDTO(signal=epochs))
+                # --- FIX STARTS HERE ---
+                # Check if we actually have any epochs left after cleaning/rejection
+                if len(epochs) == 0:
+                    log.warning(f"All epochs were dropped for recording index {i}!")
+                    log.warning(f"Drop log summary: {epochs.drop_log}")
+                    continue
+                    # --- FIX ENDS HERE ---
+
+                # 4. Resampling (Now it's safe to call)
+                if cfg.resample:
+                    log.info(f"Resampling epochs at index {i} to {cfg.resample} Hz")
+                    epochs.resample(cfg.resample)
+
+                # 5. Reconstruct the entry (zbytek tvého kódu)
+                # ...
+                # We replace the 'raw' object (Raw) with the new 'epochs' object (Epochs)
+                # Ensure your output DTO structure or wrapper can handle MNE.Epochs
+
+                # Here we assume your entry has a field (like 'raw' or 'epochs')
+                # that holds the signal wrapper. We'll update it to the new epochs.
+                new_entry = None
+
+                if dataclasses.is_dataclass(entry):
+                    new_entry = dataclasses.replace(entry, data=epochs)
+
+                elif hasattr(entry, "_replace"):
+                    new_entry = entry._replace(data=epochs)
+                else:
+                    new_entry = copy.copy(entry)
+
+                processed_items.append(new_entry)
+
+            log.info(f"Successfully processed all runs. Total items: {len(processed_items)}")
+
+            # Return the result with the full list of processed entries
+            return StepResult(ParadigmResultDTO(data=processed_items))
 
         except ValueError as e:
             log.error(f"Error in paradigm event selection or frequency range: {e}")

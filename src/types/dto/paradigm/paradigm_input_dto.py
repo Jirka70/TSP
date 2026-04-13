@@ -21,4 +21,4 @@ class ParadigmInputDTO:
 
     paradigm_preprocessing_config: ParadigmConfig
 
-    signal: RawPreprocessedDTO
+    data: RawPreprocessedDTO

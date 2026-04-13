@@ -10,6 +10,14 @@ path: ./data/eegbci
 # Subject IDs to include in the experiment.
 subject_ids:
   - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
 
 # Session IDs to load.
 # Use null to load all available sessions.
@@ -17,8 +25,5 @@ session_ids: null
 
 # Run IDs to load.
 # Example: EEGBCI motor imagery commonly uses runs 4, 8, and 12.
-run_ids:
-  - 4
-  - 8
-  - 12
+run_ids: null
 

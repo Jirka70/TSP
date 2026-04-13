@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
-import mne.io
-
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
+from src.types.dto.load.raw_data_dto import RawDataDTO
 
 
 @dataclass(frozen=True)
@@ -20,4 +19,4 @@ class RawPreprocessingInputDTO:
 
     raw_preprocessing_config: RawPreprocessingConfig
 
-    signal: mne.io.Raw
+    data: RawDataDTO
