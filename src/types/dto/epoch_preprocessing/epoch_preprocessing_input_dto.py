@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
-from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
+from src.types.dto.load.recording import RecordingDTO
 
 
 @dataclass(frozen=True)
@@ -20,4 +20,4 @@ class EpochPreprocessingInputDTO:
 
     epoch_preprocessing_config: EpochPreprocessingConfig
 
-    signal: ParadigmResultDTO
+    data: list[RecordingDTO]

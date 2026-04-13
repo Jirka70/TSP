@@ -1,12 +1,13 @@
+import moabb.datasets as moabb_datasets
+import moabb.paradigms as moabb_paradigms
+from moabb.datasets.base import BaseDataset
+
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.load.recording import RecordingDTO
 from src.types.interfaces.data_loader import IDataLoader
-import moabb.datasets as moabb_datasets
-from moabb.datasets.base import BaseDataset
-import moabb.paradigms as moabb_paradigms
 
 
 class MOABBDataLoader(IDataLoader):
@@ -48,7 +49,7 @@ class MOABBDataLoader(IDataLoader):
 
                     recordings.append(
                         RecordingDTO(
-                            raw=raw,
+                            data=raw,
                             dataset_name=config.name,
                             subject_id=subject_id,
                             session_id=str(session_id),

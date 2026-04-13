@@ -23,61 +23,70 @@ class EpochPreprocessor(IEpochPreprocessing):
     """
 
     def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
-        """
-        Applies advanced cleaning and spatial filters to the epoched signal.
-
-        The process focuses on:
-        1. **Artifact Cleaning**: Using ICA to decompose the signal and remove
-           non-brain components (EOG, ECG).
-        2. **Spatial Transformation**: Applying CSP to enhance the signal-to-noise
-           ratio of motor-related rhythms.
-        3. **Final Scaling**: Ensuring the data is normalized for the estimator.
-
-        Args:
-            input_dto: DTO containing segmented MNE.Epochs from the paradigm stage.
-            run_ctx: Execution context providing configuration and parameters.
-
-        Returns:
-            StepResult containing the refined and cleaned Epochs.
-        """
         log = logging.getLogger(__name__)
-        epochs: mne.Epochs = input_dto.signal.signal
         cfg: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
-        log.info(f"Starting advanced epoch epoch_preprocessing for {len(epochs)} epochs")
+        log.info(f"Starting advanced epoch preprocessing for {len(input_dto.data)} recordings")
+
+        processed_recordings = []
 
         try:
-            # --- 1. ICA: Artifact Rejection ---
-            log.info("Fitting ICA to decompose signal components.")
-            ica: ICA = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
-            ica.fit(epochs)
+            for i, entry in enumerate(input_dto.data):
+                # Skip empty recordings to prevent ICA/CSP crashes
+                if len(entry.data) == 0:
+                    log.warning(f"Recording index {i} has no epochs. Skipping.")
+                    continue
 
-            # Automatically identify EOG-related components based on correlation with EOG channels
-            eog_indices: list[int]
-            scores: np.ndarray
-            eog_indices, scores = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
-            log.info(f"ICA: Identified {len(eog_indices)} artifact components to exclude: {eog_indices}")
+                log.info(f"Processing epochs for recording index: {i}")
 
-            ica.exclude = eog_indices
-            ica.apply(epochs)
+                # 1. Work with a copy of the epochs
+                # entry.data is currently mne.Epochs
+                epochs: mne.Epochs = entry.data.copy()
 
-            # --- 2. CSP: Common Spatial Patterns ---
-            # CSP labels
-            log.info("Applying Common Spatial Patterns (CSP) for spatial filtering.")
-            labels: np.ndarray = epochs.events[:, -1]
+                # --- 1. ICA: Artifact Rejection ---
+                log.info(f"Fitting ICA for index {i}")
+                ica: ICA = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
 
-            # CSP
-            csp: CSP = CSP(n_components=cfg.csp.n_components, reg=cfg.csp.reg, log=cfg.csp.log, norm_trace=cfg.csp.norm_trace)
+                ica.fit(epochs)
+                # Find components correlating with eye movements
+                eog_indices, _ = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
 
-            # get_data() returns numpy array
-            x_transformed: np.ndarray = csp.fit_transform(epochs.get_data(copy=False), labels)
+                log.info(f"ICA (index {i}): Excluding {len(eog_indices)} components")
+                ica.exclude = eog_indices
+                ica.apply(epochs)
 
-            log.info(f"CSP transformation complete. New data shape: {x_transformed.shape}")
+                # --- 2. CSP: Common Spatial Patterns ---
+                log.info(f"Applying Common Spatial Patterns (CSP) for index {i}")
+                labels: np.ndarray = epochs.events[:, -1]
 
-            # Signal is numpy.ndarray (features)
-            log.info("Epoch epoch_preprocessing completed successfully.")
-            return StepResult(EpochPreprocessedDTO(signal=x_transformed, labels=labels))
+                # Oprava: v MNE se používá 'ledoit_wolf' s podtržítkem
+                csp: CSP = CSP(
+                    n_components=cfg.csp.n_components,
+                    reg="ledoit_wolf",  # Tady byla ta zrada
+                    log=cfg.csp.log,
+                    norm_trace=cfg.csp.norm_trace,
+                )
+
+                # Transform epochs into CSP space (features)
+                x_transformed: np.ndarray = csp.fit_transform(epochs.get_data(copy=False), labels)
+
+                log.info(f"CSP complete for index {i}. Features shape: {x_transformed.shape}")
+
+                # --- 3. Reconstruct the frozen RecordingDTO ---
+                import dataclasses
+
+                # We create a NEW instance of RecordingDTO.
+                # We replace the 'data' attribute (which was MNE.Epochs)
+                # with the new 'x_transformed' (which is np.ndarray).
+                new_entry = dataclasses.replace(entry, data=x_transformed)
+
+                processed_recordings.append(new_entry)
+
+            log.info("Advanced epoch preprocessing completed successfully for all runs")
+
+            # Final result DTO according to your dataclass definition
+            return StepResult(EpochPreprocessedDTO(data=processed_recordings))
 
         except Exception as e:
-            log.error(f"Failed during advanced epoch epoch_preprocessing: {e}")
+            log.error(f"Failed during advanced epoch preprocessing: {e}")
             raise

@@ -1,3 +1,5 @@
+import copy
+import dataclasses
 import logging
 
 import mne
@@ -25,66 +27,68 @@ class RawPreprocessor(IRawPreprocessing):
 
     def run(self, input_dto: RawPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[RawPreprocessedDTO]:
         r"""
-        Executes the continuous signal cleaning pipeline.
+        Executes the continuous signal cleaning pipeline for all input runs.
 
         The execution sequence follows these optimal analytical steps:
-        1. Identification and interpolation of defective channels using
-           spherical splines to preserve topological structure.
-        2. Application of a high-pass filter (typically $\ge 1.0$ Hz) to ensure
-           signal stationarity, which is a prerequisite for future Independent
-           Component Analysis (ICA).
-        3. Removal of power line interference via a Notch filter at 50/60 Hz.
-        4. Transformation to Current Source Density (CSD) to reduce volume
-           conduction and better localize signals to the sensorimotor cortex.
-        5. Algorithmic or manual annotation of macroscopic artifacts (e.g.,
-           movement) using 'BAD_' labels for automatic rejection during
-           the paradigm process.
-
-        Args:
-            input_dto: DTO containing the raw EEG signal and hardware metadata.
-            run_ctx: The context of the current pipeline execution.
-
-        Returns:
-            A StepResult containing the preprocessed Raw object, optimized
-            for entry into the MOABB paradigm.
+        1. Identification and interpolation of defective channels.
+        2. Application of a high-pass filter and Notch filter.
+        3. Transformation to Current Source Density (CSD).
+        4. Automatic annotation of macroscopic artifacts.
         """
         log = logging.getLogger(__name__)
         cfg: RawPreprocessingConfig = input_dto.raw_preprocessing_config
-        log.info("Starting processing of continuous EEG data (MNE.Raw)")
+        log.info(f"Starting processing of {len(input_dto.data)} continuous EEG recordings")
 
-        # Copy continuous signal to avoid modifying the original data
-        raw_data_copy: mne.io.Raw = input_dto.signal.copy()
+        processed_items = []
 
-        # Identification and interpolation of bad channels
-        if raw_data_copy.info["bads"]:
-            log.info(f"Interpolating bad channels: {raw_data_copy.info['bads']}")
-            raw_data_copy.interpolate_bads(reset_bads=True)
-        else:
-            log.info("No bad channels detected for interpolation")
+        for i, entry in enumerate(input_dto.data):
+            log.info(f"Processing recording index: {i}")
 
-        # High-pass and Notch filtration
-        log.info(f"Applying frequency filters: HPF {cfg.high_pass_filter.l_freq} Hz and Notch {list(cfg.notch_filter.freqs)} Hz")
+            # Copy continuous signal to avoid modifying the original data in the input DTO
+            raw_copy: mne.io.Raw = entry.data.copy()
 
-        raw_data_copy.filter(l_freq=cfg.high_pass_filter.l_freq, h_freq=None, fir_design="firwin", skip_by_annotation="edge")
-        raw_data_copy.notch_filter(freqs=list(cfg.notch_filter.freqs), fir_design="firwin")
+            # 1. Identification and interpolation of bad channels
+            if raw_copy.info["bads"]:
+                log.info(f"Interpolating bad channels at index {i}: {raw_copy.info['bads']}")
+                raw_copy.interpolate_bads(reset_bads=True)
+            else:
+                log.info(f"No bad channels detected for interpolation at index {i}")
 
-        # Spatial transformation - Current Source Density (CSD)
-        log.info("Computing Current Source Density (Surface Laplacian)")
-        try:
-            raw_data_copy = mne.preprocessing.compute_current_source_density(raw_data_copy)
-        except RuntimeError as e:
-            log.warning(f"CSD skipped: Montage/coordinates are missing in Raw.info. Error: {e}")
-        except ValueError as e:
-            log.warning(f"CSD skipped: Invalid channel types or insufficient sensors. Error: {e}")
+            # 2. High-pass and Notch filtration
+            log.info(f"Applying filters to index {i}: HPF {cfg.high_pass_filter.l_freq} Hz, Notch {list(cfg.notch_filter.freqs)} Hz")
+            raw_copy.filter(l_freq=cfg.high_pass_filter.l_freq, h_freq=None, fir_design="firwin", skip_by_annotation="edge")
+            raw_copy.notch_filter(freqs=list(cfg.notch_filter.freqs), fir_design="firwin")
 
-        # Automatic annotation of large artifacts
-        annotations: mne.Annotations = mne.preprocessing.annotate_break(
-            raw_data_copy,
-            min_break_duration=cfg.annotate_break.min_break_duration,
-            t_start_after_previous=0.0,
-            t_stop_before_next=0.0,
-        )
+            # 3. Spatial transformation - Current Source Density (CSD)
+            log.info(f"Computing Current Source Density for index {i}")
+            try:
+                raw_copy = mne.preprocessing.compute_current_source_density(raw_copy)
+            except (RuntimeError, ValueError) as e:
+                log.warning(f"CSD skipped at index {i}: {e}")
 
-        log.info("Continuous epoch_preprocessing completed successfully")
+            # 4. Automatic annotation of large artifacts
+            new_annotations = mne.preprocessing.annotate_break(
+                raw_copy,
+                min_break_duration=cfg.annotate_break.min_break_duration,
+                t_start_after_previous=1.0,
+                t_stop_before_next=1.0,
+            )
+            raw_copy.set_annotations(raw_copy.annotations + new_annotations)
 
-        return StepResult(RawPreprocessedDTO(signal=raw_data_copy))
+            new_entry = None
+
+            if dataclasses.is_dataclass(entry):
+                new_entry = dataclasses.replace(entry, data=raw_copy)
+
+            elif hasattr(entry, "_replace"):
+                new_entry = entry._replace(data=raw_copy)
+            else:
+                new_entry = copy.copy(entry)
+
+            processed_items.append(new_entry)
+
+        log.info("Continuous preprocessing of all recordings completed successfully")
+        log.info(processed_items)
+
+        # Return the StepResult containing the full list of processed entries
+        return StepResult(RawPreprocessedDTO(data=processed_items))

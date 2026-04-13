@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import mne.io
+from src.types.dto.load.recording import RecordingDTO
 
 
 @dataclass(frozen=True)
@@ -16,4 +16,4 @@ class RawPreprocessedDTO:
         signal (mne.io.Raw): The preprocessed signal data, filtered and re-referenced.
     """
 
-    signal: mne.io.Raw
+    data: list[RecordingDTO]
