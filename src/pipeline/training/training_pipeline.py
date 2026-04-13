@@ -61,13 +61,13 @@ class TrainingPipeline(IPipeline):
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
 
-        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(raw_preprocessing_config=config.raw_preprocessing, data=load_result.data.data)
+        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
 
-        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data.data)
+        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
-        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data.data)
+        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
         epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)
 
         splitting_input: SplitInputDTO = SplitInputDTO(config.split, epoch_preprocessing_result.data)

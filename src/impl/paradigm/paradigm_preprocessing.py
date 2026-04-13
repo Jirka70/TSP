@@ -46,14 +46,14 @@ class ParadigmPreprocessor(IParadigm):
             StepResult containing segmented MNE.Epochs for advanced refinement.
         """
         log = logging.getLogger(__name__)
-        log.info(f"Orchestrating MOABB Motor Imagery paradigm for {len(input_dto.data)} recordings")
+        log.info(f"Orchestrating MOABB Motor Imagery paradigm for {len(input_dto.data.data)} recordings")
 
         cfg: ParadigmConfig = input_dto.paradigm_preprocessing_config
         processed_items = []
 
         try:
             # We iterate through all data entries (runs)
-            for i, entry in enumerate(input_dto.data):
+            for i, entry in enumerate(input_dto.data.data):
                 log.info(f"Segmenting recording index: {i}")
 
                 # Access the Raw signal from the current entry

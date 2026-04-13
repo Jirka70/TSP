@@ -37,11 +37,11 @@ class RawPreprocessor(IRawPreprocessing):
         """
         log = logging.getLogger(__name__)
         cfg: RawPreprocessingConfig = input_dto.raw_preprocessing_config
-        log.info(f"Starting processing of {len(input_dto.data)} continuous EEG recordings")
+        log.info(f"Starting processing of {len(input_dto.data.data)} continuous EEG recordings")
 
         processed_items = []
 
-        for i, entry in enumerate(input_dto.data):
+        for i, entry in enumerate(input_dto.data.data):
             log.info(f"Processing recording index: {i}")
 
             # Copy continuous signal to avoid modifying the original data in the input DTO

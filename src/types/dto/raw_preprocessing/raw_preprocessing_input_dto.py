@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
-from src.types.dto.load.recording import RecordingDTO
+from src.types.dto.load.raw_data_dto import RawDataDTO
 
 
 @dataclass(frozen=True)
@@ -19,4 +19,4 @@ class RawPreprocessingInputDTO:
 
     raw_preprocessing_config: RawPreprocessingConfig
 
-    data: list[RecordingDTO]
+    data: RawDataDTO

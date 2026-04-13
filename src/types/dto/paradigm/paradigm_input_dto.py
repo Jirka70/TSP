@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from src.types.dto.config.paradigm_config import ParadigmConfig
-from src.types.dto.load.recording import RecordingDTO
+from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 
 
 @dataclass(frozen=True)
@@ -21,4 +21,4 @@ class ParadigmInputDTO:
 
     paradigm_preprocessing_config: ParadigmConfig
 
-    data: list[RecordingDTO]
+    data: RawPreprocessedDTO

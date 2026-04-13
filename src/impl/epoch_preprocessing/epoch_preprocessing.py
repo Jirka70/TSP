@@ -1,8 +1,7 @@
+import dataclasses
 import logging
 
 import mne
-import numpy as np
-from mne.decoding import CSP
 from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
@@ -15,77 +14,61 @@ from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 
 class EpochPreprocessor(IEpochPreprocessing):
     """
-    Performs high-level signal cleaning and transformation on MNE Epochs.
+    Performs advanced signal cleaning on MNE Epochs.
 
-    This stage typically involves Independent Component Analysis (ICA) for
-    eye-movement rejection or Common Spatial Patterns (CSP) to maximize
-    the variance between different experimental conditions (e.g., left vs. right hand).
+    This stage focuses on artifact removal (e.g., eye blinks) using ICA,
+    while maintaining the mne.Epochs data structure for further processing.
     """
 
     def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
         log = logging.getLogger(__name__)
         cfg: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
-        log.info(f"Starting advanced epoch preprocessing for {len(input_dto.data)} recordings")
+        log.info(f"Starting advanced epoch preprocessing for {len(input_dto.data.data)} recordings")
 
         processed_recordings = []
 
         try:
-            for i, entry in enumerate(input_dto.data):
-                # Skip empty recordings to prevent ICA/CSP crashes
+            for i, entry in enumerate(input_dto.data.data):
+                # Skip empty recordings to prevent ICA crashes
                 if len(entry.data) == 0:
                     log.warning(f"Recording index {i} has no epochs. Skipping.")
                     continue
 
                 log.info(f"Processing epochs for recording index: {i}")
 
-                # 1. Work with a copy of the epochs
+                # 1. Work with a copy to maintain immutability of input data
                 # entry.data is currently mne.Epochs
                 epochs: mne.Epochs = entry.data.copy()
 
-                # --- 1. ICA: Artifact Rejection ---
+                # --- ICA: Artifact Rejection ---
                 log.info(f"Fitting ICA for index {i}")
                 ica: ICA = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
 
+                # Fit ICA on the epoched data
                 ica.fit(epochs)
-                # Find components correlating with eye movements
+
+                # Automatically find components correlating with eye movements (EOG)
                 eog_indices, _ = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
 
                 log.info(f"ICA (index {i}): Excluding {len(eog_indices)} components")
                 ica.exclude = eog_indices
+
+                # Apply the ICA cleaning - the output remains an mne.Epochs object
                 ica.apply(epochs)
 
-                # --- 2. CSP: Common Spatial Patterns ---
-                log.info(f"Applying Common Spatial Patterns (CSP) for index {i}")
-                labels: np.ndarray = epochs.events[:, -1]
-
-                # Oprava: v MNE se používá 'ledoit_wolf' s podtržítkem
-                csp: CSP = CSP(
-                    n_components=cfg.csp.n_components,
-                    reg="ledoit_wolf",  # Tady byla ta zrada
-                    log=cfg.csp.log,
-                    norm_trace=cfg.csp.norm_trace,
-                )
-
-                # Transform epochs into CSP space (features)
-                x_transformed: np.ndarray = csp.fit_transform(epochs.get_data(copy=False), labels)
-
-                log.info(f"CSP complete for index {i}. Features shape: {x_transformed.shape}")
-
-                # --- 3. Reconstruct the frozen RecordingDTO ---
-                import dataclasses
-
-                # We create a NEW instance of RecordingDTO.
-                # We replace the 'data' attribute (which was MNE.Epochs)
-                # with the new 'x_transformed' (which is np.ndarray).
-                new_entry = dataclasses.replace(entry, data=x_transformed)
-
+                # --- Reconstruct the RecordingDTO ---
+                # CRITICAL: We pass the cleaned mne.Epochs object, NOT a numpy array.
+                # This preserves metadata and allows for further MNE-based steps.
+                new_entry = dataclasses.replace(entry, data=epochs)
                 processed_recordings.append(new_entry)
 
-            log.info("Advanced epoch preprocessing completed successfully for all runs")
+            log.info("Advanced epoch preprocessing completed. All results kept as mne.Epochs structure.")
 
-            # Final result DTO according to your dataclass definition
+            # Return the StepResult with preserved structure
             return StepResult(EpochPreprocessedDTO(data=processed_recordings))
+
+            # TODO: Maybe add CSP preprocessing in future.
 
         except Exception as e:
             log.error(f"Failed during advanced epoch preprocessing: {e}")
