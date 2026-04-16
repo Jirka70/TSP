@@ -1,5 +1,5 @@
 backend: filesystem
-path: ./data/local_dataset
+path: /Users/jirka/Downloads/21679035/edffile
 recursive: true
-subject_ids: null
+subject_ids: [1,2,3]
 session_ids: null
