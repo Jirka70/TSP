@@ -8,7 +8,7 @@ defaults:
   - model: eegnet
   - evaluation: default
   - visualization: matplotlib
-  - source: external
+  - source: filesystem
   - save_artifacts: default
 
 mode: training

@@ -39,7 +39,6 @@ class RunContextFactory:
         return RunContext(
             run_id=run_id,
             started_at=started_at,
-            dataset_name=config.source.name,
             raw_preprocessing_backend=config.raw_preprocessing.backend,
             paradigm_backend=config.paradigm.backend,
             epoch_preprocessing_backend=config.epoch_preprocessing.backend,
