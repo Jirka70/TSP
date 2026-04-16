@@ -1,6 +1,6 @@
 # Dataset-specific configuration for the EEGBCI / PhysioNet motor imagery source.
 
-backend: eegbci
+backend: external
 # Unique source identifier used by the pipeline.
 name: BNCI2014_001
 

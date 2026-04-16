@@ -7,6 +7,6 @@ class FilesystemDatasetConfig(AStageConfig):
     backend: Literal["filesystem"]
     path: str
     recursive: bool
-    subject_ids: list[int]
-    sessions_ids: list[int]
+    subject_ids: list[int] | None
+    session_ids: list[int] | None
 

@@ -1,4 +1,4 @@
-backend: "filesystem"
+backend: filesystem
 path: ./data/local_dataset
 recursive: true
 subject_ids: null

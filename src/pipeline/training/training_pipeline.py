@@ -59,7 +59,7 @@ class TrainingPipeline(IPipeline):
         self._artifact_saver = artifact_saver
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
-        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
+        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
 
         raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)

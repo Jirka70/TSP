@@ -3,6 +3,7 @@ from enum import Enum
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
+from src.impl.data_loader import EDFLoader
 #from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
@@ -38,7 +39,9 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"eegbci": MOABBDataLoader},
+        StageType.DATA_LOADER: {
+            "external": MOABBDataLoader,
+            "filesystem": EDFLoader },
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
@@ -61,7 +64,7 @@ class StageFactory:
         self._config = config
 
     def create_data_loader(self) -> IDataLoader:
-        return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.backend]()
+        return StageFactory._targets[StageType.DATA_LOADER][self._config.source.backend]()
 
     def create_raw_preprocessing_stage(self) -> IRawPreprocessing:
         return StageFactory._targets[StageType.RAW_PREPROCESSING][self._config.raw_preprocessing.backend]()
