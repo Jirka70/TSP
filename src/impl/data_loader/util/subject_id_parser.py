@@ -14,6 +14,7 @@ class SubjectIdParser:
 
     _SUBJECT_ID_PATTERN = re.compile(r"(\d+)")
 
+    @staticmethod
     def parse(self, directory_name: str) -> int | None:
         match = self._SUBJECT_ID_PATTERN.search(directory_name)
         if match is None:
