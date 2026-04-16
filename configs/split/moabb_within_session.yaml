@@ -1,0 +1,22 @@
+# MOABB Within-session splitting strategy.
+backend: moabb_within_session
+
+# Whether the within-session splitting strategy is enabled.
+enabled: true
+
+# Evaluator configuration for the MOABB within-session splitting strategy.
+evaluator:
+  # MOABB target splitter class.
+  _target_: moabb.evaluations.WithinSessionSplitter
+  
+  # Random seed for reproducible splits.
+  random_state: 42
+  
+  # Number of folds to create for cross-validation.
+  n_folds: 5
+  
+  # Whether to shuffle the session recordings before splitting.
+  shuffle: true
+  
+  # Scikit-learn cross-validation class to use internally.
+  cv_class: sklearn.model_selection.StratifiedKFold

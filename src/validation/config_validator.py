@@ -6,8 +6,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.validation.validation_message import ValidationMessage
-from validation.validation_message import ValidationResult
+from src.validation.validation_message import ValidationMessage, ValidationResult
 
 
 class ExperimentConfigValidator:
