@@ -1,0 +1,20 @@
+# Basic splitting strategy using fixed ratios.
+backend: basic
+
+# Whether the basic splitting strategy is enabled.
+enabled: true
+
+# Fraction of the dataset to be used for training (0.0 - 1.0).
+train_ratio: 0.7
+
+# Fraction of the dataset to be used for validation (0.0 - 1.0).
+validation_ratio: 0.0
+
+# Fraction of the dataset to be used for testing (0.0 - 1.0).
+test_ratio: 0.3
+
+# Whether to shuffle the data before splitting.
+shuffle: true
+
+# Random seed to ensure reproducibility of the split.
+random_seed: 42

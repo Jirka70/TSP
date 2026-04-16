@@ -1,0 +1,21 @@
+# MOABB Cross-session splitting strategy.
+backend: moabb_cross_session
+
+# Whether the cross-session splitting strategy is enabled.
+enabled: true
+
+# Evaluator configuration for the MOABB cross-session splitting strategy.
+evaluator:
+  # MOABB target splitter class.
+  _target_: moabb.evaluations.CrossSessionSplitter
+  
+  # Scikit-learn cross-validation class to use internally.
+  cv_class: sklearn.model_selection.LeaveOneGroupOut
+  
+  # Whether to shuffle groups before splitting.
+  # Note: This depends on the cv_class used. Shuffle is NOT compatible with LeaveOneGroupOut.
+  shuffle: false
+  
+  # Random seed for reproducible splits (if shuffle is true).
+  random_state: 42
+

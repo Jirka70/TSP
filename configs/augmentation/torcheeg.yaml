@@ -34,3 +34,6 @@ scale_min: 0.9
 
 # Maximum factor for amplitude scaling (e.g. 1.1).
 scale_max: 1.1
+
+# Random seed for reproducibility of augmentation transformations.
+random_seed: 42
