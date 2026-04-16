@@ -49,7 +49,7 @@ class GenericSklearnTrainer(IModelTrainer):
         method_id = input_dto.config.model_name
         params = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
-        log.info(f"Start tréninku: {method_id} (Run: {run_ctx.run_id})")
+        log.info(f"Training started: {method_id} (Run: {run_ctx.run_id})")
 
         # Pipeline and model creation
         pipeline = ModelFactory.create(method_id, params)
