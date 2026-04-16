@@ -4,8 +4,8 @@ from typing import Literal
 from src.types.dto.config.astageconfig import AStageConfig
 
 
-class DatasetConfig(AStageConfig):
-    backend: Literal["eegbci"]
+class ExternalDatasetConfig(AStageConfig):
+    backend: Literal["external"]
     name: str
     path: Path
     subject_ids: list[int]

@@ -8,13 +8,14 @@ from src.types.dto.config.augmentation_config import (
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
-from src.types.dto.config.dataset_config import DatasetConfig
+from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig
 from src.types.dto.config.model.model_config import ModelConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
+from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
 from src.types.dto.config.split_config import SplitConfig
 
 
@@ -30,7 +31,6 @@ class ExperimentConfig(BaseModel):
     split: SplitConfig
     model: ModelConfig
     evaluation: EvaluationConfig
-    dataset: DatasetConfig
     save_artifacts: SaveArtifactsConfig
 
     # union enables multiple options which pydantic differentiates by looking at backend field
@@ -38,5 +38,5 @@ class ExperimentConfig(BaseModel):
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
-
+    source: FilesystemDatasetConfig | ExternalDatasetConfig = Field(discriminator="backend")
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")

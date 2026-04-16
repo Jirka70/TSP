@@ -1,10 +1,10 @@
-# Dataset-specific configuration for the EEGBCI / PhysioNet motor imagery dataset.
+# Dataset-specific configuration for the EEGBCI / PhysioNet motor imagery source.
 
 backend: eegbci
-# Unique dataset identifier used by the pipeline.
+# Unique source identifier used by the pipeline.
 name: BNCI2014_001
 
-# Root path where the dataset is stored locally.
+# Root path where the source is stored locally.
 path: ./data/eegbci
 
 # Subject IDs to include in the experiment.

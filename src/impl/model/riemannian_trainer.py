@@ -94,7 +94,7 @@ class RiemannianModelTrainer(IModelTrainer):
     ) -> StepResult[TrainedModelDTO]:
         log.info(
             "RiemannianModelTrainer: starting training "
-            "(run_id=%s, dataset=%s)",
+            "(run_id=%s, source=%s)",
             run_ctx.run_id,
             run_ctx.dataset_name,
         )

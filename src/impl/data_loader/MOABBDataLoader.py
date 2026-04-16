@@ -4,7 +4,7 @@ from moabb.datasets.base import BaseDataset
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.config.dataset_config import DatasetConfig
+from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.load.recording import RecordingDTO
 from src.types.interfaces.data_loader import IDataLoader
@@ -33,7 +33,7 @@ class MOABBDataLoader(IDataLoader):
         allowed_str = {str(v) for v in allowed_values}
         return value_str in allowed_str
 
-    def _load_raw_recordings(self, dataset: BaseDataset, config: DatasetConfig):
+    def _load_raw_recordings(self, dataset: BaseDataset, config: ExternalDatasetConfig):
         data = dataset.get_data(subjects=config.subject_ids)
 
         recordings: list[RecordingDTO] = []
@@ -72,7 +72,7 @@ class MOABBDataLoader(IDataLoader):
         except AttributeError:
             raise ValueError(f"Paradigm {name} was not found")
 
-    def run(self, config: DatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
+    def run(self, config: ExternalDatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
         dataset_name: str = config.name
 
         dataset = self._create_dataset(dataset_name)

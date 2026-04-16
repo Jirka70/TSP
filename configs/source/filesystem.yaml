@@ -1,0 +1,5 @@
+backend: "filesystem"
+path: ./data/local_dataset
+recursive: true
+subject_ids: null
+session_ids: null

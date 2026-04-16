@@ -43,10 +43,10 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Parameters (mirror configs/dataset/eegbci.yaml + configs/paradigm/testing.yaml)
+# Parameters (mirror configs/source/external.yaml + configs/paradigm/testing.yaml)
 # ---------------------------------------------------------------------------
 SUBJECT_ID = 1
-# None = load every session and every run the dataset provides
+# None = load every session and every run the source provides
 RUN_IDS: list[int] | None = None
 EVENTS = {"left_hand": 1, "right_hand": 2}  # BNCI2014_001 event codes
 FMIN, FMAX = 8.0, 35.0
