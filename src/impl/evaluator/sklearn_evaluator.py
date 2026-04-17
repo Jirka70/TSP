@@ -13,56 +13,39 @@ log = logging.getLogger(__name__)
 
 
 class SklearnEvaluator(IEvaluator):
-    """
-    Concrete implementation of the IEvaluator interface using Scikit-learn metrics.
-
-    This evaluator calculates standard performance metrics by comparing model predictions
-    against ground truth labels provided in the test dataset.
-    """
-
     def run(self, input_dto: EvaluationInputDTO, run_ctx: RunContext) -> StepResult[EvaluationResultDTO]:
-        """
-        Executes the evaluation process on the provided test dataset.
+        if not input_dto.trained_models:
+            raise ValueError("EvaluationInputDTO neobsahuje zadny model.")
 
-        The method performs the following steps:
-        1. Validates the presence of test data.
-        2. Generates predictions using the trained model's inference method.
-        3. Computes Accuracy, Weighted F1-Score, and a Confusion Matrix.
-        4. Encapsulates the results into a serializable EvaluationResultDTO.
+        model = input_dto.trained_models[0].model
+        model_name = input_dto.trained_models[0].model_name
 
-        Args:
-            input_dto (EvaluationInputDTO): DTO containing the trained model instance,
-                test data, and evaluation configuration.
-            run_ctx (RunContext): Execution context providing metadata for the current pipeline run.
+        x_list, y_list = [], []
+        for fold in input_dto.folds:
+            if fold.test_data:
+                for recording in fold.test_data.data:
+                    epochs = recording.data
+                    if hasattr(epochs, "get_data"):
+                        x_list.append(epochs.get_data(copy=False))
+                        y_list.append(epochs.events[:, -1])
+                    else:
+                        x_list.append(epochs)
+                        y_list.append(np.array(recording.metadata.get("labels", [])))
 
-        Returns:
-            StepResult[EvaluationResultDTO]: A standardized step result containing a dictionary
-                of calculated metrics.
+        if not x_list:
+            raise ValueError("Zadna testovaci data nebyla nalezena v foldech.")
 
-        Raises:
-            ValueError: If the input_dto does not contain valid test_data.
-        """
-        log.info(f"Running evaluation for model: {input_dto.trained_model.model_name}")
+        x_test = np.concatenate(x_list, axis=0)
+        y_true = np.concatenate(y_list, axis=0)
 
-        # Collect test data and labels
-        if input_dto.test_data is None:
-            raise ValueError("EvaluationInputDTO must contain test_data for evaluation.")
-
-        x_test = input_dto.test_data.signal
-        y_true = np.asarray(input_dto.test_data.labels)
-
-        # Prediction with IModel interface (using trained model)
-        model = input_dto.trained_model.model
         y_pred = model.predict(x_test)
 
-        # Metrics calculation
         acc = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average="weighted")
         cm = confusion_matrix(y_true, y_pred).tolist()
 
-        log.info(f"Evaluation Results -> Accuracy: {acc:.4f}, F1-Score: {f1:.4f}")
+        log.info(f"Evaluace [{model_name}] -> Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
-        # Result DTO
-        metrics = {"accuracy": float(acc), "f1_score": float(f1), "confusion_matrix": cm, "n_samples": len(y_true)}
+        metrics = {"accuracy": float(acc), "f1_score": float(f1), "n_samples": len(y_true)}
 
-        return StepResult(EvaluationResultDTO(metrics))
+        return StepResult(EvaluationResultDTO(metrics=metrics, confusion_matrix=cm))

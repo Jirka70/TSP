@@ -42,7 +42,7 @@ class ModelFactory:
         if method_id == "csp_lda":
             from mne.decoding import CSP
             return Pipeline([
-                ("csp", CSP(n_components=params.get("n_components", 4))),
+                ("csp", CSP(n_components=params.get("n_components", 4), reg=params.get("reg", "ledoit_wolf"))),
                 ("lda", LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto"))
             ])
 

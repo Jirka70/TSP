@@ -54,7 +54,7 @@ class MetricsAggregator(IMetricsAggregator):
             for group_id, values in grouped_values.items():
                 g_mean = float(np.mean(values))
                 g_std = float(np.std(values))
-                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Foldů: {len(values)})")
+                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Foldu: {len(values)})")
 
         return AggregatedMetricsDTO(
             model_name=model_name,

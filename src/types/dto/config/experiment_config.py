@@ -2,6 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from src.types.dto.config.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
@@ -29,6 +30,7 @@ class ExperimentConfig(BaseModel):
     dataset: DatasetConfig
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig
+    final_trainer: FinalTrainerConfig
 
     # union enables multiple options which pydantic differentiates by looking at backend field
     # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")

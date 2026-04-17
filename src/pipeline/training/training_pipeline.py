@@ -12,6 +12,8 @@ from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import Epoc
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
 from src.types.dto.evaluation.fold_evaluation_result_dto import FoldEvaluationResultDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
+from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
+from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
@@ -27,6 +29,7 @@ from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
+from src.types.interfaces.model.final_trainer import IFinalTrainer
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
@@ -45,6 +48,7 @@ class TrainingPipeline(IPipeline):
         augmentation: IAugmentor,
         model_trainer: IModelTrainer,
         metrics_aggregator: IMetricsAggregator,
+        final_trainer: IFinalTrainer,
         evaluator: IEvaluator,
         artifact_saver: IArtifactSaver,
         model_serializer: IModelSerializer,
@@ -59,6 +63,7 @@ class TrainingPipeline(IPipeline):
         self._augmentation = augmentation
         self._model_trainer = model_trainer
         self._metrics_aggregator = metrics_aggregator
+        self._final_trainer = final_trainer
         self._evaluator = evaluator
         self._artifact_saver = artifact_saver
         self._model_serializer = model_serializer
@@ -93,17 +98,17 @@ class TrainingPipeline(IPipeline):
         # TODO: Budeme asi chtit vracet step_result pro jistotu
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
+        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds)
+        final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
+
         evaluation_input = EvaluationInputDTO(
             config=config.evaluation,
-            trained_models=model_training_result.data.trained_models,
+            trained_models=[final_training_result.data.trained_model],
             folds=folds,
         )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
 
-        trained_model = self._select_model_for_artifact_saving(
-            model_training_result.data.trained_models,
-            evaluation_result.data.fold_results,
-        )
+        trained_model = final_training_result.data.trained_model
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
