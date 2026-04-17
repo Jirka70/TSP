@@ -10,6 +10,7 @@ from src.types.dto.config.augmentation_config import (
 from src.types.dto.config.dataset_config import DatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
+from src.types.dto.config.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import ModelConfig, SklearnModelConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
@@ -27,6 +28,7 @@ class ExperimentConfig(BaseModel):
     output_dir: str
     dataset: DatasetConfig
     save_artifacts: SaveArtifactsConfig
+    metrics_aggregator: MetricsAggregatorConfig
 
     # union enables multiple options which pydantic differentiates by looking at backend field
     # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")

@@ -10,8 +10,11 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.evaluation.evaluation_result_dto import FoldEvaluationResultDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
+from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
+from src.types.dto.model.training_result_dto import TrainingResultDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
@@ -23,6 +26,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
@@ -40,6 +44,7 @@ class TrainingPipeline(IPipeline):
         splitting: ISplitter,
         augmentation: IAugmentor,
         model_trainer: IModelTrainer,
+        metrics_aggregator: IMetricsAggregator,
         evaluator: IEvaluator,
         artifact_saver: IArtifactSaver,
         model_serializer: IModelSerializer,
@@ -53,6 +58,7 @@ class TrainingPipeline(IPipeline):
         self._log = logging.getLogger(__name__)
         self._augmentation = augmentation
         self._model_trainer = model_trainer
+        self._metrics_aggregator = metrics_aggregator
         self._evaluator = evaluator
         self._artifact_saver = artifact_saver
         self._model_serializer = model_serializer
@@ -75,15 +81,29 @@ class TrainingPipeline(IPipeline):
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
 
-        first_fold = augmentation_result.data.folds[0]
-        training_input = TrainingInputDTO(config.model, first_fold.train_data, first_fold.validation_data)
-        model_training_result = self._model_trainer.run(training_input, run_ctx)
+        folds = augmentation_result.data.folds
+        if not folds:
+            raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
-        test_data = first_fold.test_data
-        evaluation_input = EvaluationInputDTO(config.evaluation, model_training_result.data, test_data)
+        training_input = TrainingInputDTO(config=config.model, folds=folds)
+        model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
+
+        # MetricsAggregator a FinalTrainer
+        metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
+        # TODO: Budeme asi chtit vracet step_result pro jistotu
+        self._metrics_aggregator.run(metrics_input, run_ctx)
+
+        evaluation_input = EvaluationInputDTO(
+            config=config.evaluation,
+            trained_models=model_training_result.data.trained_models,
+            folds=folds,
+        )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
 
-        trained_model = model_training_result.data
+        trained_model = self._select_model_for_artifact_saving(
+            model_training_result.data.trained_models,
+            evaluation_result.data.fold_results,
+        )
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
@@ -94,3 +114,24 @@ class TrainingPipeline(IPipeline):
         )
 
         self._artifact_saver.run(save_artifacts_input, run_ctx)
+
+    def _select_model_for_artifact_saving(
+        self,
+        trained_models: list[TrainedModelDTO],
+        fold_results: list[FoldEvaluationResultDTO] | None,
+    ) -> TrainedModelDTO:
+        if not trained_models:
+            raise ValueError("Training did not produce any model.")
+
+        if not fold_results:
+            return trained_models[0]
+
+        best_fold = max(
+            fold_results,
+            key=lambda result: result.metrics.get("accuracy", float("-inf")),
+        )
+        for trained_model in trained_models:
+            if trained_model.fold_idx == best_fold.fold_idx:
+                return trained_model
+
+        return trained_models[0]

@@ -3,9 +3,10 @@ defaults:
   - raw_preprocessing: testing
   - paradigm: testing
   - epoch_preprocessing: testing
-  - split: default
+  - split: moabb_within_session
   - augmentation: torcheeg
   - model: machine_learning/csp_lda
+  - metrics_aggregator: default
   - evaluation: sklearn
   - visualization: matplotlib
   - dataset: eegbci

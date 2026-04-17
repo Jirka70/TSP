@@ -26,5 +26,6 @@ class TrainedModelDTO:
 
     best_validation_metric_name: str | None = None
     best_validation_metric_value: float | None = None
+    fold_idx: int | None = None
 
     metadata: dict[str, object] = field(default_factory=dict)

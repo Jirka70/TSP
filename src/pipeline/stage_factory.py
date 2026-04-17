@@ -10,6 +10,7 @@ from src.impl.evaluator.dummy_evaluator import DummyEvaluator
 from src.impl.evaluator.sklearn_evaluator import SklearnEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
+from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.pytorch_serializer import PyTorchSerializer
 from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
@@ -22,6 +23,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
@@ -37,6 +39,7 @@ class StageType(Enum):
     SPLIT = "split"
     AUGMENTATION = "augmentation"
     MODEL_TRAINER = "model_trainer"
+    METRICS_AGGREGATOR = "metrics_aggregator"
     EVALUATOR = "evaluator"
     SAVER = "saver"
     MODEL_SERIALIZER = "serializer"
@@ -64,6 +67,7 @@ class StageFactory:
             "eegnet": DummyModelTrainer,
             "sklearn": GenericSklearnTrainer,
         },
+        StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
         StageType.EVALUATOR: {
             "default": DummyEvaluator,
             "sklearn": SklearnEvaluator,
@@ -100,6 +104,9 @@ class StageFactory:
 
     def create_model_trainer_stage(self) -> IModelTrainer:
         return StageFactory._targets[StageType.MODEL_TRAINER][self._config.model.backend]()
+
+    def create_metrics_aggregator_stage(self) -> IMetricsAggregator:
+        return StageFactory._targets[StageType.METRICS_AGGREGATOR][self._config.metrics_aggregator.backend]()
 
     def create_evaluator_stage(self) -> IEvaluator:
         return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()

@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
+from src.types.dto.model.training_result_dto import TrainingResultDTO
 
 
 class IModelTrainer(ABC):
@@ -16,7 +16,7 @@ class IModelTrainer(ABC):
     """
 
     @abstractmethod
-    def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainedModelDTO]:
+    def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainingResultDTO]:
         """
         Executes the model training process within the pipeline context.
 
@@ -31,7 +31,7 @@ class IModelTrainer(ABC):
                 current pipeline run.
 
         Returns:
-            StepResult[TrainedModelDTO]: An object wrapping the trained model,
-                its unique name, and comprehensive training history.
+            StepResult[TrainingResultDTO]: An object wrapping trained models
+                produced for every incoming fold.
         """
         raise NotImplementedError
