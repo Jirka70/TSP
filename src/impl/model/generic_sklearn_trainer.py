@@ -75,8 +75,7 @@ class GenericSklearnTrainer(IModelTrainer):
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
-        Iterates over all recordings in the DTO, extracts the signal arrays and labels
-        from MNE Epochs, and concatenates them into a single training set for the fold.
+        Iterates over all recordings in the DTO, extracts the signal arrays and labels from MNE Epochs, and concatenates them into a single training set for the fold.
 
         Args:
             data_dto (EpochPreprocessedDTO): The input data container with a list of recordings.
