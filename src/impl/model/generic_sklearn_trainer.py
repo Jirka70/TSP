@@ -28,7 +28,7 @@ class GenericSklearnTrainer(IModelTrainer):
 
         log.info(f"Training started: {method_id} (Run: {run_ctx.run_id})")
 
-        print(input_dto.folds.__len__())
+        log.info(f"Number of folds: {len(input_dto.folds)}")
         trained_models: list[TrainedModelDTO] = []
         for fold in input_dto.folds:
             # Pipeline and model creation
@@ -48,6 +48,7 @@ class GenericSklearnTrainer(IModelTrainer):
             val_metrics = {}
             val_loss = []
             if fold.validation_data:
+                log.info("Validation data exists.")
                 x_val, y_val = self._extract_data_and_labels(fold.validation_data)
                 val_acc = float(accuracy_score(y_val, model.predict(x_val)))
                 val_metrics = {"accuracy": [val_acc]}
