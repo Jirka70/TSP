@@ -1,6 +1,8 @@
 import logging
 
 import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 
 from src.pipeline.context.run_context import RunContext
@@ -46,6 +48,38 @@ class SklearnEvaluator(IEvaluator):
 
         log.info(f"Evaluace [{model_name}] -> Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
+        self._visualize_results(y_true, y_pred, cm, model_name)
+
         metrics = {"accuracy": float(acc), "f1_score": float(f1), "n_samples": len(y_true)}
 
         return StepResult(EvaluationResultDTO(metrics=metrics, confusion_matrix=cm))
+
+    def _visualize_results(self, y_true, y_pred, cm, model_name):
+        """Vytvoří jednoduchý dashboard s výsledky."""
+        plt.figure(figsize=(12, 5))
+
+        # 1. Confusion Matrix Heatmap
+        plt.subplot(1, 2, 1)
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False)
+        plt.title(f"Confusion Matrix: {model_name}")
+        plt.xlabel("Predikovaná třída")
+        plt.ylabel("Skutečná třída")
+
+        # 2. Porovnání distribuce (Realita vs Predikce)
+        plt.subplot(1, 2, 2)
+        classes, counts_true = np.unique(y_true, return_counts=True)
+        _, counts_pred = np.unique(y_pred, return_counts=True)
+
+        x = np.arange(len(classes))
+        width = 0.35
+        plt.bar(x - width / 2, counts_true, width, label="Skutečnost", color="gray", alpha=0.6)
+        plt.bar(x + width / 2, counts_pred, width, label="Predikce", color="skyblue")
+
+        plt.title("Distribuce tříd")
+        plt.xlabel("Třída")
+        plt.ylabel("Počet vzorků")
+        plt.xticks(x, classes)
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()  # Nebo plt.savefig(f"eval_{model_name}.png")
