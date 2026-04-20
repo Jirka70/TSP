@@ -19,7 +19,13 @@ from src.types.interfaces.data_loader import IDataLoader
 
 
 class FilesystemDatasetLoader(IDataLoader):
+    """
+    Loads dataset from filesystem.
 
+    This stage loads all signal files from given folder + annotations stored in .tsv file.
+    Signal folder contains multiple subfolders - each for one subject.
+    Subject subfolder name must contain integer which is used as subject ID.
+    """
 
     def __init__(self):
         self._log = logging.getLogger(__name__)
@@ -62,6 +68,12 @@ class FilesystemDatasetLoader(IDataLoader):
         recursive: bool,
         global_annotations: mne.Annotations | None,
     ) -> list[RecordingDTO]:
+        """
+        Loads one subject subfolder.
+
+        Searches inside subject folder for signal files. If annotations are missing,
+        global .tsv file with annotations is used.
+        """
         subject_recordings: list[RecordingDTO] = []
 
         for file_path in FileDiscovery.iter_files(subject_directory, recursive):
@@ -104,6 +116,7 @@ class FilesystemDatasetLoader(IDataLoader):
         subject_id: int,
         annotation_source: str,
     ) -> RecordingDTO:
+        """Creates recording with needed metadata."""
         return RecordingDTO(
             data=raw_data,
             dataset_name=dataset_name,
@@ -119,6 +132,7 @@ class FilesystemDatasetLoader(IDataLoader):
         )
 
     def _load_global_annotations(self, config: FilesystemDatasetConfig) -> mne.Annotations | None:
+        """Loads global .tsv file with annotations from file system."""
         if config.global_events_tsv_path is None:
             return None
 
@@ -152,6 +166,7 @@ class FilesystemDatasetLoader(IDataLoader):
         )
 
     def _fit_annotations_to_recording(self, raw_data: BaseRaw, annotations: mne.Annotations) -> mne.Annotations | None:
+        """Generates annotation for signal file with missing annotations."""
         recording_duration_seconds = raw_data.times[-1]
         annotation_start = annotations.onset
         annotation_end = annotations.onset + annotations.duration
