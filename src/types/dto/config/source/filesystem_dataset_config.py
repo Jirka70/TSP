@@ -8,5 +8,5 @@ class FilesystemDatasetConfig(AStageConfig):
     path: str
     recursive: bool
     subject_ids: list[int] | None
-    session_ids: list[int] | None
+    global_events_tsv_path: str | None
 
