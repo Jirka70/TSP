@@ -3,7 +3,7 @@ defaults:
   - raw_preprocessing: testing
   - paradigm: testing
   - epoch_preprocessing: testing
-  - split: default
+  - split: basic
   - augmentation: torcheeg
   - model: eegnet
   - evaluation: default
