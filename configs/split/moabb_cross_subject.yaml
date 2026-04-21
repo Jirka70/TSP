@@ -1,0 +1,17 @@
+# MOABB Cross-subject splitting strategy.
+backend: moabb_cross_subject
+
+# Whether the cross-subject splitting strategy is enabled.
+enabled: true
+
+# Evaluator configuration for the MOABB cross-subject splitting strategy.
+evaluator:
+  # MOABB target splitter class.
+  _target_: moabb.evaluations.CrossSubjectSplitter
+  
+  # Random seed for reproducible splits.
+  random_state: 42
+  
+  # Scikit-learn cross-validation class to use internally.
+  cv_class: sklearn.model_selection.LeaveOneGroupOut
+

@@ -17,6 +17,7 @@ from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
 from src.types.dto.config.split_config import SplitConfig
+from src.types.dto.config.split_config import SplitConfig, SplitMoabbCrossSessionConfig, SplitMoabbCrossSubjectConfig, SplitMoabbWithinSessionConfig, SplitMoabbWithinSubjectConfig
 
 
 class Mode(str, Enum):
@@ -28,15 +29,14 @@ class Mode(str, Enum):
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
-    split: SplitConfig
     model: ModelConfig
     evaluation: EvaluationConfig
     save_artifacts: SaveArtifactsConfig
-
     # union enables multiple options which pydantic differentiates by looking at backend field
     # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
+    split: SplitConfig | SplitMoabbWithinSessionConfig | SplitMoabbWithinSubjectConfig | SplitMoabbCrossSessionConfig | SplitMoabbCrossSubjectConfig = Field(discriminator="backend")
     source: FilesystemDatasetConfig | ExternalDatasetConfig = Field(discriminator="backend")
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")

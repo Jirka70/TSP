@@ -10,6 +10,7 @@ class AugmentationConfigBasic(AStageConfig):
 
     backend: Literal["basic"]
     enabled: bool
+    random_seed: int
     copies_per_sample: int
     gaussian_noise_std: float
     max_time_shift: int
@@ -21,6 +22,7 @@ class AugmentationConfigTorchEEG(AStageConfig):
 
     backend: Literal["torcheeg"]
     enabled: bool
+    random_seed: int
     copies_per_sample: int
     gaussian_noise_std: float
     mask_prob: float

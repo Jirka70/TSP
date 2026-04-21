@@ -1,0 +1,22 @@
+# MOABB Within-subject splitting strategy.
+backend: moabb_within_subject
+
+# Whether the within-subject splitting strategy is enabled.
+enabled: true
+
+# Evaluator configuration for the MOABB within-subject splitting strategy.
+evaluator:
+  # MOABB target splitter class.
+  _target_: moabb.evaluations.WithinSubjectSplitter
+  
+  # Random seed for reproducible splits.
+  random_state: 42
+  
+  # Number of folds to create for cross-validation.
+  n_folds: 5
+  
+  # Whether to shuffle the subject data before splitting.
+  shuffle: true
+  
+  # Scikit-learn cross-validation class to use internally.
+  cv_class: sklearn.model_selection.StratifiedKFold

@@ -11,7 +11,8 @@ from src.impl.evaluator.dummy_evaluator import DummyEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
-from src.impl.split.dummy_splitter import DummySplitter
+from src.impl.split.basic_splitter import BasicSplitter
+from src.impl.split.moabb_splitter import MoabbSplitter
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
@@ -45,7 +46,13 @@ class StageFactory:
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
-        StageType.SPLIT: {"default": DummySplitter},
+        StageType.SPLIT: {
+            "basic": BasicSplitter,
+            "moabb_within_session": MoabbSplitter,
+            "moabb_within_subject": MoabbSplitter,
+            "moabb_cross_subject": MoabbSplitter,
+            "moabb_cross_session": MoabbSplitter,
+        },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
             "torcheeg": DummyAugmentor,
