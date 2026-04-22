@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class SklearnEvaluator(IEvaluator):
     def run(self, input_dto: EvaluationInputDTO, run_ctx: RunContext) -> StepResult[EvaluationResultDTO]:
         if not input_dto.trained_models:
-            raise ValueError("EvaluationInputDTO neobsahuje zadny model.")
+            raise ValueError("EvaluationInputDTO does not include any model.")
 
         model = input_dto.trained_models[0].model
         model_name = input_dto.trained_models[0].model_name
@@ -35,7 +35,7 @@ class SklearnEvaluator(IEvaluator):
                         y_list.append(np.array(recording.metadata.get("labels", [])))
 
         if not x_list:
-            raise ValueError("Zadna testovaci data nebyla nalezena v foldech.")
+            raise ValueError("None of the testing data found in folds.")
 
         x_test = np.concatenate(x_list, axis=0)
         y_true = np.concatenate(y_list, axis=0)
@@ -46,7 +46,7 @@ class SklearnEvaluator(IEvaluator):
         f1 = f1_score(y_true, y_pred, average="weighted")
         cm = confusion_matrix(y_true, y_pred).tolist()
 
-        log.info(f"Evaluace [{model_name}] -> Accuracy: {acc:.4f}, F1: {f1:.4f}")
+        log.info(f"Evaluation [{model_name}] -> Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
         self._visualize_results(y_true, y_pred, cm, model_name)
 
@@ -55,31 +55,29 @@ class SklearnEvaluator(IEvaluator):
         return StepResult(EvaluationResultDTO(metrics=metrics, confusion_matrix=cm))
 
     def _visualize_results(self, y_true, y_pred, cm, model_name):
-        """Vytvoří jednoduchý dashboard s výsledky."""
+        """Create a simple dashboard with results."""
         plt.figure(figsize=(12, 5))
 
-        # 1. Confusion Matrix Heatmap
         plt.subplot(1, 2, 1)
         sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False)
         plt.title(f"Confusion Matrix: {model_name}")
-        plt.xlabel("Predikovaná třída")
-        plt.ylabel("Skutečná třída")
+        plt.xlabel("Predicted class")
+        plt.ylabel("Actual class")
 
-        # 2. Porovnání distribuce (Realita vs Predikce)
         plt.subplot(1, 2, 2)
         classes, counts_true = np.unique(y_true, return_counts=True)
         _, counts_pred = np.unique(y_pred, return_counts=True)
 
         x = np.arange(len(classes))
         width = 0.35
-        plt.bar(x - width / 2, counts_true, width, label="Skutečnost", color="gray", alpha=0.6)
-        plt.bar(x + width / 2, counts_pred, width, label="Predikce", color="skyblue")
+        plt.bar(x - width / 2, counts_true, width, label="Reality", color="gray", alpha=0.6)
+        plt.bar(x + width / 2, counts_pred, width, label="Predicted", color="skyblue")
 
-        plt.title("Distribuce tříd")
-        plt.xlabel("Třída")
-        plt.ylabel("Počet vzorků")
+        plt.title("Class distribution")
+        plt.xlabel("Class")
+        plt.ylabel("Number of samples")
         plt.xticks(x, classes)
         plt.legend()
 
         plt.tight_layout()
-        plt.show()  # Nebo plt.savefig(f"eval_{model_name}.png")
+        plt.show()
