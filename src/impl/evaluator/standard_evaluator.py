@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -43,12 +42,15 @@ class StandardEvaluator(IEvaluator):
             raise ValueError("EvaluationInputDTO does not include any model.")
 
         fold_results: list[FoldEvaluationResultDTO] = []
+        # variable for all true labels across folds
         all_y_true = []
+        # variable for all predictions
         all_y_pred = []
+        # variable for all probabilities (if available)
         all_probs = []
 
         # Determine which metrics to compute
-        requested_metrics = input_dto.config.metrics or ["accuracy", "f1_weighted"]
+        requested_metrics = input_dto.config.metrics
 
         for model_dto in input_dto.trained_models:
             # Determine which folds to evaluate this model on
@@ -61,7 +63,7 @@ class StandardEvaluator(IEvaluator):
                 if not fold.test_data or not fold.test_data.data:
                     continue
 
-                x_test, y_true = self._extract_data(fold)
+                x_test, y_true = self.extract_data(fold)
 
                 # Predict
                 y_pred = model_dto.model.predict(x_test)
@@ -116,13 +118,13 @@ class StandardEvaluator(IEvaluator):
         overall_cm = confusion_matrix(all_y_true, all_y_pred).tolist()
 
         # Visualization
-        self._visualize_results(all_y_true, all_y_pred, overall_cm, input_dto.trained_models[0].model_name if len(input_dto.trained_models) == 1 else "Combined Models", aggregate_metrics)
+        self.visualize_results(np.array(all_y_true), np.array(all_y_pred), overall_cm, input_dto.trained_models[0].model_name if len(input_dto.trained_models) == 1 else "Combined Models", aggregate_metrics)
 
         result = EvaluationResultDTO(metrics=aggregate_metrics, fold_results=fold_results, predictions=all_y_pred, targets=all_y_true, probabilities=all_probs if all_probs else None, confusion_matrix=overall_cm)
 
         return StepResult(result)
 
-    def _visualize_results(self, y_true: np.ndarray, y_pred: np.ndarray, cm: list[list[int]], model_name: str, metrics: dict[str, float]) -> None:
+    def visualize_results(self, y_true: np.ndarray, y_pred: np.ndarray, cm: list[list[int]], model_name: str, metrics: dict[str, float]) -> None:
         """Creates a simple dashboard with results and saves it to the run directory.
 
         Args:
@@ -177,13 +179,8 @@ class StandardEvaluator(IEvaluator):
 
         plt.tight_layout()
 
-        # Save the plot
-        # Try to get the output directory from Hydra, otherwise fall back to current working directory
-        try:
-            output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
-        except (ValueError, KeyError, RuntimeError):
-            # Fallback if not running through Hydra
-            output_dir = Path(os.getcwd()).absolute()
+        # Save the plot to output directory from Hydra
+        output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
 
         plots_dir = output_dir / "plots"
         plots_dir.mkdir(parents=True, exist_ok=True)
@@ -194,9 +191,10 @@ class StandardEvaluator(IEvaluator):
         plt.savefig(str(save_path))
         log.info(f"Evaluation plot saved to: {save_path}")
 
-        plt.close()  # Important to free memory
+        plt.show()
+        plt.close()
 
-    def _extract_data(self, fold: FoldDTO) -> tuple[np.ndarray, np.ndarray]:
+    def extract_data(self, fold: FoldDTO) -> tuple[np.ndarray, np.ndarray]:
         """Extracts X and y from FoldDTO.
 
         Args:
