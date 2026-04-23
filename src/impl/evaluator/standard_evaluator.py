@@ -1,10 +1,6 @@
 import logging
-from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-from hydra.core.hydra_config import HydraConfig
 from sklearn.metrics import confusion_matrix, get_scorer
 
 from src.pipeline.context.run_context import RunContext
@@ -42,15 +38,12 @@ class StandardEvaluator(IEvaluator):
             raise ValueError("EvaluationInputDTO does not include any model.")
 
         fold_results: list[FoldEvaluationResultDTO] = []
-        # variable for all true labels across folds
         all_y_true = []
-        # variable for all predictions
         all_y_pred = []
-        # variable for all probabilities (if available)
         all_probs = []
 
         # Determine which metrics to compute
-        requested_metrics = input_dto.config.metrics
+        requested_metrics = input_dto.config.metrics or ["accuracy", "f1_weighted"]
 
         for model_dto in input_dto.trained_models:
             # Determine which folds to evaluate this model on
@@ -63,7 +56,7 @@ class StandardEvaluator(IEvaluator):
                 if not fold.test_data or not fold.test_data.data:
                     continue
 
-                x_test, y_true = self.extract_data(fold)
+                x_test, y_true = self._extract_data(fold)
 
                 # Predict
                 y_pred = model_dto.model.predict(x_test)
@@ -78,15 +71,10 @@ class StandardEvaluator(IEvaluator):
                 # Compute metrics for this fold
                 fold_metrics = {}
                 for m_name in requested_metrics:
-                    # Note: Using private _score_func and _kwargs from Scorer objects
-                    # to calculate metrics directly from y_true and y_pred.
-                    # The metric name is already validated by EvaluationConfig.
                     scorer = get_scorer(m_name)
                     if hasattr(scorer, "_score_func"):
                         fold_metrics[m_name] = float(scorer._score_func(y_true, y_pred, **scorer._kwargs))
                     else:
-                        # Fallback for some custom scorers that might not have _score_func
-                        # In this project, most will be standard classification metrics.
                         log.warning(f"Could not calculate metric '{m_name}' directly from labels.")
 
                 fold_res = FoldEvaluationResultDTO(
@@ -117,84 +105,18 @@ class StandardEvaluator(IEvaluator):
 
         overall_cm = confusion_matrix(all_y_true, all_y_pred).tolist()
 
-        # Visualization
-        self.visualize_results(np.array(all_y_true), np.array(all_y_pred), overall_cm, input_dto.trained_models[0].model_name if len(input_dto.trained_models) == 1 else "Combined Models", aggregate_metrics)
-
-        result = EvaluationResultDTO(metrics=aggregate_metrics, fold_results=fold_results, predictions=all_y_pred, targets=all_y_true, probabilities=all_probs if all_probs else None, confusion_matrix=overall_cm)
+        result = EvaluationResultDTO(
+            metrics=aggregate_metrics,
+            fold_results=fold_results,
+            predictions=all_y_pred,
+            targets=all_y_true,
+            probabilities=all_probs if all_probs else None,
+            confusion_matrix=overall_cm
+        )
 
         return StepResult(result)
 
-    def visualize_results(self, y_true: np.ndarray, y_pred: np.ndarray, cm: list[list[int]], model_name: str, metrics: dict[str, float]) -> None:
-        """Creates a simple dashboard with results and saves it to the run directory.
-
-        Args:
-            y_true (np.ndarray): Ground truth labels.
-            y_pred (np.ndarray): Predicted labels.
-            cm (list[list[int]]): Confusion matrix.
-            model_name (str): Name of the model for titles and filenames.
-            metrics (dict[str, float]): Dictionary of aggregate metrics.
-        """
-        plt.figure(figsize=(15, 6))
-
-        # 1. Confusion Matrix
-        plt.subplot(1, 3, 1)
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False)
-        plt.title(f"Confusion Matrix: {model_name}")
-        plt.xlabel("Predicted class")
-        plt.ylabel("Actual class")
-
-        # 2. Class distribution (Reality vs Predicted)
-        plt.subplot(1, 3, 2)
-        classes, counts_true = np.unique(y_true, return_counts=True)
-        # Handle cases where some classes might not be predicted
-        pred_unique, pred_counts = np.unique(y_pred, return_counts=True)
-        pred_counts_dict = dict(zip(pred_unique, pred_counts, strict=True))
-        counts_pred = [pred_counts_dict.get(cls, 0) for cls in classes]
-
-        x = np.arange(len(classes))
-        width = 0.35
-        plt.bar(x - width / 2, counts_true, width, label="Reality", color="gray", alpha=0.6)
-        plt.bar(x + width / 2, counts_pred, width, label="Predicted", color="skyblue")
-
-        plt.title("Class distribution")
-        plt.xlabel("Class")
-        plt.ylabel("Number of samples")
-        plt.xticks(x, classes)
-        plt.legend()
-
-        # 3. Metrics Summary
-        plt.subplot(1, 3, 3)
-        m_names = list(metrics.keys())
-        m_values = [metrics[name] for name in m_names]
-
-        bars = plt.barh(m_names, m_values, color="salmon")
-        plt.xlim(0, 1.1)
-        plt.title("Aggregate Metrics")
-        plt.xlabel("Value")
-
-        # Add values to the bars
-        for bar in bars:
-            width = bar.get_width()
-            plt.text(width + 0.02, bar.get_y() + bar.get_height() / 2, f"{width:.4f}", va="center", fontweight="bold")
-
-        plt.tight_layout()
-
-        # Save the plot to output directory from Hydra
-        output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
-
-        plots_dir = output_dir / "plots"
-        plots_dir.mkdir(parents=True, exist_ok=True)
-
-        filename = f"evaluation_{model_name.lower().replace(' ', '_')}.png"
-        save_path = plots_dir / filename
-
-        plt.savefig(str(save_path))
-        log.info(f"Evaluation plot saved to: {save_path}")
-
-        plt.show()
-        plt.close()
-
-    def extract_data(self, fold: FoldDTO) -> tuple[np.ndarray, np.ndarray]:
+    def _extract_data(self, fold: FoldDTO) -> tuple[np.ndarray, np.ndarray]:
         """Extracts X and y from FoldDTO.
 
         Args:

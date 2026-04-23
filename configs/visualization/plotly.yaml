@@ -1,9 +1,9 @@
-backend: matplotlib
+backend: plotly
 visualize_raw: True
 visualize_epochs: True
 visualize_augmentation: True
 visualize_evaluation: True
-width: 1500
-height: 800
 save_plots: True
-show_plots: True
+show_plots: False
+width: 1200
+height: 800
