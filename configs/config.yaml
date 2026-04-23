@@ -8,7 +8,7 @@ defaults:
   - model: machine_learning/csp_lda
   - metrics_aggregator: default
   - final_trainer: default
-  - evaluation: sklearn
+  - evaluation: default
   - visualization: matplotlib
   - dataset: eegbci
   - save_artifacts: default
