@@ -6,5 +6,7 @@ from src.types.dto.split.dataset_split_dto import FoldDTO
 
 @dataclass(frozen=True)
 class FinalTrainingInputDTO:
+    """Input data for the final training stage."""
+
     config: ModelConfig | SklearnModelConfig
     folds: list[FoldDTO]

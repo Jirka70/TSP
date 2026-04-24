@@ -101,7 +101,7 @@ class ParadigmPreprocessor(IParadigm):
                     log.info(f"Resampling epochs at index {i} to {cfg.resample} Hz")
                     epochs.resample(cfg.resample)
 
-                # 5. Reconstruct the entry (zbytek tvého kódu)
+                # 5. Reconstruct the entry.
                 # ...
                 # We replace the 'raw' object (Raw) with the new 'epochs' object (Epochs)
                 # Ensure your output DTO structure or wrapper can handle MNE.Epochs

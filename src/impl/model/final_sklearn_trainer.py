@@ -18,11 +18,14 @@ log = logging.getLogger(__name__)
 
 
 class FinalSklearnTrainer(IFinalTrainer):
+    """Train a Scikit-learn model on all available folds for final export."""
+
     def run(self, input_dto: FinalTrainingInputDTO, run_ctx: RunContext) -> StepResult[FinalTrainingResultDTO]:
+        """Fit the configured model on every available test fold and wrap the result."""
         method_id = input_dto.config.model_name
         params = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
-        log.info(f"Finalni trenink: {method_id} (Run: {run_ctx.run_id})")
+        log.info(f"Final training: {method_id} (Run: {run_ctx.run_id})")
 
         x_all, y_all = self._collect_all_data(input_dto)
 
@@ -46,11 +49,12 @@ class FinalSklearnTrainer(IFinalTrainer):
             fold_idx=None,
         )
 
-        log.info(f"Finalni model natrénovan: accuracy={train_acc:.4f} na {len(y_all)} vzorcich")
+        log.info(f"Final model trained: accuracy={train_acc:.4f} on {len(y_all)} samples")
 
         return StepResult(FinalTrainingResultDTO(trained_model=trained_model))
 
     def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> tuple[np.ndarray, np.ndarray]:
+        """Collect training samples and labels from all test folds."""
         x_list, y_list = [], []
         for fold in input_dto.folds:
             if fold.test_data:
@@ -60,6 +64,7 @@ class FinalSklearnTrainer(IFinalTrainer):
         return np.concatenate(x_list, axis=0), np.concatenate(y_list, axis=0)
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
+        """Extract features and labels from preprocessed epoch recordings."""
         x_list, y_list = [], []
         for recording in data_dto.data:
             epochs = recording.data

@@ -18,11 +18,14 @@ log = logging.getLogger(__name__)
 
 
 class GenericSklearnTrainer(IModelTrainer):
-    """
-    A universal orchestrator for training Scikit-learn-based BCI classification pipelines.
-    """
+    """Train Scikit-learn-based BCI pipelines across all configured folds."""
 
     def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainingResultDTO]:
+        """Train the configured model for each fold and return the collected results."""
+        if not input_dto.config.fold_training:
+            log.info("Fold training is disabled. Skipping fold training stage.")
+            return StepResult(TrainingResultDTO(trained_models=[]))
+
         method_id = input_dto.config.model_name
         params = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
@@ -31,20 +34,16 @@ class GenericSklearnTrainer(IModelTrainer):
         log.info(f"Number of folds: {len(input_dto.folds)}")
         trained_models: list[TrainedModelDTO] = []
         for fold in input_dto.folds:
-            # Pipeline and model creation
             pipeline = ModelFactory.create(method_id, params)
             model = GenericSklearnModel(pipeline, method_id)
 
-            # Data set-up (extrahujeme X i y najednou ze všech nahrávek ve foldu)
+            # Extract X and y from all recordings in the fold.
             x_train, y_train = self._extract_data_and_labels(fold.train_data)
 
-            # Fitting
             model.fit(x_train, y_train)
 
-            # Metrics (train)
             train_acc = float(accuracy_score(y_train, model.predict(x_train)))
 
-            # Validation (Optional)
             val_metrics = {}
             val_loss = []
             if fold.validation_data:
@@ -54,7 +53,6 @@ class GenericSklearnTrainer(IModelTrainer):
                 val_metrics = {"accuracy": [val_acc]}
                 val_loss = [1.0 - val_acc]
 
-            # Result creation
             history = TrainingHistory(train_loss=[1.0 - train_acc], validation_loss=val_loss, train_metrics={"accuracy": [train_acc]}, validation_metrics=val_metrics)
 
             trained_models.append(
@@ -70,53 +68,48 @@ class GenericSklearnTrainer(IModelTrainer):
             )
 
         for train_model in trained_models:
-            print(train_model.model_name, train_model.history.train_metrics["accuracy"], train_model.history.validation_metrics.get("accuracy", []))
+            log.info(
+                "Trained model %s: train accuracy=%s, validation accuracy=%s",
+                train_model.model_name,
+                train_model.history.train_metrics["accuracy"],
+                train_model.history.validation_metrics.get("accuracy", []),
+            )
 
         return StepResult(TrainingResultDTO(trained_models=trained_models))
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
-        Iterates over all recordings in the DTO, extracts the signal arrays and labels from MNE Epochs, and concatenates them into a single training set for the fold.
+        Extract signal arrays and labels from MNE Epochs and concatenate them into one training set.
 
         Args:
-            data_dto (EpochPreprocessedDTO): The input data container with a list of recordings.
+            data_dto (EpochPreprocessedDTO): Input data container with a list of recordings.
 
         Returns:
-            tuple[np.ndarray, np.ndarray]: (X, y) where X is the feature array and y are the labels.
+            tuple[np.ndarray, np.ndarray]: A tuple containing the feature array and labels.
 
         Raises:
-            ValueError: If the concatenated array dimensions do not match the 2D or 3D requirements.
+            ValueError: If the concatenated feature array does not have a supported shape.
         """
         x_list = []
         y_list = []
 
-        # Iterujeme přes pole RecordingDTO
         for recording in data_dto.data:
-            epochs = recording.data  # Zde očekáváme objekt mne.Epochs
+            epochs = recording.data
 
-            # Bezpečné získání dat z MNE objektu
             if hasattr(epochs, "get_data"):
-                # MNE 1.0+ používá copy=False pro ušetření paměti
                 x_list.append(epochs.get_data(copy=False))
 
-                # Labely jsou ve třetím sloupci events matice
                 y_list.append(epochs.events[:, -1])
             else:
-                # Fallback, pokud by data uvnitř už byla numpy matice
-                # V takovém případě musíš specifikovat, odkud brát labely (např. z metadata)
                 x_list.append(epochs)
                 y_list.append(np.array(recording.metadata.get("labels", [])))
 
-        # Konkatenace listů do jedné velké matice podél osy epoch (axis=0)
         x_merged = np.concatenate(x_list, axis=0)
         y_merged = np.concatenate(y_list, axis=0)
 
-        # Dimension check
         if x_merged.ndim == 3:
-            # Standard EEG epochs (n_epochs, n_channels, n_times)
             pass
         elif x_merged.ndim == 2:
-            # Already extracted (n_epochs, n_features)
             log.info(f"Training on already extracted signals: {x_merged.shape}")
         else:
             raise ValueError(f"2D (epochs, features) or 3D (epochs, channels, times) expected, but got: {x_merged.shape}")

@@ -93,9 +93,8 @@ class TrainingPipeline(IPipeline):
         training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        # MetricsAggregator a FinalTrainer
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
-        # TODO: Budeme asi chtit vracet step_result pro jistotu
+        # Not using step result because it does not return anything (just log and future visualization)
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
         final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds)

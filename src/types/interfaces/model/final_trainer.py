@@ -7,6 +7,9 @@ from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 
 
 class IFinalTrainer(ABC):
+    """Contract for final-stage trainers that fit on all available folds."""
+
     @abstractmethod
     def run(self, input_dto: FinalTrainingInputDTO, run_ctx: RunContext) -> StepResult[FinalTrainingResultDTO]:
+        """Train a final model using all available data and return the result."""
         raise NotImplementedError
