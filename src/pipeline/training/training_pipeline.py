@@ -90,7 +90,7 @@ class TrainingPipeline(IPipeline):
         if not folds:
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
-        training_input = TrainingInputDTO(config=config.model, folds=folds)
+        training_input = TrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
         # MetricsAggregator a FinalTrainer
@@ -98,7 +98,7 @@ class TrainingPipeline(IPipeline):
         # TODO: Budeme asi chtit vracet step_result pro jistotu
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
-        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds)
+        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 
         evaluation_input = EvaluationInputDTO(

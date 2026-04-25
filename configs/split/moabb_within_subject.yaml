@@ -4,6 +4,10 @@ backend: moabb_within_subject
 # Whether the within-subject splitting strategy is enabled.
 enabled: true
 
+# Global validation settings
+pre_split_validation: true
+validation_ratio: 0.2
+
 # Evaluator configuration for the MOABB within-subject splitting strategy.
 evaluator:
   # MOABB target splitter class.
@@ -13,7 +17,7 @@ evaluator:
   random_state: 42
   
   # Number of folds to create for cross-validation.
-  n_folds: 5
+  n_folds: 2
   
   # Whether to shuffle the subject data before splitting.
   shuffle: true

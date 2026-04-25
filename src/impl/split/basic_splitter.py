@@ -25,7 +25,7 @@ class BasicSplitter(ISplitter):
     containing a single fold (Fold 0).
     """
 
-    def _extract_data(self, recordings: list) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    def extract_data(self, recordings: list) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
         """
         Helper method to extract and aggregate signals, labels, and metadata from RecordingDTOs.
 
@@ -101,15 +101,14 @@ class BasicSplitter(ISplitter):
             single_fold = FoldDTO(
                 fold_idx=0,
                 train_data=input_dto.data,
-                validation_data=None,
                 test_data=None,
             )
-            return StepResult(DatasetSplitDTO(folds=[single_fold]))
+            return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
 
         log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})")
 
         # Aggregate data from all input recordings
-        signal, labels, metadata = self._extract_data(recordings)
+        signal, labels, metadata = self.extract_data(recordings)
 
         n_samples = len(labels)
         indices = np.arange(n_samples)
@@ -149,8 +148,8 @@ class BasicSplitter(ISplitter):
         single_fold = FoldDTO(
             fold_idx=0,
             train_data=train_dto,
-            validation_data=val_dto,
             test_data=test_dto,
         )
 
-        return StepResult(DatasetSplitDTO(folds=[single_fold]))
+        # val_dto is now in global validation_data
+        return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=val_dto))

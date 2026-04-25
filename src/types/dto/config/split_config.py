@@ -1,13 +1,13 @@
 """Configuration DTOs for data splitting strategies."""
 
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, Field
 
 from src.types.dto.config.astageconfig import AStageConfig
 
 
-class SplitConfig(AStageConfig):
+class SplitBasicConfig(AStageConfig):
     """
     Configuration for the basic percentage-based splitting strategy.
 
@@ -102,41 +102,60 @@ class MoabbCrossSessionSplit(BaseModel):
     shuffle: bool = True
 
 
-class SplitMoabbWithinSessionConfig(AStageConfig):
+class MoabbSplitConfig(AStageConfig):
+    """
+    Base configuration for MOABB-based splitting strategies.
+
+    Attributes:
+        enabled: Whether this splitting strategy is enabled.
+        pre_split_validation: Whether to extract validation data before MOABB splitting (based on subjects).
+        validation_ratio: Fraction of data (subjects or samples) to use for validation.
+    """
+    enabled: bool
+    pre_split_validation: bool = False
+    validation_ratio: float = 0.0
+
+
+class SplitMoabbWithinSessionConfig(MoabbSplitConfig):
     """
     Full stage configuration for MOABB Within-Session splitting.
     """
 
     backend: Literal["moabb_within_session"]
-    enabled: bool
     evaluator: MoabbWithinSessionSplit
 
 
-class SplitMoabbWithinSubjectConfig(AStageConfig):
+class SplitMoabbWithinSubjectConfig(MoabbSplitConfig):
     """
     Full stage configuration for MOABB Within-Subject splitting.
     """
 
     backend: Literal["moabb_within_subject"]
-    enabled: bool
     evaluator: MoabbWithinSubjectSplit
 
 
-class SplitMoabbCrossSubjectConfig(AStageConfig):
+class SplitMoabbCrossSubjectConfig(MoabbSplitConfig):
     """
     Full stage configuration for MOABB Cross-Subject splitting.
     """
 
     backend: Literal["moabb_cross_subject"]
-    enabled: bool
     evaluator: MoabbCrossSubjectSplit
 
 
-class SplitMoabbCrossSessionConfig(AStageConfig):
+class SplitMoabbCrossSessionConfig(MoabbSplitConfig):
     """
     Full stage configuration for MOABB Cross-Session splitting.
     """
 
     backend: Literal["moabb_cross_session"]
-    enabled: bool
     evaluator: MoabbCrossSessionSplit
+
+
+SplitConfig = Union[
+    SplitBasicConfig,
+    SplitMoabbWithinSessionConfig,
+    SplitMoabbWithinSubjectConfig,
+    SplitMoabbCrossSubjectConfig,
+    SplitMoabbCrossSessionConfig,
+]

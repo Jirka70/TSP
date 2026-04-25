@@ -4,6 +4,10 @@ backend: moabb_cross_subject
 # Whether the cross-subject splitting strategy is enabled.
 enabled: true
 
+# Global validation settings
+pre_split_validation: true
+validation_ratio: 0.0
+
 # Evaluator configuration for the MOABB cross-subject splitting strategy.
 evaluator:
   # MOABB target splitter class.

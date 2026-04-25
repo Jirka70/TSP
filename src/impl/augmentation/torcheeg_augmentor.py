@@ -123,11 +123,11 @@ class TorchEEGAugmentor(IAugmentor):
             augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, torcheeg_transform=torcheeg_transform, copies_per_sample=config.copies_per_sample)
 
             # Reconstruct the fold with the newly augmented training data
-            new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, validation_data=fold.validation_data, test_data=fold.test_data)
+            new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
         # 5. Wrap results in StepResult and return
-        return StepResult(DatasetSplitDTO(folds=augmented_folds))
+        return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
 
     def _build_transforms(self, config: AugmentationConfigTorchEEG) -> transforms.Compose | None:
         """
