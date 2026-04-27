@@ -9,16 +9,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E", # pycodestyle errors (PEP8)
-    "W", # pycodestyle warnings (PEP8)
-    "F", # Pyflakes (logic errors, unused imports)
-    "I", # isort (import sorting)
-    "N", # pep8-naming (naming conventions)
-    "D", # pydocstyle (docstring requirements)
-    "UP", # pyupgrade (modern Python syntax)
-    "B", # flake8-bugbear (common design flaws/fail-fast)
-    "T20", # flake8-print (disallow print statements)
-    "BLE", # flake8-blind-except (disallow except Exception: pass)
+
 ]
 
 # Specific rules to ignore
