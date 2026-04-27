@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Any
 
-from mne.io import read_raw
-from mne.io import BaseRaw
+from mne.io import BaseRaw, read_raw
 
 from src.impl.data_loader.error.dataset_loading_error import DatasetLoadingError
+
 
 
 class MneRawReader:

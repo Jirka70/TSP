@@ -72,7 +72,7 @@ class TorchEEGAugmentor(IAugmentor):
         Returns:
             StepResult containing the DatasetSplitDTO with augmented training sets.
         """
-        config: AugmentationConfigTorchEEG = input_dto.augmentationConfig
+        config: AugmentationConfigTorchEEG = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
         # 1. Check if augmentation is enabled

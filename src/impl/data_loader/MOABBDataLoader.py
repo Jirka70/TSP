@@ -21,7 +21,7 @@ class MOABBDataLoader(IDataLoader):
         try:
             data_class = getattr(moabb_datasets, name)
             return data_class()
-        except AttributeError:
+        except AttributeError as err:
             raise ValueError(f"Dataset {name} was not found")
 
     @staticmethod
@@ -69,7 +69,7 @@ class MOABBDataLoader(IDataLoader):
         try:
             paradigm_class = getattr(moabb_paradigms, name)
             return paradigm_class()
-        except AttributeError:
+        except AttributeError as err:
             raise ValueError(f"Paradigm {name} was not found")
 
     def run(self, config: ExternalDatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:

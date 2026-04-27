@@ -16,7 +16,6 @@ from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
-from src.types.dto.config.split_config import SplitConfig
 from src.types.dto.config.split_config import SplitConfig, SplitMoabbCrossSessionConfig, SplitMoabbCrossSubjectConfig, SplitMoabbWithinSessionConfig, SplitMoabbWithinSubjectConfig
 
 

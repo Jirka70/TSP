@@ -21,7 +21,7 @@ class BasicAugmentor(IAugmentor):
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """Iterates over folds, applies basic augmentation to train_data, and returns updated folds."""
-        config: AugmentationConfigBasic = input_dto.augmentationConfig
+        config: AugmentationConfigBasic = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
         # 1. Check if augmentation is enabled
@@ -90,7 +90,7 @@ class BasicAugmentor(IAugmentor):
             augmented_labels_list = [labels]
 
             # Main augmentation loop
-            for i in range(config.copies_per_sample):
+            for _ in range(config.copies_per_sample):
                 x_aug = np.copy(x)
 
                 # Add Gaussian noise
