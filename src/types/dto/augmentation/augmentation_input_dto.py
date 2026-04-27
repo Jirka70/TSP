@@ -10,9 +10,9 @@ class AugmentationInputDTO:
     Input data for the augmentation stage of the pipeline.
 
     Attributes:
-        augmentationConfig: The configuration for the augmentation backend (Basic or TorchEEG).
+        augmentation_config: The configuration for the augmentation backend (Basic or TorchEEG).
         data: The dataset splits (folds) to be augmented.
     """
 
-    augmentationConfig: AugmentationConfigBasic | AugmentationConfigTorchEEG
+    augmentation_config: AugmentationConfigBasic | AugmentationConfigTorchEEG
     data: DatasetSplitDTO

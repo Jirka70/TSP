@@ -1,8 +1,10 @@
 backend: testing
 
 events:
-  - left_hand
-  - right_hand
+  # - left_hand
+  # - right_hand
+  - "1"
+  - "2"
 
 fmin: 8.0
 fmax: 35.0

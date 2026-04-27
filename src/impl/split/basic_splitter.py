@@ -106,7 +106,7 @@ class BasicSplitter(ISplitter):
             return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
 
         log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})")
-
+    
         # Aggregate data from all input recordings
         signal, labels, metadata = self.extract_data(recordings)
 

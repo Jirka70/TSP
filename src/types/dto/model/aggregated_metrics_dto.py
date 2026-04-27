@@ -3,16 +3,14 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class AggregatedMetricsDTO:
-    """
-    Data Transfer Object obsahující agregované statistiky z křížové validace.
-    """
+    """Data transfer object holding aggregated cross-validation metrics."""
 
     model_name: str
     metric_name: str
 
-    # Agregované statistiky
+    # Aggregated statistics.
     mean: float
     std: float
 
-    # Detailní výsledky jednotlivých foldů pro případnou vizualizaci/boxplot
+    # Per-fold results for visualization or box plots.
     fold_results: dict[int, float] = field(default_factory=dict)

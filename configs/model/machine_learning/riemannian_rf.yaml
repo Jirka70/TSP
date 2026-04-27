@@ -1,3 +1,6 @@
+# Configuration for a fold trainer (many small models trained on different folds)
+fold_training: false
+
 # Unique identifier used by the ModelFactory to instantiate the specific pipeline
 model_name: "riemannian_rf"
 

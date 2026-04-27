@@ -51,6 +51,18 @@ class ParadigmPreprocessor(IParadigm):
         cfg: ParadigmConfig = input_dto.paradigm_preprocessing_config
         processed_items = []
 
+        def normalize_event_name(value: object) -> str:
+            return str(value).strip().lower().replace(" ", "_")
+
+        if cfg.events is None:
+            configured_events = []
+        elif isinstance(cfg.events, str):
+            configured_events = [cfg.events]
+        else:
+            configured_events = list(cfg.events)
+
+        configured_events_normalized = {normalize_event_name(name) for name in configured_events}
+
         try:
             # We iterate through all data entries (runs)
             for i, entry in enumerate(input_dto.data.data):
@@ -69,10 +81,19 @@ class ParadigmPreprocessor(IParadigm):
                 events, event_id = mne.events_from_annotations(raw)
 
                 # Filter event_id to include only requested events from config
-                event_id_filtered = {k: v for k, v in event_id.items() if k in cfg.events}
+                event_id_filtered = {
+                    k: v
+                    for k, v in event_id.items()
+                    if normalize_event_name(k) in configured_events_normalized
+                    or str(v) in configured_events_normalized
+                }
+
 
                 if not event_id_filtered:
-                    log.warning(f"No matching events found for index {i}. Skipping epoching.")
+                    log.warning(
+                        f"No matching events found for index {i}. "
+                        f"available={list(event_id.keys())}, configured={configured_events}"
+                    )
                     continue
 
                 # 3. Epoching (Segmentation)
@@ -101,7 +122,7 @@ class ParadigmPreprocessor(IParadigm):
                     log.info(f"Resampling epochs at index {i} to {cfg.resample} Hz")
                     epochs.resample(cfg.resample)
 
-                # 5. Reconstruct the entry (zbytek tvého kódu)
+                # 5. Reconstruct the entry.
                 # ...
                 # We replace the 'raw' object (Raw) with the new 'epochs' object (Epochs)
                 # Ensure your output DTO structure or wrapper can handle MNE.Epochs

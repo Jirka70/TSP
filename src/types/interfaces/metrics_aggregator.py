@@ -6,6 +6,9 @@ from src.types.dto.model.training_result_dto import TrainingResultDTO
 
 
 class IMetricsAggregator(ABC):
+    """Contract for aggregating metrics across trained folds."""
+
     @abstractmethod
-    def run(self, result_dto: TrainingResultDTO, run_ctx: RunContext) -> AggregatedMetricsDTO:
+    def run(self, result_dto: TrainingResultDTO, run_ctx: RunContext) -> AggregatedMetricsDTO | None:
+        """Aggregate the provided training results into summary metrics."""
         raise NotImplementedError

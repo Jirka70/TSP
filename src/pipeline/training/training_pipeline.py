@@ -69,7 +69,7 @@ class TrainingPipeline(IPipeline):
         self._model_serializer = model_serializer
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
-        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.dataset, run_ctx)
+        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
 
         raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
@@ -93,9 +93,8 @@ class TrainingPipeline(IPipeline):
         training_input = TrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        # MetricsAggregator a FinalTrainer
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
-        # TODO: Budeme asi chtit vracet step_result pro jistotu
+        # Not using step result because it does not return anything (just log and future visualization)
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
         final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
