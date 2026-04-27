@@ -11,3 +11,7 @@ on:
 jobs:
   test-build:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Print Test Message
+        run: echo "Ahoj světe"
