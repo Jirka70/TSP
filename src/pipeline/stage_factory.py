@@ -4,11 +4,10 @@ from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
-#from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
+
+# from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from src.impl.evaluator.dummy_evaluator import DummyEvaluator
-from src.impl.evaluator.sklearn_evaluator import SklearnEvaluator
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
@@ -35,7 +34,6 @@ from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
 
 
-
 class StageType(Enum):
     DATA_LOADER = "data_loader"
     RAW_PREPROCESSING = "raw_preprocessing"
@@ -53,9 +51,7 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {
-            "external": MOABBDataLoader,
-            "filesystem": FilesystemDatasetLoader },
+        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
@@ -79,7 +75,6 @@ class StageFactory:
         StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer},
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
-            "sklearn": SklearnEvaluator,
         },
         StageType.SAVER: {"default": ArtifactSaver},
         StageType.MODEL_SERIALIZER: {
