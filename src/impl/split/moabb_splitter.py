@@ -166,12 +166,14 @@ class MoabbSplitter(ISplitter):
                         data=x[val_indices],
                         dataset_name=recordings[0].dataset_name if recordings else "unknown",
                         subject_id="validation_global",
+                        # todo session_id by subject -> možná to bude potřeba někde dále, tak proč z toho dělat combined
                         session_id="combined",
                         run_id="combined",
                         metadata={"labels": y[val_indices]},
                     )
                     validation_data_global = EpochPreprocessedDTO(data=[val_rec])
             else:
+                # todo spis hodit exception -> nedostatek subjektů pro validaci
                 log.warning("Subject-based validation requested but not enough subjects found.")
 
         # Subset data for MOABB splitter
@@ -232,6 +234,7 @@ class MoabbSplitter(ISplitter):
                     validation_data_global = val_dto
 
         except Exception as e:
+            # todo tady prostě hodit exception -> doporučit jiný splitter / jiné nastavení splitu
             log.error(f"Error calling splitter.split: {e}")
             log.info("Falling back to a single random split (Fold 0).")
             indices = np.random.permutation(len(y_main))
