@@ -14,4 +14,13 @@ jobs:
 
     steps:
       - name: Print Test Message
-        run: echo "Ahoj světe"
+        run: echo "Ahoj světe
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+        
+      - name: Print Python version
+        run: python --version
+      
