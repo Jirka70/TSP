@@ -1,0 +1,13 @@
+name: "CI"
+
+on:
+  push:
+    branches:
+      - "feature/TMSPKED-380-CICD-Implement-CICD-Pipeline"
+  pull_request:
+    branches:
+      - "feature/TMSPKED-380-CICD-Implement-CICD-Pipeline"
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
