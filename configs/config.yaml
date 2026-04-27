@@ -3,9 +3,11 @@ defaults:
   - raw_preprocessing: testing
   - paradigm: testing
   - epoch_preprocessing: testing
-  - split: basic
+  - split: moabb_within_session
   - augmentation: torcheeg
-  - model: eegnet
+  - model: machine_learning/riemannian_svm
+  - metrics_aggregator: default
+  - final_trainer: default
   - evaluation: default
   - visualization: matplotlib
   - source: external

@@ -1,0 +1,14 @@
+# Configuration for a fold trainer (many small models trained on different folds)
+fold_training: false
+
+# Unique identifier used by the ModelFactory to instantiate the specific pipeline
+model_name: "riemannian_lda"
+
+# Backend / training family identifier.
+# Type of training
+backend: "sklearn"
+
+# Model-specific hyperparameters passed directly to the factory
+parameters:
+  estimator: "oas"
+  metric: "riemann"

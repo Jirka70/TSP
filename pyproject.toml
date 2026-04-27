@@ -33,6 +33,7 @@ convention = "google"
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
+exclude = ["src/impl/model/model_factory.py"]
 
 [tool.mypy]
 # Mypy configuration for strict type checking
