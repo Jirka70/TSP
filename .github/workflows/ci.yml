@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Print Test Message
-        run: echo "Ahoj světe"
-
+      - name: Setup repo
+        uses: actions/checkout@v4
+        
       - name: Setup python
         uses: actions/setup-python@v5
         with:
@@ -23,4 +23,6 @@ jobs:
         
       - name: Print Python version
         run: python --version
+      
+    
       
