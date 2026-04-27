@@ -1,5 +1,5 @@
 backend: filesystem
-path: C:\Users\vlada\Downloads\edffile\edffile
+path: /Users/jirka/Downloads/21679035/edffile
 recursive: true
 subject_ids: [ 1,2,3,4,5 ]
-global_events_tsv_path: C:\Users\vlada\Downloads\task-motor-imagery_events.tsv
+global_events_tsv_path: /Users/jirka/Downloads/21679035/task-motor-imagery_events.tsv
