@@ -33,6 +33,10 @@ jobs:
       - name: Run tests
         run: |
           pytest
+
+      - name: Build package
+        run: | 
+          python -m build
       
     
       
