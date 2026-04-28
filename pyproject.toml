@@ -1,6 +1,14 @@
 [project]
-name = "project-name"
+name = "Modular software for EEG data classification"
 requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "build"
+]
 
 [tool.ruff]
 # Matches your requirement for line length.
