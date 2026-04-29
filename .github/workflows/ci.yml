@@ -59,7 +59,10 @@ jobs:
 
       - name: Save Docker image
         run: |
-          docker save tsp-eeg-classification:${{ github.sha }} -o tsp-eeg-classification-image.tar
+          docker save \
+            tsp-eeg-classification:${{ github.sha }} \
+            tsp-eeg-classification:latest \
+            -o tsp-eeg-classification-image.tar
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4

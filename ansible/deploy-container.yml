@@ -47,6 +47,14 @@
       register: docker_load_result
       changed_when: "'Loaded image' in docker_load_result.stdout"
 
+    - name: Read loaded Docker image reference
+      ansible.builtin.set_fact:
+        loaded_image_ref: "{{ docker_load_result.stdout | regex_search('Loaded image: (.+)', '\\1') | first }}"
+
+    - name: Tag loaded Docker image as latest
+      ansible.builtin.command: "docker tag {{ loaded_image_ref }} {{ image_name }}:{{ image_tag }}"
+      changed_when: loaded_image_ref != image_name ~ ':' ~ image_tag
+
     - name: Run Docker container smoke test
       ansible.builtin.command: "docker run --rm {{ image_name }}:{{ image_tag }}"
       changed_when: false
