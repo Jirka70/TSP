@@ -4,8 +4,9 @@ backend: moabb_cross_session
 # Whether the cross-session splitting strategy is enabled.
 enabled: true
 
-# Global validation settings
+# Global validation settings - if pre_split_validation is true, a portion of the data will be set aside for validation before applying the MOABB splitting strategy.
 pre_split_validation: true
+# Fraction of data to use for global validation (0.0 to 1.0).
 validation_ratio: 0.0
 
 # Evaluator configuration for the MOABB cross-session splitting strategy.
