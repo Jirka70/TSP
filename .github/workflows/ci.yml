@@ -48,7 +48,10 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t tsp-eeg-classification:${{ github.sha }} .
+          docker build \
+            -t tsp-eeg-classification:${{ github.sha }} \
+            -t tsp-eeg-classification:latest \
+            .
 
       - name: Smoke test Docker image
         run: |

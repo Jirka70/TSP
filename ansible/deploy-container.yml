@@ -1,0 +1,52 @@
+- name: Deploy TSP EEG Docker container
+  hosts: staging
+  become: true
+  gather_facts: true
+
+  vars:
+    app_dir: /opt/tsp
+    image_name: tsp-eeg-classification
+    image_tag: latest
+    image_tar: "{{ lookup('env', 'IMAGE_TAR') | default(playbook_dir ~ '/../tsp-eeg-classification-image.tar', true) }}"
+
+  pre_tasks:
+    - name: Ensure Docker image tar exists locally
+      ansible.builtin.assert:
+        that:
+          - image_tar is file
+        fail_msg: "Docker image tar not found. Set IMAGE_TAR or place tsp-eeg-classification-image.tar in project root."
+
+  tasks:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        update_cache: true
+        state: present
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}/containers"
+        state: directory
+        mode: "0755"
+
+    - name: Copy Docker image tar to server
+      ansible.builtin.copy:
+        src: "{{ image_tar }}"
+        dest: "{{ app_dir }}/containers/tsp-eeg-classification-image.tar"
+        mode: "0644"
+
+    - name: Load Docker image
+      ansible.builtin.command: "docker load -i {{ app_dir }}/containers/tsp-eeg-classification-image.tar"
+      register: docker_load_result
+      changed_when: "'Loaded image' in docker_load_result.stdout"
+
+    - name: Run Docker container smoke test
+      ansible.builtin.command: "docker run --rm {{ image_name }}:{{ image_tag }}"
+      changed_when: false
