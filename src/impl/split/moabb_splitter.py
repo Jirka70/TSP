@@ -60,9 +60,9 @@ class MoabbSplitter(ISplitter):
 
             # Final safety check for labels
             if labels is None:
-                log.warning(f"No labels found for recording {rec.subject_id}. Supervised learning may fail.")
-                labels = np.zeros(len(signal))
-            #     todo tady je blbost je dát null ne?
+                raise ValueError(
+                    f"No labels found for recording {rec.subject_id}. MOABB splitters require labels for correct operation."
+                )
 
             all_signals.append(signal)
             all_labels.append(labels)
@@ -171,9 +171,7 @@ class MoabbSplitter(ISplitter):
         # 1. Handle disabled splitter
         if not config.enabled:
             log.info("MoabbSplitter is disabled.")
-            raise RuntimeError(
-                f"MoabbSplitter is disabled. Check config settings for {type(self).__name__} to enable it or use a different splitter."
-            )
+            raise RuntimeError(f"MoabbSplitter is disabled. Check config settings for {type(self).__name__} to enable it or use a different splitter.")
 
         log.info("Starting MOABB Splitter")
 
@@ -195,11 +193,9 @@ class MoabbSplitter(ISplitter):
         x, y, metadata = self.extract_data(recordings)
 
         if metadata is None:
-            log.warning("Metadata is missing! Creating dummy metadata with single subject/session.")
-            metadata = pd.DataFrame(
-                {"subject": [1] * len(y), "session": ["session_0"] * len(y), "run": ["run_0"] * len(y)}
+            raise ValueError(
+                "Metadata aggregation failed or no recordings provided. MOABB splitter requires valid metadata (subject, session, run) for partitioning."
             )
-        # todo zase asi výjimka
 
         validation_data_global = None
         main_indices = np.arange(len(y))
@@ -221,13 +217,9 @@ class MoabbSplitter(ISplitter):
                 main_indices = np.where(~val_mask)[0]
 
                 if len(val_indices) > 0:
-                    validation_data_global = self.create_dto(
-                        val_indices, x, y, metadata, dataset_name, "validation_global"
-                    )
+                    validation_data_global = self.create_dto(val_indices, x, y, metadata, dataset_name, "validation_global")
             else:
-                raise ValueError(
-                    f"Subject-based validation requested (ratio {validation_ratio}), but not enough subjects found (total subjects: {len(subjects)}). Consider using a different validation strategy or check subject metadata."
-                )
+                raise ValueError(f"Subject-based validation requested (ratio {validation_ratio}), but not enough subjects found (total subjects: {len(subjects)}). Consider using a different validation strategy or check subject metadata.")
 
         # Subset data for MOABB splitter
         x_main = x[main_indices]
@@ -269,9 +261,7 @@ class MoabbSplitter(ISplitter):
             # If we gather validation indices from all folds, we can create a global validation set
             if all_val_indices:
                 combined_val_idx = np.unique(np.concatenate(all_val_indices))
-                validation_data_global = self.create_dto(
-                    combined_val_idx, x_main, y_main, metadata_main, dataset_name, "validation_global_post"
-                )
+                validation_data_global = self.create_dto(combined_val_idx, x_main, y_main, metadata_main, dataset_name, "validation_global_post")
 
         except Exception as e:
             if isinstance(e, ValueError):
