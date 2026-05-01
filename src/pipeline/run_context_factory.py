@@ -28,7 +28,7 @@ class RunContextFactory:
     ) -> RunContext:
 
         run_id = str(uuid4())
-        started_at = datetime.utcnow()
+        started_at = datetime.now()
 
         git_commit_hash = self._resolve_git_commit_hash()
 
@@ -39,7 +39,6 @@ class RunContextFactory:
         return RunContext(
             run_id=run_id,
             started_at=started_at,
-            dataset_name=config.dataset.name,
             raw_preprocessing_backend=config.raw_preprocessing.backend,
             paradigm_backend=config.paradigm.backend,
             epoch_preprocessing_backend=config.epoch_preprocessing.backend,

@@ -4,6 +4,11 @@ backend: moabb_within_session
 # Whether the within-session splitting strategy is enabled.
 enabled: true
 
+# Global validation settings - if pre_split_validation is true, a portion of the data will be set aside for validation before applying the MOABB splitting strategy.
+pre_split_validation: false
+# Fraction of data to use for global validation (0.0 to 1.0)
+validation_ratio: 0.2
+
 # Evaluator configuration for the MOABB within-session splitting strategy.
 evaluator:
   # MOABB target splitter class.
@@ -13,7 +18,7 @@ evaluator:
   random_state: 42
   
   # Number of folds to create for cross-validation.
-  n_folds: 5
+  n_folds: 2
   
   # Whether to shuffle the session recordings before splitting.
   shuffle: true

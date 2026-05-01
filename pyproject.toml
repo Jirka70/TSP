@@ -22,7 +22,7 @@ select = [
 ]
 
 # Specific rules to ignore
-ignore = ["D212", "D100"]
+ignore = ["D", "T201", "W293"] # T201 for prints -- transform prints into logs
 
 [tool.ruff.lint.pydocstyle]
 # Enforce Google-style docstrings (Args, Returns, Raises)

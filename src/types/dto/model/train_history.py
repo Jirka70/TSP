@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class TrainingHistory:
-    """History of training"""
+    """Training losses and metrics collected during optimization."""
 
     train_loss: list[float] = field(default_factory=list)
     validation_loss: list[float] = field(default_factory=list)

@@ -3,10 +3,11 @@ from enum import Enum
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
-from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
+from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
+
+# from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from src.impl.evaluator.sklearn_evaluator import SklearnEvaluator
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
 from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
@@ -54,7 +55,7 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"eegbci": MOABBDataLoader},
+        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
@@ -67,7 +68,7 @@ class StageFactory:
         },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
-            "torcheeg": TorchEEGAugmentor,
+            "torcheeg": DummyAugmentor,
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
@@ -78,7 +79,6 @@ class StageFactory:
         StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer},
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
-            "sklearn": SklearnEvaluator,
         },
         StageType.SAVER: {"default": ArtifactSaver},
         StageType.MODEL_SERIALIZER: {
@@ -97,7 +97,7 @@ class StageFactory:
         self._config = config
 
     def create_data_loader(self) -> IDataLoader:
-        return StageFactory._targets[StageType.DATA_LOADER][self._config.dataset.backend]()
+        return StageFactory._targets[StageType.DATA_LOADER][self._config.source.backend]()
 
     def create_raw_preprocessing_stage(self) -> IRawPreprocessing:
         return StageFactory._targets[StageType.RAW_PREPROCESSING][self._config.raw_preprocessing.backend]()

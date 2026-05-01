@@ -5,12 +5,12 @@ defaults:
   - epoch_preprocessing: testing
   - split: moabb_within_session
   - augmentation: torcheeg
-  - model: machine_learning/csp_lda
+  - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
   - final_trainer: default
-  - evaluation: sklearn
+  - evaluation: default
   - visualization: matplotlib
-  - dataset: eegbci
+  - source: external
   - save_artifacts: default
 
 mode: training

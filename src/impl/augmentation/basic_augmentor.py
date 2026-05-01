@@ -21,7 +21,7 @@ class BasicAugmentor(IAugmentor):
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """Iterates over folds, applies basic augmentation to train_data, and returns updated folds."""
-        config: AugmentationConfigBasic = input_dto.augmentationConfig
+        config: AugmentationConfigBasic = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
         # 1. Check if augmentation is enabled
@@ -53,12 +53,12 @@ class BasicAugmentor(IAugmentor):
             # Augment ONLY the training data
             augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, config=config)
 
-            # Reconstruct the Fold with augmented training data and untouched test/validation data
-            new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, validation_data=fold.validation_data, test_data=fold.test_data)
+            # Reconstruct the Fold with augmented training data and untouched test data
+            new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
         # 3. Return wrapped in DatasetSplitDTO
-        return StepResult(DatasetSplitDTO(folds=augmented_folds))
+        return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
 
     def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, config: AugmentationConfigBasic) -> EpochPreprocessedDTO:
         """Core logic for augmenting a single EpochPreprocessedDTO with basic transformations."""
@@ -90,7 +90,7 @@ class BasicAugmentor(IAugmentor):
             augmented_labels_list = [labels]
 
             # Main augmentation loop
-            for i in range(config.copies_per_sample):
+            for _ in range(config.copies_per_sample):
                 x_aug = np.copy(x)
 
                 # Add Gaussian noise

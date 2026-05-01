@@ -20,7 +20,6 @@ from datetime import datetime
 class RunContext:
     run_id: str
     started_at: datetime
-    dataset_name: str
     raw_preprocessing_backend: str
     paradigm_backend: str
     epoch_preprocessing_backend: str

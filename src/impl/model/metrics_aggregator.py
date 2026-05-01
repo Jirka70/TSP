@@ -12,17 +12,17 @@ log = logging.getLogger(__name__)
 
 
 class MetricsAggregator(IMetricsAggregator):
-    """
-    Generický evaluátor křížové validace.
-    Umí počítat globální statistiky i statistiky seskupené podle metadat (např. subject_id).
-    """
+    """Aggregate fold-level metrics into global and grouped summaries."""
 
     def __init__(self, group_by_key: str | None = "subject_id") -> None:
+        """Initialize the aggregator with an optional metadata grouping key."""
         self._group_by_key = group_by_key
 
-    def run(self, result_dto: TrainingResultDTO, run_ctx: RunContext) -> AggregatedMetricsDTO:
-        if not result_dto.trained_models:
-            raise ValueError("Žádné modely k evaluaci.")
+    def run(self, result_dto: TrainingResultDTO, run_ctx: RunContext) -> AggregatedMetricsDTO | None:
+        """Aggregate metrics across trained folds and optionally group them by metadata."""
+        if not result_dto.trained_models or len(result_dto.trained_models) == 0:
+            log.warning("No trained models were provided for aggregation.")
+            return None
 
         first_model = result_dto.trained_models[0]
         model_name = first_model.model_name
@@ -46,15 +46,15 @@ class MetricsAggregator(IMetricsAggregator):
         global_mean = float(np.mean(all_values))
         global_std = float(np.std(all_values))
 
-        log.info(f"\n=== Globální výsledky: {model_name} ===")
+        log.info(f"\n=== Global results: {model_name} ===")
         log.info(f"Mean: {global_mean:.4f} ± {global_std:.4f}")
 
         if self._group_by_key and grouped_values:
-            log.info(f"\n--- Výsledky podle: {self._group_by_key} ---")
+            log.info(f"\n--- Results grouped by: {self._group_by_key} ---")
             for group_id, values in grouped_values.items():
                 g_mean = float(np.mean(values))
                 g_std = float(np.std(values))
-                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Foldu: {len(values)})")
+                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Folds: {len(values)})")
 
         return AggregatedMetricsDTO(
             model_name=model_name,
@@ -65,6 +65,7 @@ class MetricsAggregator(IMetricsAggregator):
         )
 
     def _extract_metric(self, trained_model, metric_name: str) -> float:
+        """Extract the most suitable metric value from a trained model."""
         if trained_model.best_validation_metric_value is not None:
             return float(trained_model.best_validation_metric_value)
         if trained_model.history:
