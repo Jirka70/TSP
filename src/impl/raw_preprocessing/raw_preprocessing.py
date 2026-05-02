@@ -47,7 +47,7 @@ class RawPreprocessor(IRawPreprocessing):
             # Copy continuous signal to avoid modifying the original data in the input DTO
             raw_copy: mne.io.Raw = entry.data.copy()
 
-            # 1. Identification and interpolation of bad channels
+            # 1. Identification and interpolation of bad channel
             if raw_copy.info["bads"]:
                 log.info(f"Interpolating bad channels at index {i}: {raw_copy.info['bads']}")
                 raw_copy.interpolate_bads(reset_bads=True)
