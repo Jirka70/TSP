@@ -29,15 +29,11 @@ class MatplotlibVisualizer(IVisualizer):
             config (VisualizationConfig): Configuration for visualization.
         """
         self._config = config
-        
-        # Matplotlib expects figsize in INCHES. 
-        # If user provides values > 100, they likely mean pixels.
-        self._fig_width = config.width if config.width < 100 else config.width / 100
-        self._fig_height = config.height if config.height < 100 else config.height / 100
-        
-        # Ensure minimum readable size
-        self._fig_width = max(self._fig_width, 5)
-        self._fig_height = max(self._fig_height, 4)
+
+        # We assume config.width and config.height are in PIXELS and convert them to inches for Matplotlib.
+        self._dpi = 100
+        self._fig_width = config.width / self._dpi
+        self._fig_height = config.height / self._dpi
 
     def visualize_raw(self, data: RawPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes PSD of the first recording to check preprocessing quality."""
@@ -50,17 +46,19 @@ class MatplotlibVisualizer(IVisualizer):
 
         # Determine safe n_fft (must be <= signal length and ideally a power of 2)
         n_times = int(raw.n_times) if hasattr(raw, "n_times") else 0
+        target_n_fft = self._config.n_fft
+
         if n_times > 0:
-            # Find the largest power of 2 <= n_times, but at most 2048
-            n_fft = 1 << (n_times.bit_length() - 1)
-            n_fft = min(n_fft, 2048)
+            # Ensure n_fft is a power of 2 and <= n_times
+            n_fft = 1 << (min(n_times, target_n_fft).bit_length() - 1)
         else:
-            n_fft = 256
+            n_fft = target_n_fft
 
         # Suppress MNE/Scipy warnings about nperseg > length
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning, message=".*nperseg.*")
-            
+
             if hasattr(raw, "compute_psd"):
                 # MNE Raw object
                 try:
@@ -68,6 +66,7 @@ class MatplotlibVisualizer(IVisualizer):
                     psd = raw.compute_psd(fmax=50, n_fft=n_fft, n_per_seg=n_fft, verbose=False)
                     fig = psd.plot(show=False)
                     fig.set_size_inches(self._fig_width, self._fig_height)
+                    fig.set_dpi(self._dpi)
                     fig.suptitle(f"PSD: Subject {recording.subject_id}")
                 except Exception as e:
                     log.warning(f"Could not plot PSD: {e}")
@@ -76,10 +75,11 @@ class MatplotlibVisualizer(IVisualizer):
                 # Older MNE versions
                 fig = raw.plot_psd(show=False, fmax=50, n_fft=n_fft, n_per_seg=n_fft, verbose=False)
                 fig.set_size_inches(self._fig_width, self._fig_height)
+                fig.set_dpi(self._dpi)
                 fig.suptitle(f"PSD: Subject {recording.subject_id}")
             else:
                 # Fallback for NumPy
-                plt.figure(figsize=(self._fig_width, self._fig_height))
+                plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
                 # Assuming (channels, time)
                 if isinstance(raw, np.ndarray) and raw.ndim >= 2:
                     plt.plot(raw[0, : min(1000, raw.shape[1])])
@@ -101,10 +101,11 @@ class MatplotlibVisualizer(IVisualizer):
             evoked = epochs.average()
             fig = evoked.plot(show=False)
             fig.set_size_inches(self._fig_width, self._fig_height)
+            fig.set_dpi(self._dpi)
             fig.suptitle(f"ERP Average: Subject {recording.subject_id}")
         else:
             # Fallback for NumPy (mean across epochs)
-            plt.figure(figsize=(self._fig_width, self._fig_height))
+            plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
             if isinstance(epochs, np.ndarray) and epochs.ndim == 3:
                 erp = np.mean(epochs, axis=0)
                 plt.plot(erp[0])  # Plot average of first channel
@@ -125,18 +126,17 @@ class MatplotlibVisualizer(IVisualizer):
 
         recording = fold.train_data.data[0]
         x = recording.data
-        
+
         # If it's augmented, it should be a NumPy array now
         if isinstance(x, np.ndarray) and x.ndim == 3:
-            plt.figure(figsize=(self._fig_width, self._fig_height))
-            
-            # Plot first few samples to see variety
-            n_samples = min(3, x.shape[0])
+            plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
+
+            n_samples = x.shape[0]
             for i in range(n_samples):
                 plt.subplot(n_samples, 1, i + 1)
-                plt.plot(x[i, 0, :]) # First channel
+                plt.plot(x[i, 0, :])  # First channel
                 plt.title(f"Sample {i} (Fold {fold.fold_idx}, Subject {recording.subject_id})")
-            
+
             plt.tight_layout()
             self._handle_output(f"augmentation_fold_{fold.fold_idx}.png")
 
@@ -149,7 +149,7 @@ class MatplotlibVisualizer(IVisualizer):
             log.warning("Insufficient data for evaluation visualization.")
             return
 
-        plt.figure(figsize=(self._fig_width, self._fig_height))
+        plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
 
         # 1. Confusion Matrix
         plt.subplot(1, 3, 1)
@@ -204,7 +204,7 @@ class MatplotlibVisualizer(IVisualizer):
             plots_dir = output_dir / "plots"
             plots_dir.mkdir(parents=True, exist_ok=True)
             save_path = plots_dir / filename
-            plt.savefig(str(save_path))
+            plt.savefig(str(save_path), dpi=self._dpi)
             log.info(f"Plot saved to: {save_path}")
 
         if self._config.show_plots:

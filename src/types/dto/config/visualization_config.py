@@ -7,15 +7,16 @@ class VisualizationConfig(AStageConfig):
     """Configuration for the visualization stage."""
 
     backend: Literal["matplotlib", "plotly"]
-    
+
     # Switches for different pipeline stages
-    visualize_raw: bool = False
-    visualize_epochs: bool = False
-    visualize_augmentation: bool = False
-    visualize_evaluation: bool = True
-    
+    visualize_raw: bool
+    visualize_epochs: bool
+    visualize_augmentation: bool
+    visualize_evaluation: bool
+
     # Global settings
-    width: int = 12
-    height: int = 6
-    save_plots: bool = True
+    width: int
+    height: int
+    n_fft: int = 256
+    save_plots: bool
     show_plots: bool = False

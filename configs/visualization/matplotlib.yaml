@@ -1,9 +1,29 @@
+# Visualization backend to use
 backend: matplotlib
+
+# --- Visualization flags for different pipeline stages ---
+# Plot Power Spectral Density (PSD) of raw data
 visualize_raw: True
+# Plot Event-Related Potentials (ERP) averages
 visualize_epochs: True
+# Plot examples of data after augmentation
 visualize_augmentation: True
+# Plot confusion matrix and metrics after evaluation
 visualize_evaluation: True
+
+# --- Figure settings ---
+# Figure width in pixels
 width: 1500
+# Figure height in pixels
 height: 800
+
+# Number of points for Fast Fourier Transform. 
+# Higher value means better frequency resolution but requires more data.
+# Ideally a power of 2 (e.g., 256, 512, 1024, 2048).
+n_fft: 2048
+
+# --- Output settings ---
+# Save generated plots to the output directory
 save_plots: True
+# Open a window to show plots (Note: this blocks execution until the window is closed)
 show_plots: True

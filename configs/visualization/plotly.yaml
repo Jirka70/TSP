@@ -1,9 +1,27 @@
+# Visualization backend to use
 backend: plotly
+
+# --- Visualization flags for different pipeline stages ---
+# Plot interactive PSD (Power Spectral Density)
 visualize_raw: True
+# Plot interactive ERP (Event-Related Potentials)
 visualize_epochs: True
+# Plot examples of data after augmentation
 visualize_augmentation: True
+# Plot interactive confusion matrix and metrics
 visualize_evaluation: True
+
+# --- Output settings ---
+# Save generated plots as interactive HTML files
 save_plots: True
-show_plots: False
+
+# --- Figure settings ---
+# Figure width in pixels
 width: 1200
+# Figure height in pixels
 height: 800
+
+# Number of points for Fast Fourier Transform.
+# Higher value means better frequency resolution but requires more data.
+# Ideally a power of 2 (e.g., 256, 512, 1024, 2048).
+n_fft: 2048
