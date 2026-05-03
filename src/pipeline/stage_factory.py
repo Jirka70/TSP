@@ -1,5 +1,6 @@
 from enum import Enum
 
+from impl.model.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -68,7 +69,7 @@ class StageFactory:
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
-            "eegnet": DummyModelTrainer,
+            "eegnet": EEGNetModelTrainer,
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
