@@ -2,15 +2,15 @@ import logging
 
 import numpy as np
 
-from impl.model.eegnet_model import EEGNetModel
-from impl.model.util.network import create_eegnet_network
-from pipeline.context.run_context import RunContext
-from pipeline.contracts.step_result import StepResult
-from types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from types.dto.model.trained_model_dto import TrainedModelDTO
-from types.dto.model.training_input_dto import TrainingInputDTO
-from types.dto.model.training_result_dto import TrainingResultDTO
-from types.interfaces.model.model_trainer import IModelTrainer
+from src.impl.model.eegnet_model import EEGNetModel
+from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
+from src.pipeline.context.run_context import RunContext
+from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from src.types.dto.model.trained_model_dto import TrainedModelDTO
+from src.types.dto.model.training_input_dto import TrainingInputDTO
+from src.types.dto.model.training_result_dto import TrainingResultDTO
+from src.types.interfaces.model.model_trainer import IModelTrainer
 
 log = logging.getLogger(__name__)
 

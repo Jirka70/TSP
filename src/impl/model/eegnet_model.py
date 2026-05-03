@@ -1,6 +1,3 @@
-from types.interfaces.model.model import IModel
-
-
 import copy
 
 import numpy as np
@@ -8,7 +5,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.types.dto.config.model.model_config import ModelConfig
+from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
 
@@ -18,7 +15,7 @@ class EEGNetModel(IModel):
     IModel wrapper around a PyTorch EEGNet network.
     """
 
-    def __init__(self, network: nn.Module, model_name: str, config: ModelConfig) -> None:
+    def __init__(self, network: nn.Module, model_name: str, config: EEGNetConfig) -> None:
         self._network = network
         self._model_name = model_name
         self._config = config
@@ -29,6 +26,9 @@ class EEGNetModel(IModel):
         self.best_epoch: int | None = None
         self.best_validation_accuracy: float | None = None
         self.history: TrainingHistory | None = None
+
+        self._classes: np.ndarray | None = None
+        self._class_to_index: dict | None = None
 
     def name(self) -> str:
         return self._model_name
@@ -54,11 +54,23 @@ class EEGNetModel(IModel):
         x_val: np.ndarray | None = None,
         y_val: np.ndarray | None = None,
     ) -> TrainingHistory:
-        train_loader = self._create_loader(x_train, y_train, shuffle=True)
+        self._fit_label_mapping(y_train)
+
+        y_train_encoded = self._encode_labels(y_train)
+
+        if y_val is not None:
+            y_val_encoded = self._encode_labels(y_val)
+        else:
+            y_val_encoded = None
+
+        train_loader = self._create_loader(x_train, y_train_encoded, shuffle=True)
 
         val_loader = None
-        if x_val is not None and y_val is not None:
-            val_loader = self._create_loader(x_val, y_val, shuffle=False)
+        if x_val is not None and y_val_encoded is not None:
+            val_loader = self._create_loader(x_val, y_val_encoded, shuffle=False)
+
+        if val_loader is None:
+            self.best_epoch = self._config.training.epochs - 1
 
         loss_fn = nn.CrossEntropyLoss()
         optimizer = self._create_optimizer()
@@ -100,12 +112,13 @@ class EEGNetModel(IModel):
 
         if best_state is not None:
             self._network.load_state_dict(best_state)
-
+        self.history = history
         return history
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         probabilities = self.predict_class_probability(x)
-        return np.argmax(probabilities, axis=1)
+        predicted_indices = np.argmax(probabilities, axis=1)
+        return self._decode_labels(predicted_indices)
 
     def predict_class_probability(self, x: np.ndarray) -> np.ndarray:
         self._network.eval()
@@ -132,6 +145,7 @@ class EEGNetModel(IModel):
 
     def get_state_dict(self) -> dict:
         return {
+            "classes": self._classes.tolist() if self._classes is not None else None,
             "model_name": self._model_name,
             "network_state_dict": self._network.state_dict(),
             "config": self._config.model_dump(),
@@ -232,3 +246,39 @@ class EEGNetModel(IModel):
             )
 
         raise ValueError(f"Unsupported optimizer: {self._config.training.optimizer}")
+
+    def _fit_label_mapping(self, y: np.ndarray) -> None:
+        self._classes = np.unique(y)
+
+        if len(self._classes) != self._config.n_classes:
+            raise ValueError(
+                f"Config n_classes={self._config.n_classes}, "
+                f"but training data has {len(self._classes)} classes: {self._classes}"
+            )
+
+        self._class_to_index = {
+            class_label: index
+            for index, class_label in enumerate(self._classes)
+        }
+
+    def _encode_labels(self, y: np.ndarray) -> np.ndarray:
+        if self._class_to_index is None:
+            raise ValueError("Label mapping is not initialized. Call fit first.")
+
+        unknown_labels = set(np.unique(y)) - set(self._class_to_index.keys())
+        if unknown_labels:
+            raise ValueError(
+                f"Labels {sorted(unknown_labels)} were not seen in training labels."
+            )
+
+        return np.array(
+            [self._class_to_index[label] for label in y],
+            dtype=np.int64,
+        )
+
+    def _decode_labels(self, y_indices: np.ndarray) -> np.ndarray:
+        if self._classes is None:
+            raise ValueError("Label mapping is not initialized. Call fit first.")
+
+        return self._classes[y_indices]
+

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from impl.model.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -11,6 +11,7 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
+from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
@@ -73,7 +74,10 @@ class StageFactory:
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
-        StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer},
+        StageType.FINAL_TRAINER: {
+            "sklearn": FinalSklearnTrainer,
+            "eegnet": FinalEEGNetTrainer
+        },
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
         },

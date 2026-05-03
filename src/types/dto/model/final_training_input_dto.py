@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.types.dto.config.model.model_config import ModelConfig, SklearnModelConfig
+from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
 from src.types.dto.split.dataset_split_dto import FoldDTO
 
 
@@ -8,5 +8,5 @@ from src.types.dto.split.dataset_split_dto import FoldDTO
 class FinalTrainingInputDTO:
     """Input data for the final training stage."""
 
-    config: ModelConfig | SklearnModelConfig
+    config: EEGNetConfig | SklearnModelConfig
     folds: list[FoldDTO]

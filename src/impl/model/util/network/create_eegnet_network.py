@@ -1,8 +1,8 @@
-from braindecode.models import EEGNetv4
+from braindecode.models import EEGNet
 
 
 def create_eegnet_network(config):
-    return EEGNetv4(
+    return EEGNet(
         n_chans=config.n_channels,
         n_outputs=config.n_classes,
         n_times=config.n_times,

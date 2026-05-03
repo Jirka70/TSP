@@ -2,7 +2,6 @@ from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.pipeline import IPipeline
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
