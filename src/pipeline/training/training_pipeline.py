@@ -109,7 +109,7 @@ class TrainingPipeline(IPipeline):
         evaluation_input = EvaluationInputDTO(
             config=config.evaluation,
             trained_models=[final_training_result.data.trained_model],
-            folds=folds,
+            dataset_split=augmentation_result.data,
         )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
         self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, final_training_result.data.trained_model.model_name)
