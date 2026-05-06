@@ -41,6 +41,7 @@ def my_app(cfg):
     metrics_aggregator = sf.create_metrics_aggregator_stage()
     final_trainer = sf.create_final_trainer_stage()
     evaluator = sf.create_evaluator_stage()
+    visualizer = sf.create_visualizer()
     saver = sf.create_saver()
     model_serializer = sf.create_model_serializer()
 
@@ -49,7 +50,7 @@ def my_app(cfg):
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, metrics_aggregator, final_trainer, evaluator, saver, model_serializer)
+        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
     else:

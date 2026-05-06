@@ -1,10 +1,6 @@
 import logging
-from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-from hydra.core.hydra_config import HydraConfig
 from sklearn.metrics import confusion_matrix, get_scorer
 
 from src.pipeline.context.run_context import RunContext
@@ -87,78 +83,10 @@ class StandardEvaluator(IEvaluator):
             confusion_matrix=overall_cm,
         )
 
-        # Visualization
-        self.visualize_results(y_true, y_pred, overall_cm, model_dto.model_name, model_metrics)
-
         result = EvaluationResultDTO(metrics=model_metrics, fold_results=[fold_res], predictions=y_pred.tolist(), targets=y_true.tolist(), probabilities=probabilities.tolist() if probabilities is not None else None, confusion_matrix=overall_cm)
 
         return StepResult(result)
 
-    def visualize_results(self, y_true: np.ndarray, y_pred: np.ndarray, cm: list[list[int]], model_name: str, metrics: dict[str, float]) -> None:
-        """Creates a simple dashboard with results and saves it to the run directory.
-
-        Args:
-            y_true (np.ndarray): Ground truth labels.
-            y_pred (np.ndarray): Predicted labels.
-            cm (list[list[int]]): Confusion matrix.
-            model_name (str): Name of the model for titles and filenames.
-            metrics (dict[str, float]): Dictionary of aggregate metrics.
-        """
-        plt.figure(figsize=(15, 6))
-
-        # 1. Confusion Matrix
-        plt.subplot(1, 3, 1)
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False)
-        plt.title(f"Confusion Matrix: {model_name}")
-        plt.xlabel("Predicted class")
-        plt.ylabel("Actual class")
-
-        # 2. Class distribution
-        plt.subplot(1, 3, 2)
-        classes, counts_true = np.unique(y_true, return_counts=True)
-        pred_unique, pred_counts = np.unique(y_pred, return_counts=True)
-        pred_counts_dict = dict(zip(pred_unique, pred_counts, strict=True))
-        counts_pred = [pred_counts_dict.get(cls, 0) for cls in classes]
-
-        x = np.arange(len(classes))
-        width = 0.35
-        plt.bar(x - width / 2, counts_true, width, label="Reality", color="gray", alpha=0.6)
-        plt.bar(x + width / 2, counts_pred, width, label="Predicted", color="skyblue")
-
-        plt.title("Class distribution")
-        plt.xlabel("Class")
-        plt.ylabel("Number of samples")
-        plt.xticks(x, classes)
-        plt.legend()
-
-        # 3. Metrics Summary
-        plt.subplot(1, 3, 3)
-        m_names = list(metrics.keys())
-        m_values = [metrics[name] for name in m_names]
-
-        bars = plt.barh(m_names, m_values, color="salmon")
-        plt.xlim(0, 1.1)
-        plt.title("Evaluation Metrics")
-        plt.xlabel("Value")
-
-        for bar in bars:
-            width = bar.get_width()
-            plt.text(width + 0.02, bar.get_y() + bar.get_height() / 2, f"{width:.4f}", va="center", fontweight="bold")
-
-        plt.tight_layout()
-
-        output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
-        plots_dir = output_dir / "plots"
-        plots_dir.mkdir(parents=True, exist_ok=True)
-
-        filename = f"evaluation_{model_name.lower().replace(' ', '_')}.png"
-        save_path = plots_dir / filename
-
-        plt.savefig(str(save_path))
-        log.info(f"Evaluation plot saved to: {save_path}")
-
-        plt.show()
-        plt.close()
 
     def extract_data(self, preprocessed_data: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
