@@ -68,7 +68,7 @@ class ParadigmPreprocessor(IParadigm):
             for i, entry in enumerate(input_dto.data.data):
                 log.info(f"Segmenting recording index: {i}")
 
-                # Access the Raw signal from the current entry
+                # Access the Raw signal from the current entry.
                 raw: mne.io.Raw = entry.data
 
                 # 1. Band-pass filtering
