@@ -4,7 +4,7 @@ defaults:
   - paradigm: testing
   - epoch_preprocessing: testing
   - split: moabb_within_session
-  - augmentation: torcheeg
+  - augmentation: basic
   - model: deep_learning/eegnet
   - metrics_aggregator: default
   - final_trainer: eegnet
