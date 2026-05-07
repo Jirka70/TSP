@@ -12,4 +12,5 @@ def create_eegnet_network(config):
         F1=config.f1,
         D=config.d,
         F2=config.f2,
+        batch_norm_momentum=0.2
     )
