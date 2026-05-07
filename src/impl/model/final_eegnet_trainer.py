@@ -19,8 +19,9 @@ class FinalEEGNetTrainer(IFinalTrainer):
     """
     Trains one final EEGNet model.
 
-    This trainer is not for fold-based evaluation. It expects one final split:
-    train_data, optional validation_data, and optional test_data for later evaluation.
+    This trainer is not for fold-based evaluation. Prefer passing train_data that
+    contains each final-training sample once. Cross-validation folds are accepted
+    only as a backward-compatible fallback.
     """
 
     def run(
@@ -30,24 +31,21 @@ class FinalEEGNetTrainer(IFinalTrainer):
     ) -> StepResult[FinalTrainingResultDTO]:
         log.info("Starting final EEGNet training. Run: %s", run_ctx.run_id)
 
-        if not input_dto.folds:
-            raise ValueError("Final EEGNet training needs exactly one fold, got none.")
-
-        if len(input_dto.folds) < 1:
-            raise ValueError(
-                "FinalEEGNetTrainer expects at least one final split fold. "
-                "Do not pass cross-validation folds into final training, because "
-                "their train_data overlap."
-            )
-
-        fold = input_dto.folds[0]
-
-        x_train, y_train = self._extract_data_and_labels(fold.train_data)
-
         x_val = None
         y_val = None
-        if fold.validation_data is not None:
-            x_val, y_val = self._extract_data_and_labels(fold.validation_data)
+        if input_dto.train_data is not None:
+            x_train, y_train = self._extract_data_and_labels(input_dto.train_data)
+            training_source = "full_dataset"
+        else:
+            if not input_dto.folds:
+                raise ValueError("Final EEGNet training needs train_data or at least one fallback fold.")
+
+            fold = input_dto.folds[0]
+            x_train, y_train = self._extract_data_and_labels(fold.train_data)
+            training_source = "first_fold_train_data"
+
+            if fold.validation_data is not None:
+                x_val, y_val = self._extract_data_and_labels(fold.validation_data)
 
         network = create_eegnet_network(input_dto.config)
 
@@ -76,6 +74,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             fold_idx=None,
             metadata={
                 "training_mode": "final_training",
+                "training_source": training_source,
                 "run_id": run_ctx.run_id,
                 "n_train_samples": len(y_train),
                 "n_validation_samples": len(y_val) if y_val is not None else 0,
