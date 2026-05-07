@@ -1,0 +1,36 @@
+# TorchEEG-based raw signal augmentation configuration.
+# This stage applies transformations to the continuous raw signal before epoching.
+
+# Whether to enable raw augmentation.
+enabled: true
+
+# Backend identifier used to select the raw augmentation implementation.
+backend: torcheeg
+
+# Random seed for reproducibility of transformations.
+random_seed: 42
+
+# Number of augmented copies to create for each original recording.
+# Each copy is stored as a new session named 'iraw_augmented'.
+copies_per_sample: 1
+
+# Standard deviation of Gaussian noise added to the raw signal.
+gaussian_noise_std: 0.05
+
+# Probability of applying a random mask (zeroing out segments) to the signal.
+mask_prob: 0.1
+
+# Ratio of the signal to be masked when RandomMask is applied (e.g., 0.1 for 10%).
+mask_ratio: 0.1
+
+# Probability of inverting the sign (phase flip) of the signal.
+sign_flip_prob: 0.5
+
+# Probability of scaling the amplitude of the signal.
+scale_prob: 0.5
+
+# Minimum factor for amplitude scaling (e.g., 0.8).
+scale_min: 0.8
+
+# Maximum factor for amplitude scaling (e.g., 1.2).
+scale_max: 1.2

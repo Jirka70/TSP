@@ -33,6 +33,7 @@ def my_app(cfg):
 
     dl = sf.create_data_loader()
     raw_preprocessing = sf.create_raw_preprocessing_stage()
+    raw_augmentation = sf.create_raw_augmentation_stage()
     paradigm = sf.create_paradigm_stage()
     epoch_preprocessing = sf.create_epoch_preprocessing_stage()
     split = sf.create_split_stage()
@@ -50,7 +51,7 @@ def my_app(cfg):
     pipeline: IPipeline
     run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
+        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
     else:

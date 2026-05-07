@@ -19,6 +19,7 @@ from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
+from src.types.dto.raw_augmentation.raw_augmentation_input_dto import RawAugmentationInputDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
 from src.types.dto.save_artifacts.save_artifacts_input_dto import SaveArtifactsInputDTO
@@ -33,6 +34,7 @@ from src.types.interfaces.model.final_trainer import IFinalTrainer
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
+from src.types.interfaces.raw_augmentor import IRawAugmentor
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
 from src.types.interfaces.visualizer import IVisualizer
@@ -43,6 +45,7 @@ class TrainingPipeline(IPipeline):
         self,
         data_loader: IDataLoader,
         raw_preprocessing: IRawPreprocessing,
+        raw_augmentation: IRawAugmentor,
         paradigm: IParadigm,
         epoch_preprocessing: IEpochPreprocessing,
         splitting: ISplitter,
@@ -58,6 +61,7 @@ class TrainingPipeline(IPipeline):
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
         self._raw_preprocessing = raw_preprocessing
+        self._raw_augmentation = raw_augmentation
         self._paradigm = paradigm
         self._epoch_preprocessing = epoch_preprocessing
         self._splitting = splitting
@@ -78,7 +82,10 @@ class TrainingPipeline(IPipeline):
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
         self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
 
-        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
+        raw_augmentation_input = RawAugmentationInputDTO(config.raw_augmentation, raw_preprocessing_result.data)
+        raw_augmentation_result = self._raw_augmentation.run(raw_augmentation_input, run_ctx)
+
+        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
         epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)

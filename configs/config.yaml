@@ -1,6 +1,7 @@
 defaults:
   - _self_
   - raw_preprocessing: testing
+  - raw_augmentation: torcheeg
   - paradigm: testing
   - epoch_preprocessing: testing
   - split: moabb_within_session

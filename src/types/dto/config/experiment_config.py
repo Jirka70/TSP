@@ -15,6 +15,10 @@ from src.types.dto.config.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import ModelConfig, SklearnModelConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
+from src.types.dto.config.raw_augmentation_config import (
+    RawAugmentationConfigNone,
+    RawAugmentationConfigTorchEEG,
+)
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
@@ -40,6 +44,7 @@ class ExperimentConfig(BaseModel):
     model: ModelConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
+    raw_augmentation: RawAugmentationConfigNone | RawAugmentationConfigTorchEEG = Field(discriminator="backend")
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
     split: SplitConfig | SplitMoabbWithinSessionConfig | SplitMoabbWithinSubjectConfig | SplitMoabbCrossSessionConfig | SplitMoabbCrossSubjectConfig = Field(discriminator="backend")
