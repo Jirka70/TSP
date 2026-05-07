@@ -19,6 +19,7 @@ class FoldDTO:
     fold_idx: int
     train_data: EpochPreprocessedDTO
     test_data: EpochPreprocessedDTO | None
+    validation_data: EpochPreprocessedDTO | None = None
 
 
 @dataclass(frozen=True)
