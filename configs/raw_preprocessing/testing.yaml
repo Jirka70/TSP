@@ -1,10 +1,33 @@
 backend: testing
 
+resampling:
+  enabled: false
+  sfreq: 250
+
 high_pass_filter:
+  enabled: true
   l_freq: 1.0
 
+low_pass_filter:
+  enabled: false
+  h_freq: 40.0
+
 notch_filter:
+  enabled: true
   freqs: [ 50 ]
 
+bad_channels_interpolation:
+  enabled: true
+
+re_referencing:
+  enabled: true
+  method: "CSD"  # Options: "CSD", "AVERAGE"
+
+ica:
+  enabled: false
+  n_components: 0.95
+  method: "infomax"
+
 annotate_break:
+  enabled: true
   min_break_duration: 2.5
