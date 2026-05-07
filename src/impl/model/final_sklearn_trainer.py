@@ -57,7 +57,7 @@ class FinalSklearnTrainer(IFinalTrainer):
         """Collect training samples and labels from all test folds."""
         x_list, y_list = [], []
         for fold in input_dto.folds:
-            if fold.test_data:
+            if fold.train_data:
                 x, y = self._extract_data_and_labels(fold.test_data)
                 x_list.append(x)
                 y_list.append(y)

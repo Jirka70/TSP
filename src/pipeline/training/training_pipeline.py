@@ -33,6 +33,7 @@ from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
+from src.types.interfaces.visualizer import IVisualizer
 
 
 class TrainingPipeline(IPipeline):
@@ -48,6 +49,7 @@ class TrainingPipeline(IPipeline):
         metrics_aggregator: IMetricsAggregator,
         final_trainer: IFinalTrainer,
         evaluator: IEvaluator,
+        visualizer: IVisualizer,
         artifact_saver: IArtifactSaver,
         model_serializer: IModelSerializer,
     ) -> None:
@@ -63,6 +65,7 @@ class TrainingPipeline(IPipeline):
         self._metrics_aggregator = metrics_aggregator
         self._final_trainer = final_trainer
         self._evaluator = evaluator
+        self._visualizer = visualizer
         self._artifact_saver = artifact_saver
         self._model_serializer = model_serializer
 
@@ -71,24 +74,27 @@ class TrainingPipeline(IPipeline):
 
         raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
+        self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
 
         paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
         epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
         epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)
+        self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         splitting_input = SplitInputDTO(config.split, epoch_preprocessing_result.data)
         splitting_result = self._splitting.run(splitting_input, run_ctx)
 
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
+        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
         folds = augmentation_result.data.folds
         if not folds:
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
-        training_input = TrainingInputDTO(config=config.model, folds=folds)
+        training_input = TrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
         is_eegnet = getattr(config.model, "backend", None) == "eegnet"
@@ -110,18 +116,18 @@ class TrainingPipeline(IPipeline):
             config=config.model,
             folds=folds,
             train_data=epoch_preprocessing_result.data if is_eegnet else None,
+            validation_data=augmentation_result.data.validation_data
         )
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 
-        if not is_eegnet:
-            evaluation_input = EvaluationInputDTO(
-                config=config.evaluation,
-                trained_models=[final_training_result.data.trained_model],
-                folds=folds,
-            )
-            evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
-        elif evaluation_result is None:
-            self._log.warning("No EEGNet fold-trained models were evaluated. Skipping final-model evaluation because it was trained on the full dataset.")
+        evaluation_input = EvaluationInputDTO(
+            config=config.evaluation,
+            trained_models=[final_training_result.data.trained_model],
+            folds=folds,
+            dataset_split=augmentation_result.data,
+        )
+        evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
+        self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, final_training_result.data.trained_model.model_name)
 
         trained_model = final_training_result.data.trained_model
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(

@@ -25,7 +25,7 @@ class BasicSplitter(ISplitter):
     containing a single fold (Fold 0).
     """
 
-    def _extract_data(self, recordings: list) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    def extract_data(self, recordings: list) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
         """
         Helper method to extract and aggregate signals, labels, and metadata from RecordingDTOs.
 
@@ -46,111 +46,175 @@ class BasicSplitter(ISplitter):
             signal = rec.data
             labels = None
 
-            # 1. Attempt to extract labels from metadata (fallback mechanism)
+            # 1. Attempt to extract labels from metadata
             if isinstance(rec.metadata, dict) and "labels" in rec.metadata:
                 labels = np.array(rec.metadata["labels"])
 
-            # 2. Extract labels and data from MNE Epochs if applicable
+            # 2. Extract labels and data from MNE Epochs
             elif isinstance(signal, mne.BaseEpochs):
                 labels = signal.events[:, -1]
-                # Extracting raw data as a NumPy array
                 signal = signal.get_data()
-
-            # 3. Debug branch: If no labels are found, log a critical error
-            else:
-                meta_keys = list(rec.metadata.keys()) if isinstance(rec.metadata, dict) else "Metadata is not a dict"
-                log.error(f"CRITICAL ERROR: No labels found for recording {rec.subject_id}!\n  -> Signal type: {type(signal)}\n  -> Metadata keys: {meta_keys}")
 
             # Final safety check for labels
             if labels is None:
-                log.warning(f"No labels found for recording {rec.subject_id}. Creating zero-filled array.")
-                labels = np.zeros(len(signal))
+                raise ValueError(f"No labels found for recording {rec.subject_id}. BasicSplitter requires labels for partitioning.")
 
             all_signals.append(signal)
             all_labels.append(labels)
 
-            # Replicate metadata to match the number of epochs for consistent indexing
-            if isinstance(rec.metadata, dict):
-                df_meta = pd.DataFrame([rec.metadata] * len(labels))
-                all_metadata.append(df_meta)
+            # Replicate metadata to match the number of epochs
+            # Standardize required columns for grouping if available
+            subj = rec.metadata.get("subject", rec.subject_id) if isinstance(rec.metadata, dict) else rec.subject_id
+            sess = rec.metadata.get("session", rec.session_id) if isinstance(rec.metadata, dict) else rec.session_id
+            run = rec.metadata.get("run", rec.run_id) if isinstance(rec.metadata, dict) else rec.run_id
 
-        # Concatenate all extracted components into unified structures
-        combined_signal = np.concatenate(all_signals, axis=0)
-        combined_labels = np.concatenate(all_labels, axis=0)
-        combined_metadata = pd.concat(all_metadata, ignore_index=True) if all_metadata else pd.DataFrame()
+            row_data = {"subject": subj, "session": sess, "run": run}
+            if isinstance(rec.metadata, dict):
+                for k, v in rec.metadata.items():
+                    if k not in ["subject", "session", "run", "labels"] and np.isscalar(v):
+                        row_data[k] = v
+
+            df_meta = pd.DataFrame([row_data] * len(labels))
+            all_metadata.append(df_meta)
+
+        # Concatenate all extracted components
+        combined_signal = np.concatenate(all_signals, axis=0) if all_signals else np.array([])
+        combined_labels = np.concatenate(all_labels, axis=0) if all_labels else np.array([])
+        combined_metadata = pd.concat(all_metadata, ignore_index=True) if all_metadata else None
 
         return combined_signal, combined_labels, combined_metadata
+
+    def create_dto(
+        self,
+        idx_list: np.ndarray,
+        subset_x: np.ndarray,
+        subset_y: np.ndarray,
+        subset_metadata: pd.DataFrame,
+        dataset_name: str,
+    ) -> EpochPreprocessedDTO | None:
+        """
+        Reconstructs RecordingDTOs from aggregated data.
+        """
+        if idx_list is None or len(idx_list) == 0:
+            return None
+
+        from src.types.dto.load.recording import RecordingDTO
+
+        current_metadata = subset_metadata.iloc[idx_list]
+        reconstructed_recs = []
+
+        # Group by subject, session and run to recreate original recording structure
+        group_cols = ["subject", "session"]
+        if "run" in current_metadata.columns:
+            group_cols.append("run")
+
+        groups = current_metadata.groupby(group_cols)
+
+        for group_keys, group_df in groups:
+            if len(group_cols) == 1:
+                subj, sess, run = group_keys, "session_0", "run_0"
+            elif len(group_cols) == 2:
+                subj, sess = group_keys
+                run = "run_0"
+            else:
+                subj, sess, run = group_keys
+
+            abs_indices = group_df.index.values
+            first_row = group_df.iloc[0].to_dict()
+            meta_dict = {k: v for k, v in first_row.items() if k not in group_cols}
+            meta_dict["labels"] = subset_y[abs_indices]
+
+            reconstructed_recs.append(
+                RecordingDTO(
+                    data=subset_x[abs_indices],
+                    dataset_name=dataset_name,
+                    subject_id=subj,
+                    session_id=str(sess),
+                    run_id=run,
+                    metadata=meta_dict,
+                )
+            )
+
+        return EpochPreprocessedDTO(data=reconstructed_recs)
 
     def run(self, input_dto: SplitInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
         Executes the percentage-based splitting logic.
-
-        Args:
-            input_dto: Contains the split configuration (ratios, shuffle, seed) and the input data.
-            run_ctx: Context of the current pipeline execution.
-
-        Returns:
-            StepResult containing a single fold with partitioned train, validation, and test sets.
         """
         config = input_dto.config
         recordings = input_dto.data.data
+        dataset_name = recordings[0].dataset_name if recordings else "unknown"
 
-        # If splitting is disabled, wrap the entire dataset into a single 'training' fold
         if not config.enabled:
             log.info("BasicSplitter is disabled. Passing entire dataset as training data.")
             single_fold = FoldDTO(
                 fold_idx=0,
                 train_data=input_dto.data,
-                validation_data=None,
                 test_data=None,
             )
-            return StepResult(DatasetSplitDTO(folds=[single_fold]))
+            return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
 
         log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})")
-    
-        # Aggregate data from all input recordings
-        signal, labels, metadata = self._extract_data(recordings)
 
-        n_samples = len(labels)
+        # Aggregate data from all input recordings
+        x, y, metadata = self.extract_data(recordings)
+
+        if metadata is None:
+            raise ValueError("Metadata aggregation failed or no recordings provided.")
+
+        n_samples = len(y)
         indices = np.arange(n_samples)
 
-        # Apply shuffling if configured
         if config.shuffle:
             np.random.seed(config.random_seed)
             np.random.shuffle(indices)
 
-        # Calculate split boundaries based on ratios
-        train_end = int(n_samples * config.train_ratio)
-        val_end = train_end + int(n_samples * config.validation_ratio)
+        validation_data_global = None
+        main_indices = indices
 
-        train_idx = indices[:train_end]
-        val_idx = indices[train_end:val_end]
-        test_idx = indices[val_end:]
+        # 1. Pre-split validation
+        if config.validation_ratio > 0 and config.pre_split_validation:
+            num_val = int(n_samples * config.validation_ratio)
+            if num_val > 0:
+                val_indices = indices[:num_val]
+                main_indices = indices[num_val:]
+                validation_data_global = self.create_dto(val_indices, x, y, metadata, dataset_name)
+                log.info(f"Pre-split: extracted {num_val} samples for global validation.")
 
-        def create_dto(idx_list: np.ndarray) -> EpochPreprocessedDTO | None:
-            """Helper to wrap indices into the pipeline's DTO structure."""
-            if len(idx_list) == 0:
-                return None
+        # Calculate boundaries for the main split (train/test) within main_indices
+        n_main = len(main_indices)
+        total_tt = config.train_ratio + config.test_ratio
+        if total_tt == 0:
+            raise ValueError("Both train_ratio and test_ratio are zero.")
 
-            from src.types.dto.load.recording import RecordingDTO
+        train_share = config.train_ratio / total_tt
+        num_train_all = int(n_main * train_share)
 
-            # Create a single 'combined' RecordingDTO representing the subset
-            subset_rec = RecordingDTO(data=signal[idx_list], dataset_name=recordings[0].dataset_name if recordings else "unknown", subject_id="combined", session_id="combined", run_id="combined", metadata={"labels": labels[idx_list]})
-            return EpochPreprocessedDTO(data=[subset_rec])
+        train_idx_all = main_indices[:num_train_all]
+        test_idx = main_indices[num_train_all:]
 
-        # Create DTOs for each partition
-        train_dto = create_dto(train_idx)
-        val_dto = create_dto(val_idx)
-        test_dto = create_dto(test_idx)
+        actual_train_idx = train_idx_all
 
-        log.info(f"Split completed: {len(train_idx)} train, {len(val_idx)} val, {len(test_idx)} test samples.")
+        # 2. Post-split validation
+        if config.validation_ratio > 0 and not config.pre_split_validation:
+            num_val = int(len(train_idx_all) * config.validation_ratio)
+            if num_val > 0:
+                val_idx_in_fold = train_idx_all[:num_val]
+                actual_train_idx = train_idx_all[num_val:]
+                validation_data_global = self.create_dto(val_idx_in_fold, x, y, metadata, dataset_name)
+                log.info(f"Post-split: extracted {num_val} samples from training set for validation.")
+
+        # Create DTOs
+        train_dto = self.create_dto(actual_train_idx, x, y, metadata, dataset_name)
+        test_dto = self.create_dto(test_idx, x, y, metadata, dataset_name)
+
+        log.info(f"Split completed: {len(actual_train_idx)} train, {len(test_idx)} test samples.")
 
         # Package results into a single fold
         single_fold = FoldDTO(
             fold_idx=0,
             train_data=train_dto,
-            validation_data=val_dto,
             test_data=test_dto,
         )
 
-        return StepResult(DatasetSplitDTO(folds=[single_fold]))
+        return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=validation_data_global))

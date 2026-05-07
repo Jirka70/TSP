@@ -4,6 +4,7 @@ from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
+from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 
 # from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
@@ -21,6 +22,8 @@ from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from src.impl.split.basic_splitter import BasicSplitter
 from src.impl.split.moabb_splitter import MoabbSplitter
+from src.impl.visualization.matplotlib_visualizer import MatplotlibVisualizer
+from src.impl.visualization.plotly_visualizer import PlotlyVisualizer
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
@@ -34,6 +37,7 @@ from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
+from src.types.interfaces.visualizer import IVisualizer
 
 
 class StageType(Enum):
@@ -49,6 +53,7 @@ class StageType(Enum):
     EVALUATOR = "evaluator"
     SAVER = "saver"
     MODEL_SERIALIZER = "serializer"
+    VISUALIZER = "visualizer"
 
 
 class StageFactory:
@@ -66,7 +71,7 @@ class StageFactory:
         },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
-            "torcheeg": DummyAugmentor,
+            "torcheeg": TorchEEGAugmentor,
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
@@ -85,6 +90,10 @@ class StageFactory:
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
             "eegnet": PyTorchSerializer,
+        },
+        StageType.VISUALIZER: {
+            "matplotlib": MatplotlibVisualizer,
+            "plotly": PlotlyVisualizer,
         },
     }
 
@@ -122,6 +131,9 @@ class StageFactory:
 
     def create_evaluator_stage(self) -> IEvaluator:
         return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
+
+    def create_visualizer(self) -> IVisualizer:
+        return StageFactory._targets[StageType.VISUALIZER][self._config.visualization.backend](self._config.visualization)
 
     def create_saver(self) -> IArtifactSaver:
         return StageFactory._targets[StageType.SAVER][self._config.save_artifacts.backend]()
