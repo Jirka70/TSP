@@ -3,6 +3,7 @@ from enum import Enum
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
+from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 
 # from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
@@ -68,7 +69,7 @@ class StageFactory:
         },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
-            "torcheeg": DummyAugmentor,
+            "torcheeg": TorchEEGAugmentor,
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
