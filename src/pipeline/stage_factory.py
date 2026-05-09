@@ -63,7 +63,7 @@ class StageFactory:
         StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
-            "torcheeg": TorchEEGRawAugmentor,
+            "raw_torcheeg": TorchEEGRawAugmentor,
         },
         StageType.PARADIGM: {"testing": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},

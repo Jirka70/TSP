@@ -73,7 +73,7 @@ class TorchEEGRawAugmentor(IRawAugmentor):
             # Variant B: Multi-session augmentation
             # Create additional sessions based on copies_per_sample
             raw: mne.io.Raw = recording.data
-            log.debug(f"Augmenting recording {i + 1}/{len(raw_preprocessed.data)} (Subject: {recording.subject_id})")
+            log.info(f"Augmenting recording {i + 1}/{len(raw_preprocessed.data)} (Subject: {recording.subject_id})")
             data = raw.get_data()  # (channels, times)
 
             # Convert to tensor [C, T]
@@ -102,6 +102,22 @@ class TorchEEGRawAugmentor(IRawAugmentor):
         return StepResult(RawAugmentedDTO(data=augmented_recordings))
 
     def _build_transforms(self, config: RawAugmentationConfigTorchEEG) -> transforms.Compose | None:
+        """
+        Builds a composition of TorchEEG transformations based on the provided configuration.
+
+        This method checks for various augmentation options in the configuration (Gaussian noise,
+        random masking, sign flipping, and amplitude scaling) and adds the corresponding
+        transformations to a list. If any transformations are configured, they are composed
+        into a single `transforms.Compose` object.
+
+        Args:
+            config (RawAugmentationConfigTorchEEG): The configuration object containing
+                augmentation parameters.
+
+        Returns:
+            transforms.Compose | None: A composition of transformations if at least one is enabled,
+                otherwise None.
+        """
         transform_list = []
 
         if config.gaussian_noise_std > 0.0:
