@@ -9,7 +9,7 @@ defaults:
   - metrics_aggregator: default
   - final_trainer: eegnet
   - evaluation: default
-  - visualization: matplotlib
+  - visualization: plotly
   - source: external
   - save_artifacts: default
 
