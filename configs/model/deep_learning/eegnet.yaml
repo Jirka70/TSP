@@ -15,15 +15,6 @@ backend: eegnet
 # Number of output classes (e. g. 0 -> left_hand, 1 -> right_hand)
 n_classes: 2
 
-# Number of EEG channels expected by the training.
-# This should match the data after epoch_preprocessing / channel selection.
-n_channels: 26
-
-# Number of temporal samples per input window / epoch.
-# This should match the prepared sample shape.
-# In EEG classification training usually does not obtain entire continuous signal.Instead of it gets smaller parts of signal (a. k. a. "epochs" or "windows")
-n_times: 578
-
 # Dropout rate used inside the training.
 # Reduces overfitting of training
 dropout: 0.25

@@ -27,7 +27,7 @@ class EEGNetModelTrainer(IModelTrainer):
         if not input_dto.config.fold_training:
             log.info("Fold training is disabled. Skipping fold training stage.")
             return StepResult(TrainingResultDTO(trained_models=[]))
-        
+
         trained_models: list[TrainedModelDTO] = []
 
         for fold in input_dto.folds:
@@ -40,7 +40,10 @@ class EEGNetModelTrainer(IModelTrainer):
             if fold.validation_data is not None:
                 x_val, y_val = self._extract_data_and_labels(fold.validation_data)
 
-            network = create_eegnet_network(input_dto.config)
+            network = create_eegnet_network(input_dto.config, shape=x_train.shape)
+
+            # get n_channels from any fold
+            # network.n_chans = fold.train_data.data[0].metadata["n_channels"]
 
             model = EEGNetModel(
                 network=network,
@@ -61,9 +64,7 @@ class EEGNetModelTrainer(IModelTrainer):
                     model_name="eegnet",
                     history=history,
                     best_epoch=model.best_epoch,
-                    best_validation_metric_name="accuracy"
-                    if model.best_validation_accuracy is not None
-                    else None,
+                    best_validation_metric_name="accuracy" if model.best_validation_accuracy is not None else None,
                     best_validation_metric_value=model.best_validation_accuracy,
                     fold_idx=fold.fold_idx,
                     metadata={
@@ -80,7 +81,7 @@ class EEGNetModelTrainer(IModelTrainer):
                 trained_models=trained_models,
             )
         )
-    
+
     def _extract_data_and_labels(
         self,
         data_dto: EpochPreprocessedDTO,
@@ -102,9 +103,6 @@ class EEGNetModelTrainer(IModelTrainer):
         y = np.concatenate(y_list, axis=0)
 
         if x.ndim != 3:
-            raise ValueError(
-                f"EEGNet expects input shape "
-                f"(n_epochs, n_channels, n_times), got {x.shape}"
-            )
+            raise ValueError(f"EEGNet expects input shape (n_epochs, n_channels, n_times), got {x.shape}")
 
         return x, y

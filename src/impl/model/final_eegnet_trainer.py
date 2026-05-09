@@ -47,7 +47,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             if fold.validation_data is not None:
                 x_val, y_val = self._extract_data_and_labels(fold.validation_data)
 
-        network = create_eegnet_network(input_dto.config)
+        network = create_eegnet_network(input_dto.config, shape=x_train.shape)
 
         model = EEGNetModel(
             network=network,
@@ -67,9 +67,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             model_name="eegnet",
             history=history,
             best_epoch=model.best_epoch,
-            best_validation_metric_name="accuracy"
-            if model.best_validation_accuracy is not None
-            else None,
+            best_validation_metric_name="accuracy" if model.best_validation_accuracy is not None else None,
             best_validation_metric_value=model.best_validation_accuracy,
             fold_idx=None,
             metadata={
@@ -117,9 +115,6 @@ class FinalEEGNetTrainer(IFinalTrainer):
         y = np.concatenate(y_list, axis=0)
 
         if x.ndim != 3:
-            raise ValueError(
-                f"EEGNet expects input shape "
-                f"(n_epochs, n_channels, n_times), got {x.shape}"
-            )
+            raise ValueError(f"EEGNet expects input shape (n_epochs, n_channels, n_times), got {x.shape}")
 
         return x, y
