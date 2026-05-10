@@ -59,7 +59,7 @@ class AnnotateBreakConfig(BaseModel):
 
 
 class RawPreprocessingConfig(AStageConfig):
-    backend: Literal["testing"]
+    backend: Literal["default"]
     resampling: ResamplingConfig
     high_pass_filter: HighPassFilterConfig
     low_pass_filter: LowPassFilterConfig

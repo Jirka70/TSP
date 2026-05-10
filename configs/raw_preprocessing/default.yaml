@@ -1,0 +1,38 @@
+backend: default              # Used by program logic, changing this may break the pipeline if not handled properly
+
+# --- Raw Preprocessing Configuration ---
+
+# Blocks can be enabled/disabled independently, based on the enabled true/false flag.
+
+resampling:
+  enabled: false
+  sfreq: 250                 # Recommended: 250-500Hz for general analysis; 1000Hz+ for ERP/HF oscillations
+
+high_pass_filter:
+  enabled: true
+  l_freq: 1.0                # 1.0Hz is recommended to remove slow drifts, especially before ICA
+
+low_pass_filter:
+  enabled: false
+  h_freq: 40.0               # Common for ERPs; keep disabled if looking at high-gamma activity
+
+notch_filter:
+  enabled: true
+  freqs: [ 50 ]              # 50Hz for Europe/Asia, 60Hz for North America to remove power line interference
+
+bad_channels_interpolation:
+  enabled: true              # Reconstructs signal for 'bad' channels using spherical splines
+
+re_referencing:
+  enabled: true
+  method: "CSD"              # Current Source Density (Laplacian) - excellent for spatial focalization
+                             # Use "AVERAGE" for a robust general-purpose reference
+
+ica:
+  enabled: false             # ICA on raw data is often used for long-duration artifact rejection
+  n_components: 0.95         # Use decimal (0.95) to retain components explaining 95% of variance
+  method: "infomax"          # Extended Infomax is highly regarded for its stability
+
+annotate_break:
+  enabled: true
+  min_break_duration: 2.5    # Automatically finds and marks periods without tasks as 'BREAK'

@@ -50,7 +50,7 @@ class CSPConfig(BaseModel):
     norm_trace: bool
 
 class EpochPreprocessingConfig(AStageConfig):
-    backend: Literal["testing"]
+    backend: Literal["default"]
     alignment: AlignmentConfig
     ica: ICAConfig
     autoreject: AutoRejectConfig

@@ -59,9 +59,9 @@ class StageType(Enum):
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
         StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
-        StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
-        StageType.PARADIGM: {"testing": ParadigmPreprocessor},
-        StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
+        StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
+        StageType.PARADIGM: {"default": ParadigmPreprocessor},
+        StageType.EPOCH_PREPROCESSING: {"default": EpochPreprocessor},
         StageType.SPLIT: {
             "basic": BasicSplitter,
             "moabb_within_session": MoabbSplitter,

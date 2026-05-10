@@ -48,8 +48,7 @@ class EpochResamplingConfig(BaseModel):
 
 
 class ParadigmConfig(AStageConfig):
-    implementation: Literal["custom", "moabb"] = "custom"
-    backend: Literal["testing"] = "testing"
+    backend: Literal["default"] = "default"
 
     events: Union[dict[str, int], list[str]]
 

@@ -1,8 +1,8 @@
 defaults:
   - _self_
-  - raw_preprocessing: testing
-  - paradigm: testing
-  - epoch_preprocessing: testing
+  - raw_preprocessing: default
+  - paradigm: default
+  - epoch_preprocessing: default
   - split: moabb_within_session
   - augmentation: basic
   - model: deep_learning/eegnet
