@@ -30,7 +30,7 @@ class RawPreprocessor(IRawPreprocessing):
         cfg: RawPreprocessingConfig = input_dto.raw_preprocessing_config
 
         # Note: General config parameters like cfg.backend are preserved in the DTO
-        log.warning("Novy RAW preprocessing")
+        log.warning("New RAW preprocessing")
         log.info(f"Starting processing with backend: {getattr(cfg, 'backend', 'default')}")
         log.info(f"Processing {len(input_dto.data.data)} continuous EEG recordings")
 
