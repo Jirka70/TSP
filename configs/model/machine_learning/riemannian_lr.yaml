@@ -1,17 +1,15 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-based features
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "riemannian_lr"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Logistic Regression applied to tangent space features with regularization.
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "riemannian_lr"  # Unique identifier for the Riemannian Logistic Regression pipeline
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  estimator: "oas"
-  metric: "riemann"
-  penalty: "elasticnet"
-  l1_ratio: 0.5
-  random_state: 42
+  estimator: "oas"           # Robust covariance estimation to handle noisy EEG trials
+  metric: "riemann"          # Metric for projecting covariance matrices into the tangent space
+  penalty: "elasticnet"      # Combined L1 and L2 regularization to promote sparsity and stability
+  l1_ratio: 0.5              # Balance between L1 (Lasso) and L2 (Ridge); 0.5 is equal weighting
+  random_state: 42           # Seed for reproducible results during optimization

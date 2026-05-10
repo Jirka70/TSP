@@ -1,13 +1,11 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend for classical machine learning pipelines
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "csp_lda"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Combines Common Spatial Patterns (CSP) for dimensionality reduction and Linear Discriminant Analysis (LDA).
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "csp_lda"        # Unique identifier for the CSP + LDA pipeline
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  n_components: 4
+  n_components: 4            # Number of spatial filters to extract (typically 4-6 for motor imagery)
