@@ -2,6 +2,9 @@ defaults:
   - training: default
   - _self_
 
+fold_training: true
+model_name: "tomas kopelent"
+
 # Model configuration for EEGNet.
 
 # Backend / training family identifier.
@@ -14,12 +17,12 @@ n_classes: 2
 
 # Number of EEG channels expected by the training.
 # This should match the data after epoch_preprocessing / channel selection.
-n_channels: 64
+n_channels: 26
 
 # Number of temporal samples per input window / epoch.
 # This should match the prepared sample shape.
 # In EEG classification training usually does not obtain entire continuous signal.Instead of it gets smaller parts of signal (a. k. a. "epochs" or "windows")
-n_times: 256
+n_times: 578
 
 # Dropout rate used inside the training.
 # Reduces overfitting of training
@@ -27,7 +30,7 @@ dropout: 0.25
 
 # Temporal kernel length used by the first convolutional block.
 # Window with size of kernel_length, which shifts over the signal and finds certain patterns
-kernel_length: 64
+kernel_length: 16
 
 # Number of temporal filters in the first convolutional layer.
 # Neural network will learn [F1] temporal filters (alpha_rhythm, beta_rhythm, small movements, fast movements, ...)
