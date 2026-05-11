@@ -1,8 +1,7 @@
 import logging
 
-import numpy as np
-
 from src.impl.model.eegnet_model import EEGNetModel
+from src.impl.model.util.extract.extract_learning_data import extract_learning_data
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
@@ -15,34 +14,6 @@ from src.types.dto.split.dataset_split_dto import FoldDTO
 from src.types.interfaces.model.model_trainer import IModelTrainer
 
 log = logging.getLogger(__name__)
-
-
-def _extract_data_and_labels(
-        data_dto: EpochPreprocessedDTO,
-) -> tuple[np.ndarray, np.ndarray]:
-    x_list = []
-    y_list = []
-
-    for recording in data_dto.data:
-        epochs = recording.data
-
-        if hasattr(epochs, "get_data"):
-            x_list.append(epochs.get_data(copy=False))
-            y_list.append(epochs.events[:, -1])
-        else:
-            x_list.append(epochs)
-            y_list.append(np.array(recording.metadata.get("labels", [])))
-
-    x = np.concatenate(x_list, axis=0)
-    y = np.concatenate(y_list, axis=0)
-
-    if x.ndim != 3:
-        raise ValueError(
-            f"EEGNet expects input shape "
-            f"(n_epochs, n_channels, n_times), got {x.shape}"
-        )
-
-    return x, y
 
 
 class EEGNetModelTrainer(IModelTrainer):
@@ -87,19 +58,19 @@ class EEGNetModelTrainer(IModelTrainer):
             config=config
         )
 
-        x_train, y_train = _extract_data_and_labels(fold.train_data)
+        x_train, y_train = extract_learning_data(fold.train_data)
         fold_test_data = fold.test_data
 
         x_fold_test_data = None
         y_fold_test_data = None
 
         if fold_test_data is not None:
-            x_fold_test_data, y_fold_test_data = _extract_data_and_labels(fold_test_data)
+            x_fold_test_data, y_fold_test_data = extract_learning_data(fold_test_data)
 
         x_validation_data, y_validation_data = None, None
 
         if validation_data is not None:
-            x_validation_data, y_validation_data = _extract_data_and_labels(validation_data)
+            x_validation_data, y_validation_data = extract_learning_data(validation_data)
 
         model.initialize_training(y_train)
         best_validation_accuracy = None
