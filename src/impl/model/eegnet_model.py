@@ -87,7 +87,7 @@ class EEGNetModel(IModel):
 
         return val_loss, val_accuracy
 
-    def evaluate(self, x: np.ndarray, y: np.ndarray, epoch: int | None = None):
+    def evaluate(self, x: np.ndarray, y: np.ndarray):
         y_encoded = self._encode_labels(y)
         data_loader = self._create_loader(x, y_encoded, shuffle=False)
 
