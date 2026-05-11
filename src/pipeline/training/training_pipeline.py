@@ -101,7 +101,7 @@ class TrainingPipeline(IPipeline):
         evaluation_result = None
         if is_eegnet and model_training_result.data.trained_models:
             self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
-            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation, trained_models=model_training_result.data.trained_models, folds=folds, validation_data=augmentation_result.data.validation_data, dataset_split=augmentation_result.data)
+            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation, trained_models=model_training_result.data.trained_models, folds=folds, dataset_split=augmentation_result.data)
             evaluation_result = self._evaluator.run(fold_evaluation_input, run_ctx)
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
