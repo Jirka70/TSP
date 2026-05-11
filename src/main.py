@@ -1,5 +1,4 @@
 import logging
-
 import hydra
 
 from src.pipeline.context.run_context import RunContext
@@ -35,24 +34,43 @@ def my_app(cfg):
     raw_preprocessing = sf.create_raw_preprocessing_stage()
     paradigm = sf.create_paradigm_stage()
     epoch_preprocessing = sf.create_epoch_preprocessing_stage()
-    split = sf.create_split_stage()
-    augmentation = sf.create_augmentation_stage()
-    model_trainer = sf.create_model_trainer_stage()
-    metrics_aggregator = sf.create_metrics_aggregator_stage()
-    final_trainer = sf.create_final_trainer_stage()
     evaluator = sf.create_evaluator_stage()
     visualizer = sf.create_visualizer()
     saver = sf.create_saver()
     model_serializer = sf.create_model_serializer()
 
     run_ctx_factory: RunContextFactory = RunContextFactory()
+    run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
 
     pipeline: IPipeline
-    run_ctx: RunContext = run_ctx_factory.create(ex_conf, "pepa zetek", "adam mika")
+
     if ex_conf.mode == Mode.TRAINING.value:
-        pipeline = TrainingPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing, split, augmentation, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
+        split = sf.create_split_stage()
+        augmentation = sf.create_augmentation_stage()
+        model_trainer = sf.create_model_trainer_stage()
+        metrics_aggregator = sf.create_metrics_aggregator_stage()
+        final_trainer = sf.create_final_trainer_stage()
+
+        pipeline = TrainingPipeline(
+            dl, raw_preprocessing, paradigm, epoch_preprocessing,
+            split, augmentation, model_trainer, metrics_aggregator,
+            final_trainer, evaluator, visualizer, saver, model_serializer
+        )
+
     elif ex_conf.mode == Mode.EXPERIMENT.value:
-        pipeline = ExperimentPipeline(dl, raw_preprocessing, paradigm, epoch_preprocessing)
+        model_loader = sf.create_model_loader()
+
+        pipeline = ExperimentPipeline(
+            data_loader=dl,
+            raw_preprocessing=raw_preprocessing,
+            paradigm=paradigm,
+            epoch_preprocessing=epoch_preprocessing,
+            model_loader=model_loader,
+            evaluator=evaluator,
+            visualizer=visualizer,
+            artifact_saver=saver,
+            model_serializer=model_serializer
+        )
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
 

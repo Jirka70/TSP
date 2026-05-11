@@ -16,6 +16,7 @@ from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
+from src.impl.model.model_loader import ModelLoader
 from src.impl.model.pytorch_serializer import PyTorchSerializer
 from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
@@ -32,6 +33,7 @@ from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.interfaces.model.final_trainer import IFinalTrainer
+from src.types.interfaces.model.model_loader import IModelLoader
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
@@ -54,6 +56,7 @@ class StageType(Enum):
     SAVER = "saver"
     MODEL_SERIALIZER = "serializer"
     VISUALIZER = "visualizer"
+    MODEL_PATH = "model_path"
 
 
 class StageFactory:
@@ -94,6 +97,9 @@ class StageFactory:
         StageType.VISUALIZER: {
             "matplotlib": MatplotlibVisualizer,
             "plotly": PlotlyVisualizer,
+        },
+        StageType.MODEL_PATH: {
+            "default": ModelLoader,
         },
     }
 
@@ -140,3 +146,6 @@ class StageFactory:
 
     def create_model_serializer(self) -> IModelSerializer:
         return StageFactory._targets[StageType.MODEL_SERIALIZER][self._config.model.backend]()
+
+    def create_model_loader(self) -> IModelLoader:
+        return StageFactory._targets[StageType.MODEL_PATH][self._config.model_path.backend]()

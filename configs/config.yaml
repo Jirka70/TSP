@@ -4,14 +4,15 @@ defaults:
   - paradigm: default
   - epoch_preprocessing: default
   - split: moabb_within_session
-  - augmentation: basic
-  - model: deep_learning/eegnet
+  - augmentation: torcheeg
+  - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
-  - final_trainer: eegnet
+  - final_trainer: default
   - evaluation: default
   - visualization: matplotlib
   - source: external
   - save_artifacts: default
+  - model_path: default
 
 mode: training
 output_dir: ./outputs
