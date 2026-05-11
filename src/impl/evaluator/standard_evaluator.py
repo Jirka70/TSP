@@ -74,7 +74,7 @@ class StandardEvaluator(IEvaluator):
         overall_cm = confusion_matrix(y_true, y_pred).tolist()
 
         # Create the single result entry
-        fold_res = FoldEvaluationResultDTO(
+        fold_res = FoldEvaluationResultDTO( # TODO: zde se foldy vubec nepouzivaji, nachazi se zde stara implementace
             fold_idx=model_dto.fold_idx if model_dto.fold_idx is not None else 0,
             metrics=model_metrics,
             predictions=y_pred.tolist(),

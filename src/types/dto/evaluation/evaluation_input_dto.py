@@ -10,6 +10,5 @@ from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 class EvaluationInputDTO:
     config: EvaluationConfig
     trained_models: list[TrainedModelDTO]
-    folds: list[FoldDTO]
+    folds: list[FoldDTO] # TODO: toto je i v tom DatasetSplitDTO
     dataset_split: DatasetSplitDTO | None = None
-    validation_data: EpochPreprocessedDTO | None = None

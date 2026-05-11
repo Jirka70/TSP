@@ -58,7 +58,7 @@ class FinalSklearnTrainer(IFinalTrainer):
         x_list, y_list = [], []
         for fold in input_dto.folds:
             if fold.train_data:
-                x, y = self._extract_data_and_labels(fold.test_data)
+                x, y = self._extract_data_and_labels(fold.test_data) # TODO: Chceme skutecne vyuzivat test_date nebo chceme spise train_data.
                 x_list.append(x)
                 y_list.append(y)
         return np.concatenate(x_list, axis=0), np.concatenate(y_list, axis=0)
