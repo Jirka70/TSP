@@ -43,12 +43,10 @@ class EEGNetModel(IModel):
         This trains without validation data. For DL training with validation,
         use fit_with_validation().
         """
-        self.history = self.fit_with_validation(
-            x_train=x,
-            y_train=y,
-            x_val=None,
-            y_val=None,
-        )
+        for _ in range(self._config.training.epochs):
+            self.train_one_epoch(x, y)
+
+        self.best_epoch = self._config.training.epochs - 1
 
     def initialize_training(self, y_train: np.ndarray):
         if self._classes is None:
@@ -63,7 +61,6 @@ class EEGNetModel(IModel):
                 "global_accuracy": [],
             },
         )
-
 
     def train_one_epoch(self, x_train: np.ndarray, y_train: np.ndarray) -> tuple[float, float]:
         y_train_encoded = self._encode_labels(y_train)
