@@ -93,7 +93,6 @@ class EEGNetModelTrainer(IModelTrainer):
         x_fold_test_data = None
         y_fold_test_data = None
 
-
         if fold_test_data is not None:
             x_fold_test_data, y_fold_test_data = _extract_data_and_labels(fold_test_data)
 
