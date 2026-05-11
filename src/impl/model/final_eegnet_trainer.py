@@ -29,7 +29,18 @@ class FinalEEGNetTrainer(IFinalTrainer):
         input_dto: FinalTrainingInputDTO,
         run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        log.info("Starting final EEGNet training. Run: %s", run_ctx.run_id)
+        network = create_eegnet_network(input_dto.config)
+        model = EEGNetModel(network=network,
+                            model_name=input_dto.config.model_name,
+                            config=input_dto.config)
+
+        all_y_train = np.concatenate([
+            self._extract_data_and_labels(fold.train_data)[1]
+            for fold in input_dto.folds
+        ])
+
+        return None
+        """log.info("Starting final EEGNet training. Run: %s", run_ctx.run_id)
 
         x_val = None
         y_val = None
@@ -94,7 +105,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             FinalTrainingResultDTO(
                 trained_model=trained_model,
             )
-        )
+        )"""
 
     def _extract_data_and_labels(
         self,

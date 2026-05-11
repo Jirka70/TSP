@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import torch
 from torch import nn
@@ -21,10 +19,10 @@ class EEGNetModel(IModel):
         self._model_name = model_name
         self._config = config
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
-        self._loss_fn = nn.CrossEntropyLoss()
-        self._optimizer: Optimizer = self._create_optimizer()
 
         self._network.to(self._device)
+        self._loss_fn = nn.CrossEntropyLoss()
+        self._optimizer: Optimizer = self._create_optimizer()
 
         self.best_epoch: int | None = None
         self.best_validation_accuracy: float | None = None
@@ -40,13 +38,13 @@ class EEGNetModel(IModel):
         """
         Basic fit required by IModel.
 
-        This trains without validation data. For DL training with validation,
-        use fit_with_validation().
+        Trains on one dataset for the configured number of epochs.
+        No fold validation and no external evaluation is performed.
         """
+
+        self.initialize_training(y)
         for _ in range(self._config.training.epochs):
             self.train_one_epoch(x, y)
-
-        self.best_epoch = self._config.training.epochs - 1
 
     def initialize_training(self, y_train: np.ndarray):
         if self._classes is None:
@@ -58,11 +56,14 @@ class EEGNetModel(IModel):
             train_metrics={"accuracy": []},
             validation_metrics={
                 "fold_accuracy": [],
-                "global_accuracy": [],
+                "validation_accuracy": [],
             },
         )
 
     def train_one_epoch(self, x_train: np.ndarray, y_train: np.ndarray) -> tuple[float, float]:
+        if self.history is None:
+            raise ValueError("Training is not initialized. Call initialize_training first.")
+
         y_train_encoded = self._encode_labels(y_train)
         train_loader = self._create_loader(x_train, y_train_encoded, shuffle=True)
 
@@ -74,6 +75,9 @@ class EEGNetModel(IModel):
         return train_loss, train_accuracy
 
     def validate(self, x_val: np.ndarray, y_val: np.ndarray) -> tuple[float, float]:
+        if self.history is None:
+            raise ValueError("Training is not initialized. Call initialize_training first.")
+
         y_val_encoded = self._encode_labels(y_val)
         val_loader = self._create_loader(x=x_val, y=y_val_encoded, shuffle=False)
 
@@ -84,13 +88,16 @@ class EEGNetModel(IModel):
 
         return val_loss, val_accuracy
 
-    def evaluate(self, x: np.ndarray, y: np.ndarray):
+    def evaluate(self, x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
+        if self.history is None:
+            raise ValueError("Training is not initialized. Call initialize_training first.")
+
         y_encoded = self._encode_labels(y)
         data_loader = self._create_loader(x, y_encoded, shuffle=False)
 
         loss, accuracy = self._run_evaluation_loader(data_loader)
 
-        self.history.validation_metrics["global_accuracy"].append(accuracy)
+        self.history.validation_metrics["validation_accuracy"].append(accuracy)
 
         return loss, accuracy
 
@@ -109,7 +116,7 @@ class EEGNetModel(IModel):
                 logits = self._network(batch_x)
                 loss = self._loss_fn(logits, batch_y)
 
-                total_loss += loss
+                total_loss += loss.item()
                 predictions = torch.argmax(logits, dim=1)
 
                 total_correct += (predictions == batch_y).sum().item()
@@ -135,82 +142,13 @@ class EEGNetModel(IModel):
             loss.backward()
             self._optimizer.step()
 
-            total_loss += loss.item
+            total_loss += loss.item()
             predictions = torch.argmax(logits, dim=1)
 
             total_correct += (predictions == batch_y).sum().item()
             total_samples += batch_y.size(0)
 
         return total_loss / len(train_loader), total_correct / total_samples
-
-    def fit_with_validation(
-        self,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        x_val: np.ndarray | None = None,
-        y_val: np.ndarray | None = None,
-    ) -> TrainingHistory:
-        self._fit_label_mapping(y_train)
-
-
-        y_train_encoded = self._encode_labels(y_train)
-
-        if y_val is not None:
-            y_val_encoded = self._encode_labels(y_val)
-        else:
-            y_val_encoded = None
-
-        train_loader = self._create_loader(x_train, y_train_encoded, shuffle=True)
-
-        val_loader = None
-        if x_val is not None and y_val_encoded is not None:
-            val_loader = self._create_loader(x_val, y_val_encoded, shuffle=False)
-
-        if val_loader is None:
-            self.best_epoch = self._config.training.epochs - 1
-
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = self._create_optimizer()
-
-        history = TrainingHistory(
-            train_loss=[],
-            validation_loss=[],
-            train_metrics={"accuracy": []},
-            validation_metrics={"accuracy": []},
-        )
-
-        best_state = None
-        best_val_accuracy = -1.0
-
-        for epoch in range(self._config.training.epochs):
-            train_loss, train_accuracy = self._train_one_epoch(
-                train_loader=train_loader,
-                loss_fn=loss_fn,
-                optimizer=optimizer,
-            )
-
-            history.train_loss.append(train_loss)
-            history.train_metrics["accuracy"].append(train_accuracy)
-
-            if val_loader is not None:
-                val_loss, val_accuracy = self._evaluate(
-                    data_loader=val_loader,
-                    loss_fn=loss_fn,
-                )
-
-                history.validation_loss.append(val_loss)
-                history.validation_metrics["accuracy"].append(val_accuracy)
-
-                if val_accuracy > best_val_accuracy:
-                    best_val_accuracy = val_accuracy
-                    best_state = copy.deepcopy(self._network.state_dict())
-                    self.best_epoch = epoch
-                    self.best_validation_accuracy = val_accuracy
-
-        if best_state is not None:
-            self._network.load_state_dict(best_state)
-        self.history = history
-        return history
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         probabilities = self.predict_class_probability(x)
@@ -250,55 +188,6 @@ class EEGNetModel(IModel):
             "best_validation_accuracy": self.best_validation_accuracy,
         }
 
-    def _train_one_epoch(self, train_loader, loss_fn, optimizer) -> tuple[float, float]:
-        self._network.train()
-
-        total_loss = 0.0
-        total_correct = 0
-        total_samples = 0
-
-        for batch_x, batch_y in train_loader:
-            batch_x = batch_x.to(self._device)
-            batch_y = batch_y.to(self._device)
-
-            logits = self._network(batch_x)
-            loss = loss_fn(logits, batch_y)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
-            predictions = torch.argmax(logits, dim=1)
-
-            total_correct += (predictions == batch_y).sum().item()
-            total_samples += batch_y.size(0)
-
-        return total_loss / len(train_loader), total_correct / total_samples
-
-    def _evaluate(self, data_loader, loss_fn) -> tuple[float, float]:
-        self._network.eval()
-
-        total_loss = 0.0
-        total_correct = 0
-        total_samples = 0
-
-        with torch.no_grad():
-            for batch_x, batch_y in data_loader:
-                batch_x = batch_x.to(self._device)
-                batch_y = batch_y.to(self._device)
-
-                logits = self._network(batch_x)
-                loss = loss_fn(logits, batch_y)
-
-                total_loss += loss.item()
-                predictions = torch.argmax(logits, dim=1)
-
-                total_correct += (predictions == batch_y).sum().item()
-                total_samples += batch_y.size(0)
-
-        return total_loss / len(data_loader), total_correct / total_samples
-
     def _create_loader(
         self,
         x: np.ndarray,
@@ -327,7 +216,7 @@ class EEGNetModel(IModel):
 
         return torch.tensor(x_array, dtype=torch.float32)
 
-    def _create_optimizer(self):
+    def _create_optimizer(self) -> Optimizer:
         optimizer_name = self._config.training.optimizer.lower()
 
         if optimizer_name == "adam":
