@@ -84,17 +84,17 @@ class TrainingPipeline(IPipeline):
         self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         splitting_input = SplitInputDTO(config.split, epoch_preprocessing_result.data)
-        splitting_result = self._splitting.run(splitting_input, run_ctx)
+        splitting_result = self._splitting.run(splitting_input, run_ctx) # TODO: tohle by melo byt typed
 
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
-        augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
+        augmentation_result = self._augmentation.run(augmentation_input, run_ctx) # TODO: tohle by melo byt typed
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
         folds = augmentation_result.data.folds
         if not folds:
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
-        training_input = TrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
+        training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
         is_eegnet = getattr(config.model, "backend", None) == "eegnet"
