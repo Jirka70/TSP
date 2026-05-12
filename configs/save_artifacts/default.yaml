@@ -2,4 +2,4 @@ backend: default
 save_model: true
 save_metrics: true
 save_config: true
-save_training_history: false
+save_training_history: true
