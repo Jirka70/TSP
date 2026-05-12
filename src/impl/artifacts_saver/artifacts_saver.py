@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 
 from src.impl.model.util.serialize.write_json import write_json
@@ -23,7 +24,7 @@ class ArtifactSaver(IArtifactSaver):
     ) -> StepResult[SavedArtifactsDTO]:
         saved_artifacts: list[ArtifactRef] = []
 
-        output_path = input_dto.output_path
+        output_path = self._create_artifact_output_path(input_dto, run_ctx)
         output_path.mkdir(parents=True, exist_ok=True)
 
         config = input_dto.config
@@ -51,7 +52,37 @@ class ArtifactSaver(IArtifactSaver):
 
         return StepResult(SavedArtifactsDTO(artifacts=saved_artifacts))
 
-    def _save_model(self, input_dto: SaveArtifactsInputDTO, output_path: Path) -> SavedArtifactsDTO:
+    def _create_artifact_output_path(
+            self,
+            input_dto: SaveArtifactsInputDTO,
+            run_ctx: RunContext,
+    ) -> Path:
+        timestamp = run_ctx.started_at.strftime("%Y%m%d_%H%M%S")
+        folder_name = self._build_artifact_folder_name(input_dto, timestamp)
+        return input_dto.output_path / folder_name
+
+    def _build_artifact_folder_name(
+            self,
+            input_dto: SaveArtifactsInputDTO,
+            timestamp: str,
+    ) -> str:
+        model_name = (
+            input_dto.trained_model.model_name
+            if input_dto.trained_model is not None
+            else "artifacts"
+        )
+        safe_model_name = self._to_safe_folder_name(model_name)
+        return f"{safe_model_name}-{timestamp}"
+
+    def _to_safe_folder_name(self, value: str) -> str:
+        safe_value = re.sub(r"[^a-zA-Z0-9]+", "_", value.strip().lower())
+        return safe_value.strip("_") or "model"
+
+    def _save_model(
+            self,
+            input_dto: SaveArtifactsInputDTO,
+            output_path: Path,
+    ) -> SavedArtifactsDTO:
         if input_dto.model_serializer is None:
             raise ValueError("Model serializer is required when save_model=True.")
 
