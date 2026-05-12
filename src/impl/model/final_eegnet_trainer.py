@@ -7,6 +7,7 @@ from src.impl.model.util.extract.extract_learning_data import extract_learning_d
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
@@ -15,6 +16,35 @@ from src.types.interfaces.model.final_trainer import IFinalTrainer
 
 log = logging.getLogger(__name__)
 
+def extraact_final_training_data_from_folds(
+        folds: list[FoldDTO]
+) -> tuple[np.ndarray, np.ndarray]:
+    if not folds:
+        raise ValueError("Final EEGNet training needs at least one fold.")
+
+    unique_recordings = []
+    # dataset_name, subject_id, session_id, run_id
+    seen_recordings = set[tuple[object, object, object, object]] = set()
+
+    for fold in folds:
+        for recording in fold.train_data.data:
+            key = (
+                recording.dataset_name,
+                recording.subject_id,
+                recording.session_id,
+                recording.run_id
+            )
+
+            if key in seen_recordings:
+                continue
+
+            seen_recordings.add(key)
+            unique_recordings.append(recording)
+
+    if not unique_recordings:
+        raise ValueError("No unique training data found in folds.")
+
+    return extract_learning_data(EpochPreprocessedDTO(data=unique_recordings))
 
 class FinalEEGNetTrainer(IFinalTrainer):
     """
