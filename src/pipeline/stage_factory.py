@@ -17,6 +17,7 @@ from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklea
 from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.model_loader import ModelLoader
 from src.impl.model.pytorch_serializer import PyTorchSerializer
+from src.impl.save_artifacts.deep_learning.eegnet_model_serializer import EEGNetModelSerializer
 from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
@@ -91,7 +92,7 @@ class StageFactory:
         StageType.SAVER: {"default": ArtifactSaver},
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
-            "eegnet": PyTorchSerializer,
+            "eegnet": EEGNetModelSerializer,
         },
         StageType.VISUALIZER: {
             "matplotlib": MatplotlibVisualizer,
