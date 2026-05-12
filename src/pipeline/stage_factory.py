@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.model.deep_learning.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -11,14 +11,13 @@ from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.dummy_model_trainer import DummyModelTrainer
-from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
-from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
-from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
+from src.impl.model.machine_learning.final_eegnet_trainer import FinalEEGNetTrainer
+from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
+from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.model_loader import ModelLoader
 from src.impl.model.pytorch_serializer import PyTorchSerializer
-from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
+from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from src.impl.split.basic_splitter import BasicSplitter

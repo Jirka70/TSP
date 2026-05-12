@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from src.impl.model.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet_model import EEGNetModel
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext

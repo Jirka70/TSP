@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from sklearn.metrics import accuracy_score
 
-from src.impl.model.generic_sklearn_model import GenericSklearnModel
+from src.impl.model.machine_learning.generic_sklearn_model import GenericSklearnModel
 from src.impl.model.model_factory import ModelFactory
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
