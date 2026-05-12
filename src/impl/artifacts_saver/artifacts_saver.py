@@ -8,7 +8,6 @@ from src.types.dto.save_artifacts.artifact_ref import ArtifactRef
 from src.types.dto.save_artifacts.save_artifacts_input_dto import SaveArtifactsInputDTO
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 from src.types.interfaces.artifact_saver import IArtifactSaver
-from src.types.interfaces.model.model_serializer import IModelSerializer
 
 
 class UnsupportedModelSerializerError(Exception):
@@ -20,30 +19,37 @@ log = logging.getLogger(__name__)
 
 class ArtifactSaver(IArtifactSaver):
     def run(
-        self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext
+            self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext
     ) -> StepResult[SavedArtifactsDTO]:
+        saved_artifacts: list[ArtifactRef] = []
 
-        if not input_dto.model_serializer or not input_dto.trained_model:
-            log.info("Model or serializer missing. Proceeding with evaluation results only.")
-            return StepResult(SavedArtifactsDTO(artifacts=[]))
-
-        log.info("Saving trained model")
-        serializer: IModelSerializer = input_dto.model_serializer
-        trained_model = input_dto.trained_model
-        model_name = trained_model.model_name
-
-        if not serializer.supports(model_name):
-            raise UnsupportedModelSerializerError(
-                f"Model serializer {serializer.__class__.__name__} "
-                f"does not support model {model_name}"
-            )
+        output_path = input_dto.output_path
+        output_path.mkdir(parents=True, exist_ok=True)
 
         config = input_dto.config
+
         if config.save_model:
+            model_artifacts = self._save_model(input_dto, output_path)
+            saved_artifacts.extend(model_artifacts.artifacts)
 
+        if config.save_metrics:
+            metrics_artifact = self._save_metrics(input_dto, output_path)
+            if metrics_artifact is not None:
+                saved_artifacts.append(metrics_artifact)
 
-        saved_artifacts = serializer.save(trained_model, input_dto.output_path)
-        return StepResult(saved_artifacts)
+        if config.save_config:
+            config_artifact = self._save_config(input_dto, output_path)
+            saved_artifacts.append(config_artifact)
+
+        if config.save_training_history:
+            history_artifact = self._save_training_history(input_dto, output_path)
+            if history_artifact is not None:
+                saved_artifacts.append(history_artifact)
+
+        manifest_artifact = self._save_manifest(saved_artifacts, output_path, run_ctx)
+        saved_artifacts.append(manifest_artifact)
+
+        return StepResult(SavedArtifactsDTO(artifacts=saved_artifacts))
 
     def _save_model(self, input_dto: SaveArtifactsInputDTO, output_path: Path) -> SavedArtifactsDTO:
         if input_dto.model_serializer is None:
@@ -114,7 +120,7 @@ class ArtifactSaver(IArtifactSaver):
             },
         )
 
-    def _save_manifest(self, artifacts: list[ArtifactRef], output_path: Path, run_ctx: RunContext):
+    def _save_manifest(self, artifacts: list[ArtifactRef], output_path: Path, run_ctx: RunContext) -> ArtifactRef:
         file_path = output_path / "manifest.json"
 
         manifest = {

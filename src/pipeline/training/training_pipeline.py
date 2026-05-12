@@ -129,7 +129,7 @@ class TrainingPipeline(IPipeline):
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
-            output_path=Path("ahoj.txt"),
+            output_path=Path("model_output"),
             evaluation_result=evaluation_result.data if evaluation_result is not None else None,
             trained_model=trained_model,
             model_serializer=self._model_serializer,
