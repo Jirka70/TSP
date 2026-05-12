@@ -15,8 +15,9 @@ from src.types.dto.split.dataset_split_dto import FoldDTO
 from src.types.interfaces.model.final_trainer import IFinalTrainer
 
 log = logging.getLogger(__name__)
+NO_ACCURACY = 0
 
-def extraact_final_training_data_from_folds(
+def extract_final_training_data_from_folds(
         folds: list[FoldDTO]
 ) -> tuple[np.ndarray, np.ndarray]:
     if not folds:
@@ -24,7 +25,7 @@ def extraact_final_training_data_from_folds(
 
     unique_recordings = []
     # dataset_name, subject_id, session_id, run_id
-    seen_recordings = set[tuple[object, object, object, object]] = set()
+    seen_recordings: set[tuple[object, object, object, object]] = set()
 
     for fold in folds:
         for recording in fold.train_data.data:
@@ -46,6 +47,7 @@ def extraact_final_training_data_from_folds(
 
     return extract_learning_data(EpochPreprocessedDTO(data=unique_recordings))
 
+
 class FinalEEGNetTrainer(IFinalTrainer):
     """
     Trains one final EEGNet model.
@@ -56,25 +58,22 @@ class FinalEEGNetTrainer(IFinalTrainer):
     """
 
     def run(
-        self,
-        input_dto: FinalTrainingInputDTO,
-        run_ctx: RunContext,
+            self,
+            input_dto: FinalTrainingInputDTO,
+            run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
         network = create_eegnet_network(input_dto.config)
         model = EEGNetModel(network=network,
                             model_name=input_dto.config.model_name,
                             config=input_dto.config)
-        all_y_train = np.concatenate([
-            extract_learning_data(fold.train_data)[1]
-            for fold in input_dto.folds
-        ])
-
-        model.initialize_training(all_y_train)
 
         epochs: int = input_dto.config.training.epochs
+        x_train, y_train = extract_final_training_data_from_folds(input_dto.folds)
 
+        model.initialize_training(y_train)
         for _ in range(epochs):
-            self._train_model_on_folds(model, input_dto, run_ctx)
+            self._train_one_epoch(model, x_train, y_train, run_ctx)
+            validation_accuracy = self._evaluate_model(model, input_dto.validation_data)
 
         trained_model = TrainedModelDTO(
             model=model,
@@ -96,14 +95,15 @@ class FinalEEGNetTrainer(IFinalTrainer):
             )
         )
 
-    def _train_model_on_folds(self, model: EEGNetModel, input: FinalTrainingInputDTO, run_ctx: RunContext) -> None:
-        folds: list[FoldDTO] = input.folds
-        for fold in folds:
-            self._train_model_on_fold(model, fold, run_ctx)
-
-    def _train_model_on_fold(self, model: EEGNetModel, fold: FoldDTO, run_ctx: RunContext):
-        x_train, y_train = extract_learning_data(fold.train_data)
-        x_test, y_test = extract_learning_data(fold.test_data)
+    def _train_one_epoch(self, model: EEGNetModel, x_train: np.ndarray, y_train: np.ndarray, run_ctx: RunContext):
         model.train_one_epoch(x_train, y_train)
-        model.validate(x_test, y_test)
 
+    def _evaluate_model(self, model: EEGNetModel, validation_data: EpochPreprocessedDTO | None) -> float:
+        if validation_data is None:
+            log.warning("Validation data are not present. Model will not be validated")
+            return NO_ACCURACY
+
+        x_validation, y_validation = extract_learning_data(validation_data)
+        _, validation_accuracy = model.evaluate(x_validation, y_validation)
+
+        return validation_accuracy
