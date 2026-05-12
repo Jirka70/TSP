@@ -97,18 +97,21 @@ class TrainingPipeline(IPipeline):
         training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        is_eegnet = getattr(config.model, "backend", None) == "eegnet"
-        evaluation_result = None
-        if is_eegnet and model_training_result.data.trained_models:
-            self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
-            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation, trained_models=model_training_result.data.trained_models, folds=folds, dataset_split=augmentation_result.data)
-            evaluation_result = self._evaluator.run(fold_evaluation_input, run_ctx)
+        self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
+        fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
+                                                   trained_models=model_training_result.data.trained_models,
+                                                   folds=folds,
+                                                   dataset_split=augmentation_result.data)
+        # Not using step result because it does not return anything (just log and future visualization)
+        self._evaluator.run(fold_evaluation_input, run_ctx)
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
         # Not using step result because it does not return anything (just log and future visualization)
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
-        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, train_data=epoch_preprocessing_result.data if is_eegnet else None, validation_data=augmentation_result.data.validation_data)
+        final_trainer_input = FinalTrainingInputDTO(config=config.model,
+                                                    folds=folds,
+                                                    validation_data=augmentation_result.data.validation_data)
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 
         evaluation_input = EvaluationInputDTO(
@@ -118,7 +121,9 @@ class TrainingPipeline(IPipeline):
             dataset_split=augmentation_result.data,
         )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
-        self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, final_training_result.data.trained_model.model_name)
+        self._visualizer.visualize_evaluation(evaluation_result.data,
+                                              run_ctx,
+                                              final_training_result.data.trained_model.model_name)
 
         trained_model = final_training_result.data.trained_model
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(

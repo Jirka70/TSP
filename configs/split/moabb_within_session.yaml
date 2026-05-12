@@ -18,7 +18,7 @@ evaluator:
   random_state: 42
   
   # Number of folds to create for cross-validation.
-  n_folds: 2
+  n_folds: 5
   
   # Whether to shuffle the session recordings before splitting.
   shuffle: true

@@ -11,5 +11,4 @@ class FinalTrainingInputDTO:
 
     config: EEGNetConfig | SklearnModelConfig
     folds: list[FoldDTO]
-    train_data: EpochPreprocessedDTO | None = None
     validation_data: EpochPreprocessedDTO | None = None

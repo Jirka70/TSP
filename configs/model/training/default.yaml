@@ -1,5 +1,5 @@
 # Number of training epochs.
-epochs: 42
+epochs: 50
 
 # Batch size used during training.
 batch_size: 32
