@@ -35,31 +35,18 @@ class EEGNetModelTrainer(IModelTrainer):
         trained_models: list[TrainedModelDTO] = []
 
         for fold in input_dto.folds:
-            trained_model = self.train_fold(
-                fold=fold,
-                validation_data=None,
-                config=input_dto.config,
-                run_ctx=run_ctx
-            )
+            trained_model = self.train_fold(fold=fold, validation_data=None, config=input_dto.config, run_ctx=run_ctx)
 
             trained_models.append(trained_model)
 
-        return StepResult(
-            TrainingResultDTO(
-                trained_models
-            )
-        )
+        return StepResult(TrainingResultDTO(trained_models))
 
     def train_fold(self, validation_data: EpochPreprocessedDTO | None, fold: FoldDTO, config: EEGNetConfig, run_ctx: RunContext):
-        network = create_eegnet_network(config)
-        model = EEGNetModel(
-            network=network,
-            model_name=config.model_name,
-            config=config
-        )
-
         x_train, y_train = extract_learning_data(fold.train_data)
         fold_test_data = fold.test_data
+
+        network = create_eegnet_network(config, x_train.shape)
+        model = EEGNetModel(network=network, model_name=config.model_name, config=config)
 
         x_fold_test_data = None
         y_fold_test_data = None
@@ -102,7 +89,7 @@ class EEGNetModelTrainer(IModelTrainer):
                 "run_id": run_ctx.run_id,
                 "n_train_samples": len(y_train),
                 "n_fold_test_samples": len(y_fold_test_data) if y_fold_test_data is not None else 0,
-                "n_validation_samples": len(y_validation_data) if y_validation_data is not None else 0
-            }
+                "n_validation_samples": len(y_validation_data) if y_validation_data is not None else 0,
+            },
         )
 

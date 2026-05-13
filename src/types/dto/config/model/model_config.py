@@ -23,8 +23,6 @@ class EEGNetConfig(AStageConfig):
     fold_training: bool
 
     n_classes: int
-    n_channels: int
-    n_times: int
 
     dropout: float
     kernel_length: int

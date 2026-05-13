@@ -62,13 +62,13 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        network = create_eegnet_network(input_dto.config)
+        epochs: int = input_dto.config.training.epochs
+        x_train, y_train = extract_final_training_data_from_folds(input_dto.folds)
+
+        network = create_eegnet_network(input_dto.config, x_train.shape)
         model = EEGNetModel(network=network,
                             model_name=input_dto.config.model_name,
                             config=input_dto.config)
-
-        epochs: int = input_dto.config.training.epochs
-        x_train, y_train = extract_final_training_data_from_folds(input_dto.folds)
 
         model.initialize_training(y_train)
         for _ in range(epochs):
