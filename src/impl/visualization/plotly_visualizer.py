@@ -87,7 +87,7 @@ class PlotlyVisualizer(IVisualizer):
             fig.update_layout(title=f"ERP Average - Subject {recording.subject_id}", xaxis_title="Time (s)", yaxis_title="Amplitude (uV)", template="plotly_white")
             self._handle_output(fig, "epoch_erp_interactive.html")
 
-    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext) -> None:
+    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
         """Visualizes augmented data comparison using Plotly."""
         if not self._config.visualize_augmentation or not data.folds:
             return
@@ -98,13 +98,17 @@ class PlotlyVisualizer(IVisualizer):
         x = recording.data
 
         if isinstance(x, np.ndarray) and x.ndim == 3:
-            n_samples = min(5, x.shape[0])
-            fig = make_subplots(rows=n_samples, cols=1, subplot_titles=[f"Augmented Sample {i}" for i in range(n_samples)])
+            n_original_samples = x.shape[0] // (1 + copies_per_sample)
 
-            for i in range(n_samples):
-                fig.add_trace(go.Scatter(y=x[i, 0, :], mode="lines", name=f"Sample {i}"), row=i + 1, col=1)
+            # We want to show the first original sample and its augmented copies
+            indices_to_plot = [0] + [(i + 1) * n_original_samples for i in range(copies_per_sample)]
 
-            fig.update_layout(height=200 * n_samples, title_text="Augmentation Variety Check", showlegend=False)
+            fig = make_subplots(rows=len(indices_to_plot), cols=1, subplot_titles=["Original Sample"] + [f"Augmented Copy {i}" for i in range(1, len(indices_to_plot))])
+
+            for i, idx in enumerate(indices_to_plot):
+                fig.add_trace(go.Scatter(y=x[idx, 0, :], mode="lines", name="Original" if i == 0 else f"Copy {i}"), row=i + 1, col=1)
+
+            fig.update_layout(height=200 * len(indices_to_plot), title_text="Augmentation Variety Check", showlegend=False)
             self._handle_output(fig, "augmentation_interactive.html")
 
     def visualize_evaluation(self, data: EvaluationResultDTO, run_ctx: RunContext, model_name: str) -> None:

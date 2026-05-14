@@ -113,7 +113,7 @@ class MatplotlibVisualizer(IVisualizer):
 
         self._handle_output("epoching_erp.png")
 
-    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext) -> None:
+    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
         """Visualizes augmented data comparison for the first fold."""
         if not self._config.visualize_augmentation or not data.folds:
             return
@@ -131,11 +131,16 @@ class MatplotlibVisualizer(IVisualizer):
         if isinstance(x, np.ndarray) and x.ndim == 3:
             plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
 
-            n_samples = x.shape[0]
-            for i in range(n_samples):
-                plt.subplot(n_samples, 1, i + 1)
-                plt.plot(x[i, 0, :])  # First channel
-                plt.title(f"Sample {i} (Fold {fold.fold_idx}, Subject {recording.subject_id})")
+            n_original_samples = x.shape[0] // (1 + copies_per_sample)
+
+            # We want to show the first original sample and its augmented copies
+            indices_to_plot = [0] + [(i + 1) * n_original_samples for i in range(copies_per_sample)]
+
+            for i, idx in enumerate(indices_to_plot):
+                plt.subplot(len(indices_to_plot), 1, i + 1)
+                plt.plot(x[idx, 0, :])  # First channel
+                title = "Original Sample" if i == 0 else f"Augmented Copy {i}"
+                plt.title(f"{title} (Fold {fold.fold_idx}, Subject {recording.subject_id})")
 
             plt.tight_layout()
             self._handle_output(f"augmentation_fold_{fold.fold_idx}.png")
