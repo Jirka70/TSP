@@ -1,14 +1,12 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-based features
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "riemannian_lda"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Uses covariance matrices projected into tangent space, classified by Linear Discriminant Analysis.
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "riemannian_lda" # Unique identifier for the Riemannian LDA pipeline
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  estimator: "oas"
-  metric: "riemann"
+  estimator: "oas"           # Oracle Approximating Shrinkage: robust covariance estimation for small samples
+  metric: "riemann"          # Geometric metric used to calculate the distance/mean in the manifold

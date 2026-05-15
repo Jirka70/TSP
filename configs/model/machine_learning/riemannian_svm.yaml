@@ -1,15 +1,13 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-based features
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "riemannian_svm"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Support Vector Machine (SVM) classifier operating on the Riemannian tangent space.
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "riemannian_svm" # Unique identifier for the Riemannian SVM pipeline
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  estimator: "oas"
-  metric: "riemann"
-  kernel: "linear"
+  estimator: "oas"           # Ensures stable covariance matrix estimation
+  metric: "riemann"          # Projection metric for the covariance manifold
+  kernel: "linear"           # SVM kernel type; linear is often preferred for high-dimensional tangent space

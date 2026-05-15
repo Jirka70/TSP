@@ -1,9 +1,9 @@
 defaults:
   - _self_
-  - raw_preprocessing: testing
+  - raw_preprocessing: default
   - raw_augmentation: raw_torcheeg
-  - paradigm: testing
-  - epoch_preprocessing: testing
+  - paradigm: default
+  - epoch_preprocessing: default
   - split: moabb_within_session
   - augmentation: torcheeg
   - model: machine_learning/riemannian_svm
@@ -13,6 +13,7 @@ defaults:
   - visualization: matplotlib
   - source: external
   - save_artifacts: default
+  - model_path: default
 
 mode: training
 output_dir: ./outputs

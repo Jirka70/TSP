@@ -3,17 +3,19 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from src.impl.model.model_loader import ModelLoader
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
+from src.types.dto.config.model_path_config import ModelPathConfig
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
 from src.types.dto.config.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.metrics_aggregator_config import MetricsAggregatorConfig
-from src.types.dto.config.model.model_config import ModelConfig, SklearnModelConfig
+from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_augmentation_config import (
     RawAugmentationConfigNone,
@@ -38,10 +40,11 @@ class ExperimentConfig(BaseModel):
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig
     final_trainer: FinalTrainerConfig
+    model_path: ModelPathConfig
 
     # union enables multiple options which pydantic differentiates by looking at backend field
     # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")
-    model: ModelConfig | SklearnModelConfig = Field(discriminator="backend")
+    model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
     raw_augmentation: RawAugmentationConfigNone | RawAugmentationConfigTorchEEG = Field(discriminator="backend")

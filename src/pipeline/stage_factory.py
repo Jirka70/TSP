@@ -1,8 +1,10 @@
 from enum import Enum
 
+from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
+from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 
 # from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
@@ -10,9 +12,11 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.dummy_model_trainer import DummyModelTrainer
+from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
+from src.impl.model.model_loader import ModelLoader
 from src.impl.model.pytorch_serializer import PyTorchSerializer
 from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
@@ -31,6 +35,7 @@ from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.interfaces.model.final_trainer import IFinalTrainer
+from src.types.interfaces.model.model_loader import IModelLoader
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
@@ -55,18 +60,19 @@ class StageType(Enum):
     SAVER = "saver"
     MODEL_SERIALIZER = "serializer"
     VISUALIZER = "visualizer"
+    MODEL_PATH = "model_path"
 
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
         StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
-        StageType.RAW_PREPROCESSING: {"testing": RawPreprocessor},
+        StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
             "raw_torcheeg": TorchEEGRawAugmentor,
         },
-        StageType.PARADIGM: {"testing": ParadigmPreprocessor},
-        StageType.EPOCH_PREPROCESSING: {"testing": EpochPreprocessor},
+        StageType.PARADIGM: {"default": ParadigmPreprocessor},
+        StageType.EPOCH_PREPROCESSING: {"default": EpochPreprocessor},
         StageType.SPLIT: {
             "basic": BasicSplitter,
             "moabb_within_session": MoabbSplitter,
@@ -76,15 +82,18 @@ class StageFactory:
         },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
-            "torcheeg": DummyAugmentor,
+            "torcheeg": TorchEEGAugmentor,
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
-            "eegnet": DummyModelTrainer,
+            "eegnet": EEGNetModelTrainer,
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
-        StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer},
+        StageType.FINAL_TRAINER: {
+            "sklearn": FinalSklearnTrainer,
+            "eegnet": FinalEEGNetTrainer
+        },
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
         },
@@ -96,6 +105,9 @@ class StageFactory:
         StageType.VISUALIZER: {
             "matplotlib": MatplotlibVisualizer,
             "plotly": PlotlyVisualizer,
+        },
+        StageType.MODEL_PATH: {
+            "default": ModelLoader,
         },
     }
 
@@ -145,3 +157,6 @@ class StageFactory:
 
     def create_model_serializer(self) -> IModelSerializer:
         return StageFactory._targets[StageType.MODEL_SERIALIZER][self._config.model.backend]()
+
+    def create_model_loader(self) -> IModelLoader:
+        return StageFactory._targets[StageType.MODEL_PATH][self._config.model_path.backend]()

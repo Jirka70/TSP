@@ -11,12 +11,16 @@ from src.types.dto.config.model.sklearn_model_parameters import validate_sklearn
 from src.types.dto.config.model.training_config import TrainingConfig
 
 
-class ModelConfig(AStageConfig):
+class EEGNetConfig(AStageConfig):
     """Configuration for the EEGNet-based deep learning backend."""
 
     _target_class = "impl.model.dummy_model_trainer.DummyModelTrainer"
 
+    model_name: str
+
     backend: Literal["eegnet"]
+
+    fold_training: bool
 
     n_classes: int
     n_channels: int

@@ -10,11 +10,9 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
-from src.types.dto.evaluation.fold_evaluation_result_dto import FoldEvaluationResultDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
-from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
@@ -93,29 +91,37 @@ class TrainingPipeline(IPipeline):
         self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         splitting_input = SplitInputDTO(config.split, epoch_preprocessing_result.data)
-        splitting_result = self._splitting.run(splitting_input, run_ctx)
+        splitting_result = self._splitting.run(splitting_input, run_ctx) # TODO: tohle by melo byt typed
 
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
-        augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
+        augmentation_result = self._augmentation.run(augmentation_input, run_ctx) # TODO: tohle by melo byt typed
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
         folds = augmentation_result.data.folds
         if not folds:
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
-        training_input = TrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
+        training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
+
+        is_eegnet = getattr(config.model, "backend", None) == "eegnet"
+        evaluation_result = None
+        if is_eegnet and model_training_result.data.trained_models:
+            self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
+            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation, trained_models=model_training_result.data.trained_models, folds=folds, validation_data=augmentation_result.data.validation_data, dataset_split=augmentation_result.data)
+            evaluation_result = self._evaluator.run(fold_evaluation_input, run_ctx)
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
         # Not using step result because it does not return anything (just log and future visualization)
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
-        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, validation_data=augmentation_result.data.validation_data)
+        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, train_data=epoch_preprocessing_result.data if is_eegnet else None, validation_data=augmentation_result.data.validation_data)
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 
         evaluation_input = EvaluationInputDTO(
             config=config.evaluation,
             trained_models=[final_training_result.data.trained_model],
+            folds=folds,
             dataset_split=augmentation_result.data,
         )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
@@ -126,30 +132,9 @@ class TrainingPipeline(IPipeline):
             config.save_artifacts,
             config,
             output_path=Path("ahoj.txt"),
-            evaluation_result=evaluation_result.data,
+            evaluation_result=evaluation_result.data if evaluation_result is not None else None,
             trained_model=trained_model,
             model_serializer=self._model_serializer,
         )
 
         self._artifact_saver.run(save_artifacts_input, run_ctx)
-
-    def _select_model_for_artifact_saving(
-        self,
-        trained_models: list[TrainedModelDTO],
-        fold_results: list[FoldEvaluationResultDTO] | None,
-    ) -> TrainedModelDTO:
-        if not trained_models:
-            raise ValueError("Training did not produce any model.")
-
-        if not fold_results:
-            return trained_models[0]
-
-        best_fold = max(
-            fold_results,
-            key=lambda result: result.metrics.get("accuracy", float("-inf")),
-        )
-        for trained_model in trained_models:
-            if trained_model.fold_idx == best_fold.fold_idx:
-                return trained_model
-
-        return trained_models[0]
