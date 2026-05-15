@@ -1,0 +1,3 @@
+backend: "default"
+
+path: "./ahoj.txt/riemannian_svm.joblib"

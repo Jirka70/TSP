@@ -1,0 +1,29 @@
+backend: default              # Used by program logic, changing this may break the pipeline if not handled properly
+
+# --- Epoch Preprocessing Configuration ---
+
+# Blocks can be enabled/disabled independently, based on the enabled true/false flag.
+
+alignment:
+  enabled: true
+  tmin_offset: -0.2          # Shift epoch start to compensate for hardware/software latency
+
+ica:
+  enabled: true
+  n_components: 15           # Number of independent components to extract (usually 15-30 or 0.95 variance)
+  random_state: 42           # Ensures reproducibility of the ICA decomposition
+  method: fastica            # FastICA is efficient; 'infomax' is a common alternative for high-density EEG
+  eog_threshold: 3.0         # Z-score threshold to automatically flag EOG (blink/eye move) components
+
+autoreject:
+  enabled: true
+  n_interpolate: [ 1, 4, 8 ] # Number of sensors to interpolate (grid search values)
+  consensus: [ 0.2, 0.5, 0.8 ] # Percentage of channels that must agree an epoch is 'bad'
+  cv: 5                      # Cross-validation folds for finding optimal rejection thresholds
+
+csp:
+  enabled: false             # Common Spatial Patterns (CSP) - used primarily for Motor Imagery classification
+  n_components: 4            # Number of spatial filters to retain (typically 4 or 6)
+  reg: null                  # Regularization parameter (e.g., 'ledoit_wolf') to handle noisy covariance
+  log: true                  # Apply log-transform to component power (standard for CSP features)
+  norm_trace: false          # Normalize the trace of the covariance matrix

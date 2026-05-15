@@ -17,18 +17,24 @@ class ArtifactSaver(IArtifactSaver):
         self, input_dto: SaveArtifactsInputDTO, run_ctx: RunContext
     ) -> StepResult[SavedArtifactsDTO]:
         log = logging.getLogger(__name__)
-        log.info("Saving trained model")
-        serializer: IModelSerializer = input_dto.model_serializer
-        trained_model = input_dto.trained_model
-        model_name = trained_model.model_name
 
-        if not serializer.supports(model_name):
-            raise UnsupportedModelSerializerError(
-                f"Model serializer {serializer.__class__.__name__} "
-                f"does not support model {model_name}"
+        if input_dto.model_serializer and input_dto.trained_model:
+            log.info("Saving trained model")
+            serializer: IModelSerializer = input_dto.model_serializer
+            trained_model = input_dto.trained_model
+            model_name = trained_model.model_name
+
+            if not serializer.supports(model_name):
+                raise UnsupportedModelSerializerError(
+                    f"Model serializer {serializer.__class__.__name__} "
+                    f"does not support model {model_name}"
+                )
+
+            saved_artifacts: SavedArtifactsDTO = serializer.save(
+                trained_model, input_dto.output_path
             )
+        else:
+            log.info("Model or serializer missing. Proceeding with evaluation results only.")
+            saved_artifacts = SavedArtifactsDTO(artifacts=[])
 
-        saved_artifacts: SavedArtifactsDTO = serializer.save(
-            trained_model, input_dto.output_path
-        )
         return StepResult(saved_artifacts)

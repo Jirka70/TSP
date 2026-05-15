@@ -46,9 +46,9 @@ class GenericSklearnTrainer(IModelTrainer):
 
             val_metrics = {}
             val_loss = []
-            if input_dto.validation_data:
+            if fold.test_data:
                 log.info("Validation data exists.")
-                x_val, y_val = self._extract_data_and_labels(input_dto.validation_data)
+                x_val, y_val = self._extract_data_and_labels(fold.test_data)
                 val_acc = float(accuracy_score(y_val, model.predict(x_val)))
                 val_metrics = {"accuracy": [val_acc]}
                 val_loss = [1.0 - val_acc]

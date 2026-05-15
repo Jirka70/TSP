@@ -1,14 +1,12 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-based features
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "riemannian_mdm"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Minimum Distance to Mean (MDM): classifies trials based on the nearest class centroid in the manifold.
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "riemannian_mdm" # Unique identifier for the Riemannian MDM classifier
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  estimator: "oas"
-  metric: "riemann"
+  estimator: "oas"           # Shrinkage estimator to ensure positive-definite covariance matrices
+  metric: "riemann"          # The Affine-Invariant Riemannian Metric used for distance calculation

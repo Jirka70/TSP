@@ -1,7 +1,10 @@
 import dataclasses
 import logging
+import warnings
 
 import mne
+from autoreject import AutoReject
+from mne.decoding import CSP
 from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
@@ -14,62 +17,77 @@ from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 
 class EpochPreprocessor(IEpochPreprocessing):
     """
-    Performs advanced signal cleaning on MNE Epochs.
-
-    This stage focuses on artifact removal (e.g., eye blinks) using ICA,
-    while maintaining the mne.Epochs data structure for further processing.
+    Advanced epoch processing pipeline.
+    Ensures output matches EpochPreprocessedDTO structure.
     """
 
     def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
         log = logging.getLogger(__name__)
         cfg: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
-        log.info(f"Starting advanced epoch preprocessing for {len(input_dto.data.data)} recordings")
-
+        log.info(f"Starting epoch preprocessing for {len(input_dto.data.data)} recordings")
         processed_recordings = []
 
         try:
             for i, entry in enumerate(input_dto.data.data):
-                # Skip empty recordings to prevent ICA crashes
                 if len(entry.data) == 0:
-                    log.warning(f"Recording index {i} has no epochs. Skipping.")
+                    log.warning(f"Entry {i} contains no epochs. Skipping.")
                     continue
 
-                log.info(f"Processing epochs for recording index: {i}")
-
-                # 1. Work with a copy to maintain immutability of input data
-                # entry.data is currently mne.Epochs
+                # Work on a copy of MNE Epochs
                 epochs: mne.Epochs = entry.data.copy()
 
-                # --- ICA: Artifact Rejection ---
-                log.info(f"Fitting ICA for index {i}")
-                ica: ICA = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
+                # --- 1. Temporal Alignment ---
+                if cfg.alignment.enabled:
+                    log.info(f"Applying time shift for index {i}: {cfg.alignment.tmin_offset}s")
+                    epochs.shift_time(cfg.alignment.tmin_offset, relative=True)
 
-                # Fit ICA on the epoched data
-                ica.fit(epochs)
+                # --- 2. ICA: Artifact Removal ---
+                if cfg.ica.enabled:
+                    log.info(f"Fitting ICA for index {i}")
 
-                # Automatically find components correlating with eye movements (EOG)
-                eog_indices, _ = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
+                    # We suppress the baseline warning because the data is already preloaded
+                    # and baseline-corrected from the previous Paradigm step.
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", message=".*baseline-corrected.*")
+                        ica = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
+                        ica.fit(epochs)
 
-                log.info(f"ICA (index {i}): Excluding {len(eog_indices)} components")
-                ica.exclude = eog_indices
+                        # Find and exclude EOG components
+                        eog_indices, _ = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
+                        ica.exclude = eog_indices
+                        ica.apply(epochs)
 
-                # Apply the ICA cleaning - the output remains an mne.Epochs object
-                ica.apply(epochs)
+                # --- 3. AutoReject: Local Artifact Repair ---
+                if cfg.autoreject.enabled:
+                    log.info(f"Applying AutoReject for index {i}")
 
-                # --- Reconstruct the RecordingDTO ---
-                # CRITICAL: We pass the cleaned mne.Epochs object, NOT a numpy array.
-                # This preserves metadata and allows for further MNE-based steps.
-                new_entry = dataclasses.replace(entry, data=epochs)
+                    # Explicitly pick only EEG channels to avoid "No channels match" errors
+                    # especially if CSD or other transforms were applied.
+                    picks = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
+
+                    if len(picks) == 0:
+                        log.warning(f"No EEG channels found for AutoReject at index {i}. Skipping AR.")
+                    else:
+                        ar = AutoReject(n_interpolate=cfg.autoreject.n_interpolate, consensus=cfg.autoreject.consensus, cv=cfg.autoreject.cv, random_state=cfg.ica.random_state, picks=picks, verbose=False)
+                        epochs, _ = ar.fit_transform(epochs, return_log=True)
+
+                # --- 4. CSP & Data Formatting ---
+                if cfg.csp.enabled:
+                    log.info(f"Applying CSP and converting to ndarray for index {i}")
+                    labels = epochs.events[:, -1]
+                    csp = CSP(n_components=cfg.csp.n_components, reg=cfg.csp.reg, log=cfg.csp.log, norm_trace=cfg.csp.norm_trace)
+
+                    # Transform to (n_epochs, n_csp_components)
+                    signal_data = csp.fit_transform(epochs.get_data(), labels)
+                    new_entry = dataclasses.replace(entry, data=signal_data)
+                else:
+                    new_entry = dataclasses.replace(entry, data=epochs)
+
                 processed_recordings.append(new_entry)
 
-            log.info("Advanced epoch preprocessing completed. All results kept as mne.Epochs structure.")
-
-            # Return the StepResult with preserved structure
             return StepResult(EpochPreprocessedDTO(data=processed_recordings))
 
-            # TODO: Maybe add CSP preprocessing in future.
-
         except Exception as e:
-            log.error(f"Failed during advanced epoch preprocessing: {e}")
+            log.error(f"Error in EpochPreprocessor at index {i}: {str(e)}")
             raise

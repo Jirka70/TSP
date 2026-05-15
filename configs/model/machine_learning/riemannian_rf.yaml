@@ -1,15 +1,13 @@
-# Configuration for a fold trainer (many small models trained on different folds)
-fold_training: false
+backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-based features
 
-# Unique identifier used by the ModelFactory to instantiate the specific pipeline
-model_name: "riemannian_rf"
+# --- Model Configuration ---
 
-# Backend / training family identifier.
-# Type of training
-backend: "sklearn"
+# Random Forest ensemble applied to the vectorized tangent space features.
 
-# Model-specific hyperparameters passed directly to the factory
+model_name: "riemannian_rf"  # Unique identifier for the Riemannian Random Forest pipeline
+fold_training: false         # Toggle between single-shot training and cross-validation fold training
+
 parameters:
-  estimator: "oas"
-  metric: "riemann"
-  n_estimators: 100
+  estimator: "oas"           # Robust covariance estimation method
+  metric: "riemann"          # Manifold metric for feature extraction
+  n_estimators: 100          # Number of decision trees in the forest

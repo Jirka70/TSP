@@ -19,11 +19,10 @@ class FoldDTO:
     fold_idx: int
     train_data: EpochPreprocessedDTO
     test_data: EpochPreprocessedDTO | None
-    validation_data: EpochPreprocessedDTO | None = None
 
 
 @dataclass(frozen=True)
-class DatasetSplitDTO:
+class DatasetSplitDTO: # TODO: necheceme toto DTO prejmenovat na AugmentedDataDTO / AugmentedDatasetSplitDTO
     """
     Main output of the splitting stage, containing all generated folds.
 
