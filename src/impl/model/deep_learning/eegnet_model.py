@@ -50,7 +50,7 @@ class EEGNetModel(IModel):
         for _ in range(self._config.training.epochs):
             self.train_one_epoch(x, y)
 
-    def initialize_training(self, y_train: np.ndarray):
+    def initialize_training(self, y_train: np.ndarray) -> None:
         if self._classes is None:
             self._fit_label_mapping(y_train)
 
