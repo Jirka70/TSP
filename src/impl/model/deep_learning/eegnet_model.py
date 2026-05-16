@@ -93,15 +93,10 @@ class EEGNetModel(IModel):
         return val_loss, val_accuracy
 
     def evaluate(self, x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
-        if self.history is None:
-            raise ValueError("Training is not initialized. Call initialize_training first.")
-
         y_encoded = self._encode_labels(y)
         data_loader = self._create_loader(x, y_encoded, shuffle=False)
 
         loss, accuracy = self._run_evaluation_loader(data_loader)
-
-        self.history.validation_metrics["validation_accuracy"].append(accuracy)
 
         return loss, accuracy
 
