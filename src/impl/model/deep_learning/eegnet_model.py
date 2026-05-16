@@ -9,6 +9,8 @@ from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
 
 
+PER_EPOCH_CHANNEL_NORMALIZATION = "per_epoch_channel"
+
 class EEGNetModel(IModel):
     """
     IModel wrapper around a PyTorch EEGNet network.
@@ -220,7 +222,8 @@ class EEGNetModel(IModel):
                 f"(n_epochs, n_channels, n_times), got {x_array.shape}"
             )
 
-        x_array = self._normalize_input(x_array)
+        if (self._config.input_normalization == PER_EPOCH_CHANNEL_NORMALIZATION):
+            x_array = self._normalize_input(x_array)
 
         return torch.tensor(x_array, dtype=torch.float32)
 

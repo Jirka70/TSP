@@ -20,6 +20,8 @@ class EEGNetConfig(AStageConfig):
 
     backend: Literal["eegnet"]
 
+    input_normalization: Literal["none", "per_epoch_channel"]
+
     fold_training: bool
 
     n_classes: PositiveInt

@@ -10,6 +10,9 @@ model_name: "tomas-kopelent-fold-duplicates"
 # Type of training
 backend: eegnet
 
+# Training data scaling (normalization). If set to "none". no input normalization will be provided
+input_normalization: "per_epoch_channel"
+
 # Number of target classes in the classification task.
 # Number of output classes (e. g. 0 -> left_hand, 1 -> right_hand)
 # Should match len(paradigm_config.events)

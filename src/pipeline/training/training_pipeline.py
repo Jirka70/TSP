@@ -95,7 +95,7 @@ class TrainingPipeline(IPipeline):
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
 
         training_input = TrainingInputDTO(config=config.model, folds=folds)
-        model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
+        """model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
         self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
         fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
@@ -107,7 +107,7 @@ class TrainingPipeline(IPipeline):
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
         # Not using step result because it does not return anything (just log and future visualization)
-        self._metrics_aggregator.run(metrics_input, run_ctx)
+        self._metrics_aggregator.run(metrics_input, run_ctx)"""
 
         final_trainer_input = FinalTrainingInputDTO(config=config.model,
                                                     folds=folds,
