@@ -10,5 +10,6 @@ class FinalTrainingInputDTO:
     """Input data for the final training stage."""
 
     config: EEGNetConfig | SklearnModelConfig
+    training_data: EpochPreprocessedDTO
     folds: list[FoldDTO]
     validation_data: EpochPreprocessedDTO | None = None

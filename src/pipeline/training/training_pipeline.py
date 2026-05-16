@@ -111,6 +111,7 @@ class TrainingPipeline(IPipeline):
 
         final_trainer_input = FinalTrainingInputDTO(config=config.model,
                                                     folds=folds,
+                                                    training_data=epoch_preprocessing_result.data,
                                                     validation_data=augmentation_result.data.validation_data)
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 

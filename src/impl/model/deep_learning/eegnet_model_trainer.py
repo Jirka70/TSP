@@ -43,7 +43,7 @@ class EEGNetModelTrainer(IModelTrainer):
 
             trained_models.append(trained_model)
 
-        return StepResult(TrainingResultDTO(trained_models))
+        return StepResult(TrainingResultDTO(trained_models=trained_models))
 
     def train_fold(self, fold: FoldDTO, config: EEGNetConfig, run_ctx: RunContext):
         x_train, y_train = extract_learning_data(fold.train_data)
