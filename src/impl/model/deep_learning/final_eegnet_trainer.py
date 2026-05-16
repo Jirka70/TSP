@@ -3,10 +3,10 @@ import logging
 
 import numpy as np
 
+from src.impl.model.deep_learning.deep_learning_model_factory import DeepLearningModelFactory
 from src.impl.model.deep_learning.eegnet_model import EEGNetModel
 from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torch_seed
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
-from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
@@ -79,6 +79,9 @@ class FinalEEGNetTrainer(IFinalTrainer):
     only as a backward-compatible fallback.
     """
 
+    def __init__(self, model_factory: DeepLearningModelFactory | None = None) -> None:
+        self._model_factory = model_factory or DeepLearningModelFactory()
+
     def run(
             self,
             input_dto: FinalTrainingInputDTO,
@@ -92,10 +95,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
         if seed is not None:
             set_torch_seed(seed, input_dto.config.training.deterministic)
 
-        network = create_eegnet_network(input_dto.config, x_train.shape)
-        model = EEGNetModel(network=network,
-                            model_name=input_dto.config.model_name,
-                            config=input_dto.config)
+        model = self._model_factory.create(config=input_dto.config, input_shape=x_train.shape)
 
         model.initialize_training(y_train)
 

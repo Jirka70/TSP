@@ -1,9 +1,8 @@
 import logging
 
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.deep_learning_model_factory import DeepLearningModelFactory
 from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torch_seed
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
-from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.config.model.model_config import EEGNetConfig
@@ -17,6 +16,9 @@ log = logging.getLogger(__name__)
 
 
 class EEGNetModelTrainer(IModelTrainer):
+    def __init__(self, model_factory: DeepLearningModelFactory | None = None) -> None:
+        self._model_factory = model_factory or DeepLearningModelFactory()
+
     def run(
         self,
         input_dto: TrainingInputDTO,
@@ -49,8 +51,7 @@ class EEGNetModelTrainer(IModelTrainer):
         x_train, y_train = extract_learning_data(fold.train_data)
         fold_test_data = fold.test_data
 
-        network = create_eegnet_network(config, x_train.shape)
-        model = EEGNetModel(network=network, model_name=config.model_name, config=config)
+        model = self._model_factory.create(config=config, input_shape=x_train.shape)
 
         x_fold_test_data = None
         y_fold_test_data = None
