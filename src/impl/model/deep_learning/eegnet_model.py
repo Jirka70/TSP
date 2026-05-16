@@ -10,8 +10,8 @@ from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
 
-
 PER_EPOCH_CHANNEL_NORMALIZATION = "per_epoch_channel"
+
 
 class EEGNetModel(IModel):
     """
@@ -197,10 +197,10 @@ class EEGNetModel(IModel):
         self._network.load_state_dict(state_dict)
 
     def _create_loader(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        shuffle: bool,
+            self,
+            x: np.ndarray,
+            y: np.ndarray,
+            shuffle: bool,
     ) -> DataLoader:
         x_tensor = self._to_x_tensor(x)
         y_tensor = torch.tensor(y, dtype=torch.long)
