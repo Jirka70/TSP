@@ -25,7 +25,7 @@ def extract_final_training_data(
 
     raise ValueError(
         "Final EEGNet training received no train_data. "
-        "Falling back to fold-based training data reconstruction."
+        "Final EEGNet training requires training_data."
     )
 
 
@@ -127,7 +127,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
         training_data_source = "train_data" if input_dto.training_data is not None else "fold_fallback"
 
         if best_state is not None:
-            log.info("Applying the best state of model during training...")
+            log.info("Applying best model state from epoch %s.", best_epoch + 1)
             model.load_network_state_dict(best_state)
         else:
             best_epoch = epochs - 1
@@ -137,6 +137,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             model_name=input_dto.config.model_name,
             history=model.history,
             best_epoch=best_epoch,
+            fold_idx=None,
             best_validation_metric_name="accuracy" if best_validation_accuracy is not None else None,
             best_validation_metric_value=best_validation_accuracy,
             metadata={
