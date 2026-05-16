@@ -3,10 +3,9 @@ defaults:
   - _self_
 
 fold_training: true
-model_name: "tomas kopelent"
+model_name: "tomas-kopelent-fold-duplicates"
 
 # Model configuration for EEGNet.
-
 # Backend / training family identifier.
 # Type of training
 backend: eegnet

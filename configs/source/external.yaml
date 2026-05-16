@@ -8,8 +8,12 @@ name: BNCI2014_001
 path: ./data/eegbci
 
 # Subject IDs to include in the experiment.
+# TODO rework invalid subject_id in moabb data loader
 subject_ids:
   - 1
+  - 2
+  - 3
+
 
 # Session IDs to load.
 # Use null to load all available sessions.
