@@ -1,11 +1,11 @@
 # Number of training epochs.
-epochs: 5
+epochs: 30
 
 # Batch size used during training.
-batch_size: 32
+batch_size: 16
 
 # Learning rate for the optimizer.
-learning_rate: 0.001
+learning_rate: 0.0005
 
 # Optimizer name.
 optimizer: adam
