@@ -60,18 +60,24 @@ class EEGNetModelTrainer(IModelTrainer):
 
         model.initialize_training(y_train)
         best_epoch = None
+        best_fold_accuracy = None
 
         for epoch in range(config.training.epochs):
             model.train_one_epoch(x_train, y_train)
 
             if x_fold_test_data is not None and y_fold_test_data is not None:
-                model.validate(x_fold_test_data, y_fold_test_data)
+                _, fold_accuracy = model.validate(x_fold_test_data, y_fold_test_data)
+                if best_fold_accuracy is None or fold_accuracy > best_fold_accuracy:
+                    best_fold_accuracy = fold_accuracy
+                    best_epoch = epoch
 
         return TrainedModelDTO(
             model=model,
             model_name=config.model_name,
             history=model.history,
             best_epoch=best_epoch,
+            best_validation_metric_name="accuracy" if best_fold_accuracy is not None else None,
+            best_validation_metric_value=best_fold_accuracy,
             fold_idx=fold.fold_idx,
             metadata={
                 "training_mode": "single_fold_training",
