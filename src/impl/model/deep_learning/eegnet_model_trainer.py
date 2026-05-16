@@ -1,6 +1,7 @@
 import logging
 
 from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torch_seed
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
@@ -34,7 +35,11 @@ class EEGNetModelTrainer(IModelTrainer):
 
         trained_models: list[TrainedModelDTO] = []
 
+        seed = input_dto.config.training.random_state
+
         for fold in input_dto.folds:
+            if seed is not None:
+                set_torch_seed(seed + fold.fold_idx, input_dto.config.training.deterministic)
             trained_model = self.train_fold(fold=fold, validation_data=None, config=input_dto.config, run_ctx=run_ctx)
 
             trained_models.append(trained_model)

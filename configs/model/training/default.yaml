@@ -9,3 +9,7 @@ learning_rate: 0.0005
 
 # Optimizer name.
 optimizer: adam
+
+# Model reproducibility
+random_state: 67
+deterministic: True # by default = False
