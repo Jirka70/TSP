@@ -181,7 +181,14 @@ class EEGNetModel(IModel):
         return np.concatenate(probabilities_batches, axis=0)
 
     def get_state_dict(self) -> dict:
-        return self._network.state_dict()
+        return {
+            "classes": self._classes.tolist() if self._classes is not None else None,
+            "model_name": self._model_name,
+            "network_state_dict": self._network.state_dict(),
+            "config": self._config.model_dump(),
+            "best_epoch": self.best_epoch,
+            "best_validation_accuracy": self.best_validation_accuracy,
+        }
 
     def get_network_state_dict(self) -> dict:
         return copy.deepcopy(self._network.state_dict())
@@ -277,4 +284,3 @@ class EEGNetModel(IModel):
             raise ValueError("Label mapping is not initialized. Call fit first.")
 
         return self._classes[y_indices]
-
