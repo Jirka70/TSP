@@ -19,6 +19,19 @@ log = logging.getLogger(__name__)
 NO_ACCURACY = 0
 
 
+def extract_final_training_data(
+    input_dto: FinalTrainingInputDTO,
+) -> tuple[np.ndarray, np.ndarray]:
+    if input_dto.training_data is not None:
+        return extract_learning_data(input_dto.training_data)
+
+    log.warning(
+        "Final EEGNet training received no train_data. "
+        "Falling back to fold-based training data reconstruction."
+    )
+
+    return extract_final_training_data_from_folds(input_dto.folds)
+
 def extract_final_training_data_from_folds(
         folds: list[FoldDTO]
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -104,11 +117,12 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        if not input_dto.folds:
-            raise ValueError("Final EEGNet training needs at least one fold.")
+        if not input_dto.folds or not input_dto.training_data is None:
+            raise ValueError("Final EEGNet training needs training data")
 
         epochs = input_dto.config.training.epochs
-        x_train, y_train = extract_final_training_data_from_folds(input_dto.folds)
+
+        x_train, y_train = extract_final_training_data(input_dto)
 
         seed = input_dto.config.training.random_state
         if seed is not None:
@@ -138,6 +152,8 @@ class FinalEEGNetTrainer(IFinalTrainer):
                 validation_accuracy,
             )
 
+        training_data_source = "train_data" if input_dto.training_data is not None else "fold_fallback"
+
         trained_model = TrainedModelDTO(
             model=model,
             model_name=input_dto.config.model_name,
@@ -147,11 +163,12 @@ class FinalEEGNetTrainer(IFinalTrainer):
             best_validation_metric_value=None,
             fold_idx=None,
             metadata={
-                "training_mode": "final_deduplicated_fold_training",
+                "training_mode": "final_training",
                 "run_id": run_ctx.run_id,
                 "n_folds": len(input_dto.folds),
                 "n_train_samples": len(y_train),
                 "n_validation_samples": len(y_validation) if y_validation is not None else 0,
+                "training_data_source": training_data_source
             },
         )
         return StepResult(
