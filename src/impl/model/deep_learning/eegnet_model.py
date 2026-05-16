@@ -205,6 +205,12 @@ class EEGNetModel(IModel):
             shuffle=shuffle,
         )
 
+    def _normalize_input(self, x: np.ndarray) -> np.ndarray:
+        mean = x.mean(axis=2, keepdims=True)
+        std = x.std(axis=2, keepdims=True)
+
+        return (x - mean) / (std + 1e-6)
+
     def _to_x_tensor(self, x: np.ndarray) -> torch.Tensor:
         x_array = np.asarray(x, dtype=np.float32)
 
@@ -213,6 +219,8 @@ class EEGNetModel(IModel):
                 f"EEGNet expects data shape "
                 f"(n_epochs, n_channels, n_times), got {x_array.shape}"
             )
+
+        x_array = self._normalize_input(x_array)
 
         return torch.tensor(x_array, dtype=torch.float32)
 
