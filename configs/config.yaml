@@ -1,11 +1,12 @@
 defaults:
   - _self_
   - raw_preprocessing: default
-  - raw_augmentation: raw_torcheeg
+  - raw_augmentation: none
   - paradigm: default
   - epoch_preprocessing: default
   - split: moabb_within_session
   - augmentation: torcheeg
+  - dataset_export: default
   - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
   - final_trainer: default

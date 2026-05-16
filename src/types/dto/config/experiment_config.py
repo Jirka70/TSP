@@ -3,19 +3,18 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from src.impl.model.model_loader import ModelLoader
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
-from src.types.dto.config.model_path_config import ModelPathConfig
-from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
+from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
 from src.types.dto.config.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
+from src.types.dto.config.model_path_config import ModelPathConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_augmentation_config import (
     RawAugmentationConfigNone,
@@ -23,6 +22,7 @@ from src.types.dto.config.raw_augmentation_config import (
 )
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
+from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
 from src.types.dto.config.split_config import SplitConfig, SplitMoabbCrossSessionConfig, SplitMoabbCrossSubjectConfig, SplitMoabbWithinSessionConfig, SplitMoabbWithinSubjectConfig
 from src.types.dto.config.visualization_config import VisualizationConfig
@@ -54,3 +54,4 @@ class ExperimentConfig(BaseModel):
     source: FilesystemDatasetConfig | ExternalDatasetConfig = Field(discriminator="backend")
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")
     visualization: VisualizationConfig = Field(discriminator="backend")
+    dataset_export: DatasetExportConfig = Field(discriminator="backend")

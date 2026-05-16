@@ -1,12 +1,10 @@
 import logging
-import os
 import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from hydra.core.hydra_config import HydraConfig
 
 from src.pipeline.context.run_context import RunContext
 from src.types.dto.config.visualization_config import VisualizationConfig
@@ -85,7 +83,7 @@ class MatplotlibVisualizer(IVisualizer):
                     plt.plot(raw[0, : min(1000, raw.shape[1])])
                 plt.title(f"Raw Signal Trace - Subject {recording.subject_id}")
 
-        self._handle_output("raw_preprocessing_psd.png")
+        self._handle_output("raw_preprocessing_psd.png", run_ctx)
 
     def visualize_epochs(self, data: EpochPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes ERP (average) of the epoched data."""
@@ -111,7 +109,7 @@ class MatplotlibVisualizer(IVisualizer):
                 plt.plot(erp[0])  # Plot average of first channel
             plt.title(f"ERP Average - Subject {recording.subject_id}")
 
-        self._handle_output("epoching_erp.png")
+        self._handle_output("epoching_erp.png", run_ctx)
 
     def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
         """Visualizes augmented data comparison for the first fold."""
@@ -143,7 +141,7 @@ class MatplotlibVisualizer(IVisualizer):
                 plt.title(f"{title} (Fold {fold.fold_idx}, Subject {recording.subject_id})")
 
             plt.tight_layout()
-            self._handle_output(f"augmentation_fold_{fold.fold_idx}.png")
+            self._handle_output(f"augmentation_fold_{fold.fold_idx}.png", run_ctx)
 
     def visualize_evaluation(self, data: EvaluationResultDTO, run_ctx: RunContext, model_name: str) -> None:
         """Visualizes evaluation results (Confusion Matrix and Metrics)."""
@@ -196,16 +194,12 @@ class MatplotlibVisualizer(IVisualizer):
 
         plt.tight_layout()
         logging.info("Saving plot to file...")
-        self._handle_output(f"evaluation_{model_name.lower().replace(' ', '_')}.png")
+        self._handle_output(f"evaluation_{model_name.lower().replace(' ', '_')}.png", run_ctx)
 
-    def _handle_output(self, filename: str) -> None:
+    def _handle_output(self, filename: str, run_ctx: RunContext) -> None:
         """Handles saving and showing of the current plot."""
         if self._config.save_plots:
-            try:
-                output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
-            except (ValueError, KeyError, RuntimeError):
-                output_dir = Path(os.getcwd()).absolute()
-
+            output_dir = run_ctx.output_dir
             plots_dir = output_dir / "plots"
             plots_dir.mkdir(parents=True, exist_ok=True)
             save_path = plots_dir / filename

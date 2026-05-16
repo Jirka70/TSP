@@ -60,9 +60,7 @@ class MoabbSplitter(ISplitter):
 
             # Final safety check for labels
             if labels is None:
-                raise ValueError(
-                    f"No labels found for recording {rec.subject_id}. MOABB splitters require labels for correct operation."
-                )
+                raise ValueError(f"No labels found for recording {rec.subject_id}. MOABB splitters require labels for correct operation.")
 
             all_signals.append(signal)
             all_labels.append(labels)
@@ -79,11 +77,14 @@ class MoabbSplitter(ISplitter):
             # Include other scalar metadata fields
             if isinstance(rec.metadata, dict):
                 for k, v in rec.metadata.items():
-                    if k not in ["subject", "session", "run", "labels"] and np.isscalar(v):
+                    if k not in ["subject", "session", "run", "labels"] and (np.isscalar(v) or k in ["ch_names", "sfreq"]):
                         row_data[k] = v
 
             # Replicate the row for every epoch in this recording
             df_meta = pd.DataFrame([row_data] * len(labels))
+            if "ch_names" in row_data and not np.isscalar(row_data["ch_names"]):
+                df_meta["ch_names"] = [row_data["ch_names"]] * len(labels)
+
             all_metadata.append(df_meta)
 
         # Merge all recordings into unified structures
@@ -193,9 +194,7 @@ class MoabbSplitter(ISplitter):
         x, y, metadata = self.extract_data(recordings)
 
         if metadata is None:
-            raise ValueError(
-                "Metadata aggregation failed or no recordings provided. MOABB splitter requires valid metadata (subject, session, run) for partitioning."
-            )
+            raise ValueError("Metadata aggregation failed or no recordings provided. MOABB splitter requires valid metadata (subject, session, run) for partitioning.")
 
         validation_data_global = None
         main_indices = np.arange(len(y))

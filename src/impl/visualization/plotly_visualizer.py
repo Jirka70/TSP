@@ -1,5 +1,4 @@
 import logging
-import os
 import warnings
 from pathlib import Path
 
@@ -7,7 +6,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from hydra.core.hydra_config import HydraConfig
 from plotly.subplots import make_subplots
 
 from src.pipeline.context.run_context import RunContext
@@ -63,7 +61,7 @@ class PlotlyVisualizer(IVisualizer):
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=freqs, y=psd_mean, mode="lines", name="Mean PSD"))
             fig.update_layout(title=f"Power Spectral Density - Subject {recording.subject_id}", xaxis_title="Frequency (Hz)", yaxis_title="Power (dB)", template="plotly_white")
-            self._handle_output(fig, "raw_psd_interactive.html")
+            self._handle_output(fig, "raw_psd_interactive.html", run_ctx)
 
     def visualize_epochs(self, data: EpochPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes ERP (average) of the epoched data using Plotly."""
@@ -85,7 +83,7 @@ class PlotlyVisualizer(IVisualizer):
                 fig.add_trace(go.Scatter(x=times, y=erp[i], mode="lines", name=f"Channel {i}"))
 
             fig.update_layout(title=f"ERP Average - Subject {recording.subject_id}", xaxis_title="Time (s)", yaxis_title="Amplitude (uV)", template="plotly_white")
-            self._handle_output(fig, "epoch_erp_interactive.html")
+            self._handle_output(fig, "epoch_erp_interactive.html", run_ctx)
 
     def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
         """Visualizes augmented data comparison using Plotly."""
@@ -109,7 +107,7 @@ class PlotlyVisualizer(IVisualizer):
                 fig.add_trace(go.Scatter(y=x[idx, 0, :], mode="lines", name="Original" if i == 0 else f"Copy {i}"), row=i + 1, col=1)
 
             fig.update_layout(height=200 * len(indices_to_plot), title_text="Augmentation Variety Check", showlegend=False)
-            self._handle_output(fig, "augmentation_interactive.html")
+            self._handle_output(fig, "augmentation_interactive.html", run_ctx)
 
     def visualize_evaluation(self, data: EvaluationResultDTO, run_ctx: RunContext, model_name: str) -> None:
         """Visualizes evaluation results with interactive heatmaps and charts."""
@@ -129,19 +127,15 @@ class PlotlyVisualizer(IVisualizer):
         metrics_df = pd.DataFrame([{"Metric": k, "Value": v} for k, v in data.metrics.items()])
         fig_metrics = px.bar(metrics_df, x="Metric", y="Value", color="Metric", title="Aggregate Metrics", range_y=[0, 1.1])
 
-        self._handle_output(fig_cm, f"evaluation_{model_name.lower()}_cm_interactive.html")
-        self._handle_output(fig_metrics, f"evaluation_{model_name.lower()}_metrics_interactive.html")
+        self._handle_output(fig_cm, f"evaluation_{model_name.lower()}_cm_interactive.html", run_ctx)
+        self._handle_output(fig_metrics, f"evaluation_{model_name.lower()}_metrics_interactive.html", run_ctx)
 
-    def _handle_output(self, fig: object, filename: str) -> None:
+    def _handle_output(self, fig: object, filename: str, run_ctx: RunContext) -> None:
         """Saves the plotly figure as an interactive HTML file."""
         if not self._config.save_plots:
             return
 
-        try:
-            output_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
-        except (ValueError, KeyError, RuntimeError):
-            output_dir = Path(os.getcwd()).absolute()
-
+        output_dir = run_ctx.output_dir
         plots_dir = output_dir / "plots"
         plots_dir.mkdir(parents=True, exist_ok=True)
         save_path = plots_dir / filename

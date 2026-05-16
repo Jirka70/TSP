@@ -25,6 +25,7 @@ from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
+from src.types.interfaces.dataset_exporter import IDatasetExporter
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
@@ -48,6 +49,7 @@ class TrainingPipeline(IPipeline):
         epoch_preprocessing: IEpochPreprocessing,
         splitting: ISplitter,
         augmentation: IAugmentor,
+        dataset_exporter: IDatasetExporter,
         model_trainer: IModelTrainer,
         metrics_aggregator: IMetricsAggregator,
         final_trainer: IFinalTrainer,
@@ -65,6 +67,7 @@ class TrainingPipeline(IPipeline):
         self._splitting = splitting
         self._log = logging.getLogger(__name__)
         self._augmentation = augmentation
+        self._dataset_exporter = dataset_exporter
         self._model_trainer = model_trainer
         self._metrics_aggregator = metrics_aggregator
         self._final_trainer = final_trainer
@@ -91,12 +94,13 @@ class TrainingPipeline(IPipeline):
         self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         splitting_input = SplitInputDTO(config.split, epoch_preprocessing_result.data)
-        splitting_result = self._splitting.run(splitting_input, run_ctx) # TODO: tohle by melo byt typed
+        splitting_result = self._splitting.run(splitting_input, run_ctx)  # TODO: tohle by melo byt typed
 
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
-        augmentation_result = self._augmentation.run(augmentation_input, run_ctx) # TODO: tohle by melo byt typed
+        augmentation_result = self._augmentation.run(augmentation_input, run_ctx)  # TODO: tohle by melo byt typed
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
-        augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
+
+        self._dataset_exporter.run(config.dataset_export, augmentation_result.data, run_ctx)
 
         copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)

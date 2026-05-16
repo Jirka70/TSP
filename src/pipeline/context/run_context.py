@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 
 # ============================================================
@@ -27,3 +28,17 @@ class RunContext:
     experiment_name: str  # experiment name (e. g. "left_right_subject_01")
     pipeline_name: str  # name of the entire pipeline (e. g. "training_pipeline_<version>")
     git_commit_hash: str | None
+
+    @property
+    def output_dir(self) -> Path:
+        """Returns the directory where artifacts should be saved, prioritizing Hydra's output dir."""
+        try:
+            from hydra.core.hydra_config import HydraConfig
+
+            path = Path(HydraConfig.get().runtime.output_dir).absolute()
+        except (ValueError, KeyError, RuntimeError, ImportWarning):
+            # Fallback to manual path if Hydra is not initialized
+            path = Path("outputs") / f"{self.started_at.strftime('%Y-%m-%d_%H-%M-%S')}_{self.run_id[:8]}"
+
+        path.mkdir(parents=True, exist_ok=True)
+        return path
