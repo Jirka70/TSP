@@ -84,9 +84,6 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        if input_dto.training_data is None and not input_dto.folds:
-            raise ValueError("Final EEGNet training needs training_data or at least one fold.")
-
         epochs = input_dto.config.training.epochs
 
         x_train, y_train = extract_final_training_data(input_dto)
