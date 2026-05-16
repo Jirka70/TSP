@@ -1,3 +1,6 @@
+import logging
+from typing import Dict
+
 import torch
 from braindecode import EEGClassifier
 from braindecode.models import EEGNetv4
@@ -8,6 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
+# Setup logger
+logger: logging.Logger = logging.getLogger(__name__)
 
 class ModelFactory:
     """
@@ -18,7 +23,7 @@ class ModelFactory:
     geometry, CSP) to deep learning architectures (EEGNet via Braindecode).
     """
     @staticmethod
-    def create(method_id: str, params: dict) -> Pipeline:
+    def create(method_id: str, params: Dict[str, any]) -> Pipeline:
         """
         Instantiates a specific classification pipeline based on the method identifier.
 
@@ -128,7 +133,6 @@ class ModelFactory:
             )
 
             return Pipeline([
-                #("reshape", Ensure4D()),
                 ("net", net)
             ])
 

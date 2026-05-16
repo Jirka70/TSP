@@ -1,7 +1,9 @@
 import logging
+from typing import Dict, Any, List
 
 import numpy as np
 from sklearn.metrics import accuracy_score
+from sklearn.pipeline import Pipeline
 
 from src.impl.model.generic_sklearn_model import GenericSklearnModel
 from src.impl.model.model_factory import ModelFactory
@@ -21,39 +23,56 @@ class GenericSklearnTrainer(IModelTrainer):
     """Train Scikit-learn-based BCI pipelines across all configured folds."""
 
     def run(self, input_dto: TrainingInputDTO, run_ctx: RunContext) -> StepResult[TrainingResultDTO]:
-        """Train the configured model for each fold and return the collected results."""
+        """
+        Train the configured model for each fold and return the collected results.
+
+        Args:
+            input_dto (TrainingInputDTO): Input data containing configuration and folds.
+            run_ctx (RunContext): Context information for the current execution run.
+
+        Returns:
+            StepResult[TrainingResultDTO]: Encapsulated results containing all trained models.
+        """
         if not input_dto.config.fold_training:
             log.info("Fold training is disabled. Skipping fold training stage.")
             return StepResult(TrainingResultDTO(trained_models=[]))
 
-        method_id = input_dto.config.model_name
-        params = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
+        method_id : str = input_dto.config.model_name
+        params : Dict[str, Any] = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
         log.info(f"Training started: {method_id} (Run: {run_ctx.run_id})")
-
         log.info(f"Number of folds: {len(input_dto.folds)}")
-        trained_models: list[TrainedModelDTO] = []
-        for fold in input_dto.folds:
-            pipeline = ModelFactory.create(method_id, params)
-            model = GenericSklearnModel(pipeline, method_id)
 
-            # Extract X and y from all recordings in the fold.
+        trained_models: list[TrainedModelDTO] = []
+
+        for fold in input_dto.folds:
+            pipeline : Pipeline = ModelFactory.create(method_id, params)
+            model : GenericSklearnModel = GenericSklearnModel(pipeline, method_id)
+
+            # Extract X (signals) and y (labels) from all recordings in the fold.
             x_train, y_train = self._extract_data_and_labels(fold.train_data)
 
             model.fit(x_train, y_train)
 
-            train_acc = float(accuracy_score(y_train, model.predict(x_train)))
+            train_acc : float = float(accuracy_score(y_train, model.predict(x_train)))
 
-            val_metrics = {}
-            val_loss = []
+            val_metrics : Dict[str, List[float]] = {}
+            val_loss : List[float] = []
             if fold.test_data:
-                log.info("Validation data exists.")
+                log.info(f"Validation data exists for fold {fold.fold_idx}.")
                 x_val, y_val = self._extract_data_and_labels(fold.test_data)
-                val_acc = float(accuracy_score(y_val, model.predict(x_val)))
+
+                val_acc : float = float(accuracy_score(y_val, model.predict(x_val)))
                 val_metrics = {"accuracy": [val_acc]}
                 val_loss = [1.0 - val_acc]
 
-            history = TrainingHistory(train_loss=[1.0 - train_acc], validation_loss=val_loss, train_metrics={"accuracy": [train_acc]}, validation_metrics=val_metrics)
+            # Construct the metrics history container
+            history : TrainingHistory = TrainingHistory(
+                train_loss=[1.0 - train_acc],
+                validation_loss=val_loss,
+                train_metrics={"accuracy": [train_acc]},
+                validation_metrics=val_metrics
+            )
 
             trained_models.append(
                 TrainedModelDTO(
@@ -90,23 +109,24 @@ class GenericSklearnTrainer(IModelTrainer):
         Raises:
             ValueError: If the concatenated feature array does not have a supported shape.
         """
-        x_list = []
-        y_list = []
+        x_list: List[np.ndarray] = []
+        y_list: List[np.ndarray] = []
 
         for recording in data_dto.data:
-            epochs = recording.data
+            epochs : Any = recording.data
 
+            # Check if data is an MNE Epochs instance or a raw numpy array
             if hasattr(epochs, "get_data"):
                 x_list.append(epochs.get_data(copy=False))
-
                 y_list.append(epochs.events[:, -1])
             else:
                 x_list.append(epochs)
                 y_list.append(np.array(recording.metadata.get("labels", [])))
 
-        x_merged = np.concatenate(x_list, axis=0)
-        y_merged = np.concatenate(y_list, axis=0)
+        x_merged: np.ndarray = np.concatenate(x_list, axis=0)
+        y_merged: np.ndarray = np.concatenate(y_list, axis=0)
 
+        # Validate dimensions (2D for features/flattened, 3D for trials x channels x times)
         if x_merged.ndim == 3:
             pass
         elif x_merged.ndim == 2:

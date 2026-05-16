@@ -14,5 +14,5 @@ defaults:
   - save_artifacts: default
   - model_path: default
 
-mode: training
+mode: experiment
 output_dir: ./outputs

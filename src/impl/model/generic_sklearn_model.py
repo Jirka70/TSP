@@ -21,8 +21,8 @@ class GenericSklearnModel(IModel):
             pipeline (Pipeline): The Scikit-learn Pipeline instance to wrap.
             model_name (str): The unique name or identifier for this model configuration.
         """
-        self._pipeline = pipeline
-        self._model_name = model_name
+        self._pipeline : Pipeline = pipeline
+        self._model_name : str = model_name
 
     def name(self) -> str:
         """

@@ -10,6 +10,12 @@ path: ./data/eegbci
 # Subject IDs to include in the experiment.
 subject_ids:
   - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
 
 # Session IDs to load.
 # Use null to load all available sessions.
