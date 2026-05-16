@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -8,68 +9,34 @@ from src.impl.model.util.extract.extract_learning_data import extract_learning_d
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
-from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
-from src.types.dto.split.dataset_split_dto import FoldDTO
 from src.types.interfaces.model.final_trainer import IFinalTrainer
 
 log = logging.getLogger(__name__)
-NO_ACCURACY = 0
 
 
 def extract_final_training_data(
-    input_dto: FinalTrainingInputDTO,
+        input_dto: FinalTrainingInputDTO,
 ) -> tuple[np.ndarray, np.ndarray]:
     if input_dto.training_data is not None:
         return extract_learning_data(input_dto.training_data)
 
-    log.warning(
+    raise ValueError(
         "Final EEGNet training received no train_data. "
         "Falling back to fold-based training data reconstruction."
     )
-
-    return extract_final_training_data_from_folds(input_dto.folds)
-
-def extract_final_training_data_from_folds(
-        folds: list[FoldDTO]
-) -> tuple[np.ndarray, np.ndarray]:
-    if not folds:
-        raise ValueError("Final EEGNet training needs at least one fold.")
-
-    unique_recordings = []
-    seen_recordings: set[tuple[object, object, object, object]] = set()
-
-    for fold in folds:
-        for recording in fold.train_data.data:
-            key = (
-                recording.dataset_name,
-                recording.subject_id,
-                recording.session_id,
-                recording.run_id,
-            )
-
-            if key in seen_recordings:
-                continue
-
-            seen_recordings.add(key)
-            unique_recordings.append(recording)
-
-    if not unique_recordings:
-        raise ValueError("No unique training data found in folds.")
-
-    return extract_learning_data(EpochPreprocessedDTO(data=unique_recordings))
 
 
 def _evaluate_model(
         model: EEGNetModel,
         x_validation: np.ndarray | None,
         y_validation: np.ndarray | None,
-) -> float:
+) -> float | None:
     if x_validation is None or y_validation is None:
         log.warning("Validation data are not present. Model will not be validated")
-        return NO_ACCURACY
+        return None
 
     _, validation_accuracy = model.evaluate(x_validation, y_validation)
 
@@ -117,8 +84,8 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        if not input_dto.folds or not input_dto.training_data is None:
-            raise ValueError("Final EEGNet training needs training data")
+        if input_dto.training_data is None and not input_dto.folds:
+            raise ValueError("Final EEGNet training needs training_data or at least one fold.")
 
         epochs = input_dto.config.training.epochs
 
@@ -140,12 +107,20 @@ class FinalEEGNetTrainer(IFinalTrainer):
         if input_dto.validation_data is not None:
             x_validation, y_validation = extract_learning_data(input_dto.validation_data)
 
+        best_validation_accuracy: float | None = None
+        best_epoch: int | None = None
+        best_state: dict | None = None
         for epoch in range(epochs):
             log.info("Epoch %s/%s started", epoch + 1, epochs)
             _train_one_epoch(model, x_train, y_train, epoch)
             _log_epoch_metrics(model, epoch)
             log.info("Epoch %s evaluate validation data", epoch + 1)
             validation_accuracy = _evaluate_model(model, x_validation, y_validation)
+            if validation_accuracy is not None:
+                if best_validation_accuracy is None or validation_accuracy > best_validation_accuracy:
+                    best_validation_accuracy = validation_accuracy
+                    best_epoch = epoch
+                    best_state = copy.deepcopy(model.get_network_state_dict())
             log.info(
                 "Epoch %s validation accuracy=%s",
                 epoch + 1,
@@ -154,14 +129,19 @@ class FinalEEGNetTrainer(IFinalTrainer):
 
         training_data_source = "train_data" if input_dto.training_data is not None else "fold_fallback"
 
+        if best_state is not None:
+            log.info("Applying the best state of model during training...")
+            model.load_network_state_dict(best_state)
+        else:
+            best_epoch = epochs - 1
+
         trained_model = TrainedModelDTO(
             model=model,
             model_name=input_dto.config.model_name,
             history=model.history,
-            best_epoch=None,
-            best_validation_metric_name=None,
-            best_validation_metric_value=None,
-            fold_idx=None,
+            best_epoch=best_epoch,
+            best_validation_metric_name="accuracy" if best_validation_accuracy is not None else None,
+            best_validation_metric_value=best_validation_accuracy,
             metadata={
                 "training_mode": "final_training",
                 "run_id": run_ctx.run_id,
