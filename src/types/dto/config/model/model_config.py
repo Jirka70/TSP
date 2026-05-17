@@ -4,7 +4,7 @@
 
 from typing import Any, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, PositiveInt, field_validator
 
 from src.types.dto.config.astageconfig import AStageConfig
 from src.types.dto.config.model.sklearn_model_parameters import validate_sklearn_model_parameters
@@ -20,17 +20,17 @@ class EEGNetConfig(AStageConfig):
 
     backend: Literal["eegnet"]
 
+    input_normalization: Literal["none", "per_epoch_channel"]
+
     fold_training: bool
 
-    n_classes: int
-    n_channels: int
-    n_times: int
+    n_classes: PositiveInt
 
-    dropout: float
-    kernel_length: int
-    f1: int
-    d: int
-    f2: int
+    dropout: float = Field(ge=0, le=1)
+    kernel_length: PositiveInt
+    f1: PositiveInt
+    d: PositiveInt
+    f2: PositiveInt
 
     training: TrainingConfig
 
