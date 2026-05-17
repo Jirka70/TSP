@@ -45,6 +45,7 @@ def my_app(cfg):
     pipeline: IPipeline
 
     if ex_conf.mode == Mode.TRAINING.value:
+        raw_augmentation = sf.create_raw_augmentation_stage()
         split = sf.create_split_stage()
         augmentation = sf.create_augmentation_stage()
         model_trainer = sf.create_model_trainer_stage()
@@ -52,7 +53,7 @@ def my_app(cfg):
         final_trainer = sf.create_final_trainer_stage()
 
         pipeline = TrainingPipeline(
-            dl, raw_preprocessing, paradigm, epoch_preprocessing,
+            dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing,
             split, augmentation, model_trainer, metrics_aggregator,
             final_trainer, evaluator, visualizer, saver, model_serializer
         )

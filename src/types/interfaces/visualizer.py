@@ -21,7 +21,7 @@ class IVisualizer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext) -> None:
+    def visualize_augmentation(self, data: DatasetSplitDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
         """Visualizes augmented data (e.g., comparison of original and augmented samples)."""
         raise NotImplementedError
 
