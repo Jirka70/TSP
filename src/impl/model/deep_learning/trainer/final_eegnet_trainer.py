@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from src.impl.model.deep_learning.deep_learning_model_factory import DeepLearningModelFactory
+from src.impl.model.deep_learning.factory.deep_learning_model_factory import DeepLearningModelFactory
 from src.impl.model.deep_learning.eegnet_model import EEGNetModel
 from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torch_seed
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data

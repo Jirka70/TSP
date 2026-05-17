@@ -1,6 +1,6 @@
 import logging
 
-from src.impl.model.deep_learning.deep_learning_model_factory import DeepLearningModelFactory
+from src.impl.model.deep_learning.factory.deep_learning_model_factory import DeepLearningModelFactory
 from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torch_seed
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
 from src.pipeline.context.run_context import RunContext
