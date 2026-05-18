@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 from src.pipeline_logging.filter.PipelineOrWarningFilter import PipelineOrWarningFilter
-from src.pipeline_logging.format.Json_formatter import JsonFormatter
+from src.pipeline_logging.format.json_formatter import JsonFormatter
 from src.types.dto.config.logging.log_format import LogFormat
 from src.types.dto.config.logging.logging_config import LoggingConfig
 from logging import Formatter
