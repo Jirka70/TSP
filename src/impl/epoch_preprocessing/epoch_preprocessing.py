@@ -22,8 +22,33 @@ class EpochPreprocessor(IEpochPreprocessing):
     """
 
     def run(self, input_dto: EpochPreprocessingInputDTO, run_ctx: RunContext) -> StepResult[EpochPreprocessedDTO]:
+        """
+            Executes sequential preprocessing steps on epoched neural data.
+
+            This method processes a collection of MNE Epochs recordings by applying a
+            configurable multi-stage pipeline:
+            1. Temporal Alignment: Shifts epoch time markers.
+            2. Independent Component Analysis (ICA): Isolates and removes EOG artifacts.
+            3. AutoReject: Automatically detects, repairs, or drops bad local data segments.
+            4. Common Spatial Patterns (CSP): Learns spatial filters and transforms
+               the data into feature arrays (if enabled).
+
+            Args:
+                input_dto (EpochPreprocessingInputDTO): Input object containing the
+                    MNE Epochs data and the pipeline preprocessing configurations.
+                run_ctx (RunContext): Context keeping track of the current pipeline execution.
+
+            Returns:
+                StepResult[EpochPreprocessedDTO]: A step result wrapping the processed
+                    recordings. Depending on `cfg.csp.enabled`, the inner `.data` fields
+                    will contain either transformed NumPy ndarrays or cleaned MNE Epochs objects.
+
+            Raises:
+                Exception: Re-raises any exception caught during processing, logging the
+                    exact recording index where the pipeline failed.
+        """
         log = logging.getLogger(__name__)
-        cfg: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
+        config: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
         log.info(f"Starting epoch preprocessing for {len(input_dto.data.data)} recordings")
         processed_recordings = []
@@ -38,45 +63,41 @@ class EpochPreprocessor(IEpochPreprocessing):
                 epochs: mne.Epochs = entry.data.copy()
 
                 # --- 1. Temporal Alignment ---
-                if cfg.alignment.enabled:
-                    log.info(f"Applying time shift for index {i}: {cfg.alignment.tmin_offset}s")
-                    epochs.shift_time(cfg.alignment.tmin_offset, relative=True)
+                if config.alignment.enabled:
+                    log.info(f"Applying time shift for index {i}: {config.alignment.tmin_offset}s")
+                    epochs.shift_time(config.alignment.tmin_offset, relative=True)
 
                 # --- 2. ICA: Artifact Removal ---
-                if cfg.ica.enabled:
+                if config.ica.enabled:
                     log.info(f"Fitting ICA for index {i}")
 
                     # We suppress the baseline warning because the data is already preloaded
                     # and baseline-corrected from the previous Paradigm step.
                     with warnings.catch_warnings():
                         warnings.filterwarnings("ignore", message=".*baseline-corrected.*")
-                        ica = ICA(n_components=cfg.ica.n_components, random_state=cfg.ica.random_state, method=cfg.ica.method)
+                        ica = ICA(n_components=config.ica.n_components, random_state=config.ica.random_state, method=config.ica.method)
                         ica.fit(epochs)
 
-                        # Find and exclude EOG components
-                        eog_indices, _ = ica.find_bads_eog(epochs, threshold=cfg.ica.eog_threshold)
-                        ica.exclude = eog_indices
+                        electrooculography_indices, _ = ica.find_bads_eog(epochs, threshold=config.ica.eog_threshold)
+                        ica.exclude = electrooculography_indices
                         ica.apply(epochs)
 
                 # --- 3. AutoReject: Local Artifact Repair ---
-                if cfg.autoreject.enabled:
+                if config.autoreject.enabled:
                     log.info(f"Applying AutoReject for index {i}")
-
-                    # Explicitly pick only EEG channels to avoid "No channels match" errors
-                    # especially if CSD or other transforms were applied.
                     picks = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
 
                     if len(picks) == 0:
                         log.warning(f"No EEG channels found for AutoReject at index {i}. Skipping AR.")
                     else:
-                        ar = AutoReject(n_interpolate=cfg.autoreject.n_interpolate, consensus=cfg.autoreject.consensus, cv=cfg.autoreject.cv, random_state=cfg.ica.random_state, picks=picks, verbose=False)
-                        epochs, _ = ar.fit_transform(epochs, return_log=True)
+                        auto_reject = AutoReject(n_interpolate=config.autoreject.n_interpolate, consensus=config.autoreject.consensus, cv=config.autoreject.cv, random_state=config.ica.random_state, picks=picks, verbose=False)
+                        epochs, _ = auto_reject.fit_transform(epochs, return_log=True)
 
                 # --- 4. CSP & Data Formatting ---
-                if cfg.csp.enabled:
+                if config.csp.enabled:
                     log.info(f"Applying CSP and converting to ndarray for index {i}")
                     labels = epochs.events[:, -1]
-                    csp = CSP(n_components=cfg.csp.n_components, reg=cfg.csp.reg, log=cfg.csp.log, norm_trace=cfg.csp.norm_trace)
+                    csp = CSP(n_components=config.csp.n_components, reg=config.csp.reg, log=config.csp.log, norm_trace=config.csp.norm_trace)
 
                     # Transform to (n_epochs, n_csp_components)
                     signal_data = csp.fit_transform(epochs.get_data(), labels)
