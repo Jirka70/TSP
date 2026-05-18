@@ -1,17 +1,17 @@
 import logging
+from typing import Any
 
-from src.types.dto.config.logging.verbosity_level import VerbosityLevel
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel, VERBOSITY_ORDER
 
+type PipelineLoggerContext = dict[str, Any] | None
 
-type PipelineLoggerContext = dict[str, str] | None
 
 class PipelineLogger:
     def __init__(self,
                  logger: logging.Logger,
                  verbosity: VerbosityLevel = VerbosityLevel.NORMAL,
                  ctx: PipelineLoggerContext = None) -> None:
-        if ctx is None:
-            ctx = {}
+        self._context = dict(ctx) if ctx is not None else {}
         self._logger = logger
         self._verbosity = verbosity
         self._context = ctx or {}
@@ -20,15 +20,22 @@ class PipelineLogger:
         if message is None:
             raise ValueError("Message cannot be defined as None")
 
-        if verbosity <= self._verbosity:
+        if self._should_log(verbosity):
             self._logger.info(self._format(message))
 
     def debug(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.NORMAL) -> None:
         if message is None:
             raise ValueError("Message cannot be defined as None")
 
-        if verbosity <= self._verbosity:
-            self._logger.info(self._format(message))
+        if self._should_log(verbosity):
+            self._logger.debug(self._format(message))
+
+    def for_step(self, step: str) -> "PipelineLogger":
+        return PipelineLogger(
+            logger=self._logger,
+            verbosity=self._verbosity,
+            ctx={**self._context, "step": step},
+        )
 
     def warning(self, message: str) -> None:
         if message is None:
@@ -48,7 +55,7 @@ class PipelineLogger:
 
         self._logger.exception(self._format(message))
 
-    def _format(self, message) -> str:
+    def _format(self, message: str) -> str:
         UNKNOWN = "unknown"
         if message is None:
             raise ValueError("Message cannot be defined as None")
@@ -67,4 +74,7 @@ class PipelineLogger:
             prefix = f"{prefix} [{step}]"
 
         return f"{prefix} {message}"
+
+    def _should_log(self, message_verbosity: VerbosityLevel) -> bool:
+        return VERBOSITY_ORDER[message_verbosity] <= VERBOSITY_ORDER[self._verbosity]
 
