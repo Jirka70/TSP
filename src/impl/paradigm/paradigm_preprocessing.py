@@ -1,8 +1,11 @@
 import copy
 import dataclasses
 import logging
+from typing import Any, Dict, List, Set, Union
+
 import mne
 import mne.io
+import numpy as np
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
@@ -18,7 +21,7 @@ class ParadigmPreprocessor(IParadigm):
     Supports custom MNE-based implementation.
     """
 
-    def _update_entry_data(self, entry: object, epochs: mne.Epochs) -> object:
+    def _update_entry_data(self, entry: Any, epochs: mne.Epochs) -> Any:
         """Safely updates the data field of a DTO, handling frozen dataclasses."""
         if dataclasses.is_dataclass(entry):
             return dataclasses.replace(entry, data=epochs)
@@ -29,34 +32,31 @@ class ParadigmPreprocessor(IParadigm):
             new_entry.data = epochs
             return new_entry
 
-    def _normalize_event_name(self, value: object) -> str:
+    def _normalize_event_name(self, value: Any) -> str:
         """Normalizes event names by converting to lowercase, stripping whitespace, and replacing spaces with underscores."""
         return str(value).strip().lower().replace(" ", "_")
 
 
     def run(self, input_dto: ParadigmInputDTO, run_ctx: RunContext) -> StepResult[ParadigmResultDTO]:
         """
-    Processes raw MNE data by filtering, segmenting into epochs, and optionally resampling.
+        Processes raw MNE data by filtering, segmenting into epochs, and optionally resampling.
 
-    This method iterates through a collection of raw data entries, applies a
-    bandpass filter based on the configuration, extracts specified events from
-    annotations, windows the data into epochs, and performs resampling if enabled.
+        Args:
+            input_dto (ParadigmInputDTO): The input data transfer object containing
+                the raw MNE data and the paradigm preprocessing configuration.
+            run_ctx (RunContext): The execution context for the current pipeline run.
 
-    Args:
-        input_dto (ParadigmInputDTO): The input data transfer object containing
-            the raw MNE data and the paradigm preprocessing configuration.
-        run_ctx (RunContext): The execution context for the current pipeline run.
-
-    Returns:
-        StepResult[ParadigmResultDTO]: A step result container holding the
-            processed, epoched, and optionally resampled data entries.
-    """
-        log = logging.getLogger(__name__)
+        Returns:
+            StepResult[ParadigmResultDTO]: A step result container holding the
+                processed, epoched, and optionally resampled data entries.
+        """
+        log: logging.Logger = logging.getLogger(__name__)
         config: ParadigmConfig = input_dto.paradigm_preprocessing_config
 
-        processed_items = []
+        processed_items: List[Any] = []
 
         # Unify event parsing (takes key from dictionary or value from list)
+        configured_events: List[str]
         if isinstance(config.events, dict):
             configured_events = list(config.events.keys())
         elif isinstance(config.events, list):
@@ -64,7 +64,9 @@ class ParadigmPreprocessor(IParadigm):
         else:
             configured_events = [str(config.events)]
 
-        configured_events_normalized = {self._normalize_event_name(name) for name in configured_events}
+        configured_events_normalized: Set[str] = {self._normalize_event_name(name) for name in configured_events}
+
+        log.info(f"Starting paradigm preprocessing for {len(input_dto.data.data)} entries with configured events: {configured_events_normalized}")
 
         for i, entry in enumerate(input_dto.data.data):
             raw: mne.io.Raw = entry.data
@@ -77,8 +79,12 @@ class ParadigmPreprocessor(IParadigm):
                 skip_by_annotation="edge"
             )
 
+            # mne.events_from_annotations returns an (N, 3) int array and a mapping dict
+            events: np.ndarray
+            event_id: Dict[str, int]
             events, event_id = mne.events_from_annotations(raw)
-            event_id_filtered = {
+
+            event_id_filtered: Dict[str, int] = {
                 k: v for k, v in event_id.items()
                 if self._normalize_event_name(k) in configured_events_normalized or str(v) in configured_events_normalized
             }
@@ -87,7 +93,7 @@ class ParadigmPreprocessor(IParadigm):
                 continue
 
             # Segment Raw data into Epochs
-            epochs = mne.Epochs(
+            epochs: mne.Epochs = mne.Epochs(
                 raw, events=events, event_id=event_id_filtered,
                 tmin=config.window.tmin, tmax=config.window.tmax,
                 baseline=tuple(config.window.baseline) if config.window.baseline else None,

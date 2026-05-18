@@ -1,6 +1,7 @@
 import copy
 import dataclasses
 import logging
+from typing import Any, List, Optional
 
 import mne
 import mne.io
@@ -26,13 +27,13 @@ class RawPreprocessor(IRawPreprocessing):
         """
         Executes the raw signal preprocessing pipeline based on the provided configuration.
         """
-        log = logging.getLogger(__name__)
+        log: logging.Logger = logging.getLogger(__name__)
         config: RawPreprocessingConfig = input_dto.raw_preprocessing_config
 
         log.info(f"Starting processing with backend: {getattr(config, 'backend', 'default')}")
         log.info(f"Processing {len(input_dto.data.data)} continuous EEG recordings")
 
-        processed_items = []
+        processed_items: List[Any] = []
 
         for i, entry in enumerate(input_dto.data.data):
             log.info(f"Processing recording index: {i}")
@@ -53,12 +54,12 @@ class RawPreprocessor(IRawPreprocessing):
                     log.info(f"No bad channels detected for interpolation at index {i}")
 
             # --- 3. Frequency Filtering (High-pass, Low-pass, Notch) ---
-            high_pass_filter_enabled = getattr(config.high_pass_filter, "enabled", False)
-            low_pass_filter_enabled = getattr(config.low_pass_filter, "enabled", False)
+            high_pass_filter_enabled: bool = getattr(config.high_pass_filter, "enabled", False)
+            low_pass_filter_enabled: bool = getattr(config.low_pass_filter, "enabled", False)
 
             if high_pass_filter_enabled or low_pass_filter_enabled:
-                low_freq = config.high_pass_filter.l_freq if high_pass_filter_enabled else None
-                high_freq = config.low_pass_filter.h_freq if low_pass_filter_enabled else None
+                low_freq: Optional[float] = config.high_pass_filter.l_freq if high_pass_filter_enabled else None
+                high_freq: Optional[float] = config.low_pass_filter.h_freq if low_pass_filter_enabled else None
                 log.info(f"Applying filter: HPF={low_freq} Hz, LPF={high_freq} Hz")
                 raw_copy.filter(
                     l_freq=low_freq,
@@ -74,7 +75,7 @@ class RawPreprocessor(IRawPreprocessing):
             # --- 4. ICA (Artifact Rejection) ---
             if getattr(config.ica, "enabled", False):
                 log.info(f"Running ICA decomposition (method: {config.ica.method})")
-                ica = mne.preprocessing.ICA(
+                ica: mne.preprocessing.ICA = mne.preprocessing.ICA(
                     n_components=config.ica.n_components,
                     method=config.ica.method,
                     random_state=42
@@ -85,7 +86,7 @@ class RawPreprocessor(IRawPreprocessing):
 
             # --- 5. Spatial Transformation / Re-referencing ---
             if getattr(config.re_referencing, "enabled", False):
-                re_referencing_method = config.re_referencing.method.upper()
+                re_referencing_method: str = config.re_referencing.method.upper()
 
                 if re_referencing_method == "CSD":
                     log.info("Computing Current Source Density (CSD)")
@@ -101,7 +102,7 @@ class RawPreprocessor(IRawPreprocessing):
             # --- 6. Automatic Annotation of Artifacts/Breaks ---
             if getattr(config.annotate_break, "enabled", False):
                 log.info("Generating break annotations")
-                new_annotations = mne.preprocessing.annotate_break(
+                new_annotations: mne.Annotations = mne.preprocessing.annotate_break(
                     raw_copy,
                     min_break_duration=config.annotate_break.min_break_duration,
                     t_start_after_previous=1.0,
@@ -109,13 +110,13 @@ class RawPreprocessor(IRawPreprocessing):
                 )
                 raw_copy.set_annotations(raw_copy.annotations + new_annotations)
 
-            new_entry = self._update_entry_data(entry, raw_copy)
+            new_entry: Any = self._update_entry_data(entry, raw_copy)
             processed_items.append(new_entry)
 
         log.info("Continuous preprocessing of all recordings completed successfully")
         return StepResult(RawPreprocessedDTO(data=processed_items))
 
-    def _update_entry_data(self, entry, new_raw_data):
+    def _update_entry_data(self, entry: Any, new_raw_data: mne.io.Raw) -> Any:
         """
         Helper method to replace the 'data' field in various container types
         (Dataclass, NamedTuple, or generic objects).

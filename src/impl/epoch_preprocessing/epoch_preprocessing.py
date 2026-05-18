@@ -1,8 +1,10 @@
 import dataclasses
 import logging
 import warnings
+from typing import Any, List, Tuple
 
 import mne
+import numpy as np
 from autoreject import AutoReject
 from mne.decoding import CSP
 from mne.preprocessing import ICA
@@ -47,11 +49,14 @@ class EpochPreprocessor(IEpochPreprocessing):
                 Exception: Re-raises any exception caught during processing, logging the
                     exact recording index where the pipeline failed.
         """
-        log = logging.getLogger(__name__)
+        log: logging.Logger = logging.getLogger(__name__)
         config: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
         log.info(f"Starting epoch preprocessing for {len(input_dto.data.data)} recordings")
-        processed_recordings = []
+        processed_recordings: List[Any] = []  # Replace Any with your specific Recording Entry DTO type if available
+
+        # Declare i outside the try block so it is safely scoped for the except block
+        i: int = 0
 
         try:
             for i, entry in enumerate(input_dto.data.data):
@@ -75,9 +80,14 @@ class EpochPreprocessor(IEpochPreprocessing):
                     # and baseline-corrected from the previous Paradigm step.
                     with warnings.catch_warnings():
                         warnings.filterwarnings("ignore", message=".*baseline-corrected.*")
-                        ica = ICA(n_components=config.ica.n_components, random_state=config.ica.random_state, method=config.ica.method)
+                        ica: ICA = ICA(
+                            n_components=config.ica.n_components,
+                            random_state=config.ica.random_state,
+                            method=config.ica.method
+                        )
                         ica.fit(epochs)
 
+                        electrooculography_indices: List[int]
                         electrooculography_indices, _ = ica.find_bads_eog(epochs, threshold=config.ica.eog_threshold)
                         ica.exclude = electrooculography_indices
                         ica.apply(epochs)
@@ -85,23 +95,35 @@ class EpochPreprocessor(IEpochPreprocessing):
                 # --- 3. AutoReject: Local Artifact Repair ---
                 if config.autoreject.enabled:
                     log.info(f"Applying AutoReject for index {i}")
-                    picks = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
+                    picks: np.ndarray = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
 
                     if len(picks) == 0:
                         log.warning(f"No EEG channels found for AutoReject at index {i}. Skipping AR.")
                     else:
-                        auto_reject = AutoReject(n_interpolate=config.autoreject.n_interpolate, consensus=config.autoreject.consensus, cv=config.autoreject.cv, random_state=config.ica.random_state, picks=picks, verbose=False)
+                        auto_reject: AutoReject = AutoReject(
+                            n_interpolate=config.autoreject.n_interpolate,
+                            consensus=config.autoreject.consensus,
+                            cv=config.autoreject.cv,
+                            random_state=config.ica.random_state,
+                            picks=picks,
+                            verbose=False
+                        )
                         epochs, _ = auto_reject.fit_transform(epochs, return_log=True)
 
                 # --- 4. CSP & Data Formatting ---
                 if config.csp.enabled:
                     log.info(f"Applying CSP and converting to ndarray for index {i}")
-                    labels = epochs.events[:, -1]
-                    csp = CSP(n_components=config.csp.n_components, reg=config.csp.reg, log=config.csp.log, norm_trace=config.csp.norm_trace)
+                    labels: np.ndarray = epochs.events[:, -1]
+                    csp: CSP = CSP(
+                        n_components=config.csp.n_components,
+                        reg=config.csp.reg,
+                        log=config.csp.log,
+                        norm_trace=config.csp.norm_trace
+                    )
 
                     # Transform to (n_epochs, n_csp_components)
-                    signal_data = csp.fit_transform(epochs.get_data(), labels)
-                    new_entry = dataclasses.replace(entry, data=signal_data)
+                    signal_data: np.ndarray = csp.fit_transform(epochs.get_data(), labels)
+                    new_entry: Any = dataclasses.replace(entry, data=signal_data)
                 else:
                     new_entry = dataclasses.replace(entry, data=epochs)
 
