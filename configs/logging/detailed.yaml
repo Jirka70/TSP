@@ -3,3 +3,9 @@ console: true
 file: false
 file_path: null
 format: plain
+
+context:
+  run_id: false
+  git_commit_hash: true
+  pipeline_name: true
+  step: true

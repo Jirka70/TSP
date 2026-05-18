@@ -1,6 +1,7 @@
 from pydantic import BaseModel, model_validator
 
 from src.types.dto.config.logging.log_format import LogFormat
+from src.types.dto.config.logging.logging_context_config import LoggingContextConfig
 from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 
 
@@ -14,6 +15,8 @@ class LoggingConfig(BaseModel):
     file: bool = False
     file_path: str | None = None
     format: LogFormat = LogFormat.PLAIN
+
+    context: LoggingContextConfig = LoggingContextConfig()
 
     @model_validator(mode="after")
     def validate_file_path(self) -> "LoggingConfig":
