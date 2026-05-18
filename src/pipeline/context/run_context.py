@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from src.logging.pipeline_logger import PipelineLogger
+
 
 # ============================================================
 # RUN CONTEXT
@@ -27,3 +29,4 @@ class RunContext:
     experiment_name: str  # experiment name (e. g. "left_right_subject_01")
     pipeline_name: str  # name of the entire pipeline (e. g. "training_pipeline_<version>")
     git_commit_hash: str | None
+    logger: PipelineLogger
