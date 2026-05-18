@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from src.pipeline_logging.format.Json_formatter import JsonFormatter
 from src.types.dto.config.logging.log_format import LogFormat
@@ -6,12 +7,13 @@ from src.types.dto.config.logging.logging_config import LoggingConfig
 from logging import Formatter
 
 
-DEFAULT_LEVEL: int = logging.DEBUG
+INFO_LEVEL: int = logging.INFO
+DEBUG_LEVEL = logging.DEBUG
 ENCODING = "utf-8"
 
 def setup_pipeline_logging(config: LoggingConfig) -> None:
     root_logger = logging.getLogger()
-    root_logger.setLevel(DEFAULT_LEVEL)
+    root_logger.setLevel(INFO_LEVEL)
 
     root_logger.handlers.clear()
 
@@ -26,9 +28,9 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
         )
 
     if config.console:
-        console_handler = logging.StreamHandler()
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
-        console_handler.setLevel(logging.DEBUG)
+        console_handler.setLevel(INFO_LEVEL)
         root_logger.addHandler(console_handler)
 
     if config.file:
@@ -37,5 +39,8 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
 
         file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
         file_handler.setFormatter(formatter)
-        file_handler.setLevel(DEFAULT_LEVEL)
+        file_handler.setLevel(INFO_LEVEL)
         root_logger.addHandler(file_handler)
+
+    pipeline_logger = logging.getLogger("pipeline")
+    pipeline_logger.setLevel(DEBUG_LEVEL)
