@@ -7,6 +7,11 @@ from src.types.dto.config.logging.verbosity_level import VerbosityLevel, VERBOSI
 PipelineLoggerContext = dict[str, Any] | None
 
 
+def _validate_message(message: str | None) -> None:
+    if message is None:
+        raise ValueError("Message cannot be defined as None")
+
+
 class PipelineLogger:
     def __init__(self,
                  logger: logging.Logger,
@@ -19,15 +24,13 @@ class PipelineLogger:
         self._verbosity = verbosity
 
     def info(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.NORMAL) -> None:
-        if message is None:
-            raise ValueError("Message cannot be defined as None")
+        _validate_message(message)
 
         if self._should_log(verbosity):
             self._logger.info(self._format(message))
 
     def debug(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.TRACE) -> None:
-        if message is None:
-            raise ValueError("Message cannot be defined as None")
+        _validate_message(message)
 
         if self._should_log(verbosity):
             self._logger.debug(self._format(message))
@@ -41,20 +44,17 @@ class PipelineLogger:
         )
 
     def warning(self, message: str) -> None:
-        if message is None:
-            raise ValueError("Message cannot be defined as None")
+        _validate_message(message)
 
         self._logger.warning(self._format(message))
 
     def error(self, message: str) -> None:
-        if message is None:
-            raise ValueError("Message cannot be defined as None")
+        _validate_message(message)
 
         self._logger.error(self._format(message))
 
     def exception(self, message: str) -> None:
-        if message is None:
-            raise ValueError("Message cannot be defined as None")
+        _validate_message(message)
 
         self._logger.exception(self._format(message))
 

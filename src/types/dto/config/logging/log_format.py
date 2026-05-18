@@ -1,6 +1,6 @@
-from enum import StrEnum
+from enum import Enum
 
 
-class LogFormat(StrEnum):
+class LogFormat(str, Enum):
     PLAIN = "plain"
     JSON = "json"
