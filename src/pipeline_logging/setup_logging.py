@@ -12,6 +12,21 @@ from logging import Formatter
 DEBUG_LEVEL = logging.DEBUG
 ENCODING = "utf-8"
 
+
+def setup_bootstrap_logging() -> None:
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.setLevel(logging.INFO)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(logging.Formatter(
+        fmt="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    console_handler.setLevel(logging.INFO)
+    root_logger.addHandler(console_handler)
+
+
 def setup_pipeline_logging(config: LoggingConfig) -> None:
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
