@@ -15,7 +15,7 @@ from src.types.interfaces.paradigm import IParadigm
 class ParadigmPreprocessor(IParadigm):
     """
     Orchestrates the transition from Raw signal to segmented Epochs.
-    Supports both a custom MNE-based implementation and native MOABB paradigms.
+    Supports custom MNE-based implementation.
     """
 
     def _update_entry_data(self, entry: object, epochs: mne.Epochs) -> object:
@@ -30,22 +30,39 @@ class ParadigmPreprocessor(IParadigm):
             return new_entry
 
     def _normalize_event_name(self, value: object) -> str:
+        """Normalizes event names by converting to lowercase, stripping whitespace, and replacing spaces with underscores."""
         return str(value).strip().lower().replace(" ", "_")
 
 
     def run(self, input_dto: ParadigmInputDTO, run_ctx: RunContext) -> StepResult[ParadigmResultDTO]:
+        """
+    Processes raw MNE data by filtering, segmenting into epochs, and optionally resampling.
+
+    This method iterates through a collection of raw data entries, applies a
+    bandpass filter based on the configuration, extracts specified events from
+    annotations, windows the data into epochs, and performs resampling if enabled.
+
+    Args:
+        input_dto (ParadigmInputDTO): The input data transfer object containing
+            the raw MNE data and the paradigm preprocessing configuration.
+        run_ctx (RunContext): The execution context for the current pipeline run.
+
+    Returns:
+        StepResult[ParadigmResultDTO]: A step result container holding the
+            processed, epoched, and optionally resampled data entries.
+    """
         log = logging.getLogger(__name__)
-        cfg: ParadigmConfig = input_dto.paradigm_preprocessing_config
+        config: ParadigmConfig = input_dto.paradigm_preprocessing_config
 
         processed_items = []
 
         # Unify event parsing (takes key from dictionary or value from list)
-        if isinstance(cfg.events, dict):
-            configured_events = list(cfg.events.keys())
-        elif isinstance(cfg.events, list):
-            configured_events = [str(e) for e in cfg.events]
+        if isinstance(config.events, dict):
+            configured_events = list(config.events.keys())
+        elif isinstance(config.events, list):
+            configured_events = [str(e) for e in config.events]
         else:
-            configured_events = [str(cfg.events)]
+            configured_events = [str(config.events)]
 
         configured_events_normalized = {self._normalize_event_name(name) for name in configured_events}
 
@@ -54,8 +71,8 @@ class ParadigmPreprocessor(IParadigm):
 
             # Apply bandpass filter using nested filter configuration
             raw.filter(
-                l_freq=cfg.filter.fmin,
-                h_freq=cfg.filter.fmax,
+                l_freq=config.filter.fmin,
+                h_freq=config.filter.fmax,
                 fir_design="firwin",
                 skip_by_annotation="edge"
             )
@@ -69,21 +86,20 @@ class ParadigmPreprocessor(IParadigm):
             if not event_id_filtered:
                 continue
 
-            # Segment Raw data into Epochs using window configuration
+            # Segment Raw data into Epochs
             epochs = mne.Epochs(
                 raw, events=events, event_id=event_id_filtered,
-                tmin=cfg.window.tmin, tmax=cfg.window.tmax,
-                baseline=tuple(cfg.window.baseline) if cfg.window.baseline else None,
-                reject_by_annotation=cfg.reject_by_annotation,
-                preload=cfg.preload,
+                tmin=config.window.tmin, tmax=config.window.tmax,
+                baseline=tuple(config.window.baseline) if config.window.baseline else None,
+                reject_by_annotation=config.reject_by_annotation,
+                preload=config.preload,
             )
 
             if len(epochs) == 0:
                 continue
 
-            # Perform resampling if enabled in the configuration
-            if cfg.resampling.enabled:
-                epochs.resample(cfg.resampling.sfreq)
+            if config.resampling.enabled:
+                epochs.resample(config.resampling.sfreq)
 
             processed_items.append(self._update_entry_data(entry, epochs))
 
