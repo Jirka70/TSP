@@ -9,6 +9,7 @@ from logging import Formatter
 
 INFO_LEVEL: int = logging.INFO
 DEBUG_LEVEL = logging.DEBUG
+WARNING_LEVEL = logging.WARNING
 ENCODING = "utf-8"
 
 def setup_pipeline_logging(config: LoggingConfig) -> None:
@@ -27,11 +28,21 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
+    pipeline_logger = logging.getLogger("pipeline")
+    pipeline_logger.handlers.clear()
+    pipeline_logger.setLevel(DEBUG_LEVEL)
+    pipeline_logger.propagate = False
+
     if config.console:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
-        console_handler.setLevel(INFO_LEVEL)
-        root_logger.addHandler(console_handler)
+        console_handler.setLevel(DEBUG_LEVEL)
+        pipeline_logger.addHandler(console_handler)
+
+        root_console_handler = logging.StreamHandler(sys.stdout)
+        root_console_handler.setFormatter(formatter)
+        root_console_handler.setLevel(WARNING_LEVEL)
+        root_logger.addHandler(root_console_handler)
 
     if config.file:
         if config.file_path is None or config.file_path.strip() == "":
@@ -39,8 +50,10 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
 
         file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
         file_handler.setFormatter(formatter)
-        file_handler.setLevel(INFO_LEVEL)
-        root_logger.addHandler(file_handler)
+        file_handler.setLevel(DEBUG_LEVEL)
+        pipeline_logger.addHandler(file_handler)
 
-    pipeline_logger = logging.getLogger("pipeline")
-    pipeline_logger.setLevel(DEBUG_LEVEL)
+        root_file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
+        root_file_handler.setFormatter(formatter)
+        root_file_handler.setLevel(WARNING_LEVEL)
+        root_logger.addHandler(root_file_handler)

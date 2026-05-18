@@ -39,6 +39,7 @@ class RunContextFactory:
             augmentation_backend = config.augmentation.backend
 
         logger = PipelineLogger(logger=logging.getLogger("pipeline"),
+                                logging_config=config.logging,
                                 verbosity=config.logging.verbosity,
                                 ctx={
                                     "run_id": run_id,

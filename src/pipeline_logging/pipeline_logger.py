@@ -1,20 +1,22 @@
 import logging
 from typing import Any
 
+from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.logging.verbosity_level import VerbosityLevel, VERBOSITY_ORDER
 
-type PipelineLoggerContext = dict[str, Any] | None
+PipelineLoggerContext = dict[str, Any] | None
 
 
 class PipelineLogger:
     def __init__(self,
                  logger: logging.Logger,
+                 logging_config: LoggingConfig,
                  verbosity: VerbosityLevel = VerbosityLevel.NORMAL,
                  ctx: PipelineLoggerContext = None) -> None:
         self._context = dict(ctx) if ctx is not None else {}
+        self._logging_config = logging_config
         self._logger = logger
         self._verbosity = verbosity
-        self._context = ctx or {}
 
     def info(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.NORMAL) -> None:
         if message is None:
@@ -33,6 +35,7 @@ class PipelineLogger:
     def for_step(self, step: str) -> "PipelineLogger":
         return PipelineLogger(
             logger=self._logger,
+            logging_config=self._logging_config,
             verbosity=self._verbosity,
             ctx={**self._context, "step": step},
         )
@@ -63,17 +66,23 @@ class PipelineLogger:
         if not self._context:
             return message
 
-        run_id = self._context.get("run_id", UNKNOWN)
-        git = self._context.get("git_commit_hash", UNKNOWN)
-        pipeline = self._context.get("pipeline_name", UNKNOWN)
-        step = self._context.get("step")
+        context_config = self._logging_config.context
+        parts: list[str] = []
 
-        prefix = f"run_id={run_id} git={git} pipeline={pipeline}"
+        if context_config.run_id:
+            parts.append(f"run_id={self._context.get('run_id', UNKNOWN)}")
 
-        if step is not None:
-            prefix = f"{prefix} [{step}]"
+        if context_config.git_commit_hash:
+            parts.append(f"git={self._context.get('git_commit_hash', UNKNOWN)}")
 
-        return f"{prefix} {message}"
+        if context_config.pipeline_name:
+            parts.append(f"pipeline={self._context.get('pipeline_name', UNKNOWN)}")
+
+        if context_config.step and self._context.get("step") is not None:
+            parts.append(f"[{self._context['step']}]")
+
+        prefix = " ".join(parts)
+        return f"{prefix} {message}" if prefix else message
 
     def _should_log(self, message_verbosity: VerbosityLevel) -> bool:
         return VERBOSITY_ORDER[message_verbosity] <= VERBOSITY_ORDER[self._verbosity]
