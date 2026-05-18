@@ -77,4 +77,3 @@ class PipelineLogger:
 
     def _should_log(self, message_verbosity: VerbosityLevel) -> bool:
         return VERBOSITY_ORDER[message_verbosity] <= VERBOSITY_ORDER[self._verbosity]
-
