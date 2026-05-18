@@ -2,6 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
+from src.pipeline_logging.filter.PipelineOrWarningFilter import PipelineOrWarningFilter
 from src.pipeline_logging.format.Json_formatter import JsonFormatter
 from src.types.dto.config.logging.log_format import LogFormat
 from src.types.dto.config.logging.logging_config import LoggingConfig
@@ -38,6 +39,7 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         console_handler.setLevel(DEBUG_LEVEL)
+        console_handler.addFilter(PipelineOrWarningFilter())
         pipeline_logger.addHandler(console_handler)
 
         root_console_handler = logging.StreamHandler(sys.stdout)
@@ -54,6 +56,7 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
 
         file_handler = logging.FileHandler(log_file_path, encoding=ENCODING)
         file_handler.setFormatter(formatter)
+        file_handler.addFilter(PipelineOrWarningFilter())
         file_handler.setLevel(DEBUG_LEVEL)
         pipeline_logger.addHandler(file_handler)
 
