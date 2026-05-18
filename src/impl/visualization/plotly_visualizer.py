@@ -14,6 +14,7 @@ from src.pipeline.context.run_context import RunContext
 from src.types.dto.config.visualization_config import VisualizationConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
+from src.types.dto.raw_augmentation.raw_augmented_dto import RawAugmentedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 from src.types.interfaces.visualizer import IVisualizer
@@ -64,6 +65,44 @@ class PlotlyVisualizer(IVisualizer):
             fig.add_trace(go.Scatter(x=freqs, y=psd_mean, mode="lines", name="Mean PSD"))
             fig.update_layout(title=f"Power Spectral Density - Subject {recording.subject_id}", xaxis_title="Frequency (Hz)", yaxis_title="Power (dB)", template="plotly_white")
             self._handle_output(fig, "raw_psd_interactive.html")
+
+    def visualize_raw_augmentation(self, data: RawAugmentedDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
+        """Visualizes raw augmented data comparison using Plotly."""
+        if not self._config.visualize_raw_augmentation or not data.data:
+            return
+
+        log.info("Visualizing raw augmented samples (interactive)...")
+        n_copies = 1 + copies_per_sample
+        recordings = data.data[:n_copies]
+
+        titles = ["Original Signal"] + [f"Augmented Copy {i}" for i in range(1, n_copies)]
+        fig = make_subplots(rows=n_copies, cols=1, subplot_titles=titles)
+
+        for i, recording in enumerate(recordings):
+            raw = recording.data
+            max_samples = 2000
+            n_times = int(raw.n_times) if hasattr(raw, "n_times") else 0
+            stop_idx = min(max_samples, n_times) if n_times > 0 else max_samples
+
+            if hasattr(raw, "get_data"):
+                ch_data = raw.get_data(picks=[0], stop=stop_idx)
+                times = raw.times[: ch_data.shape[1]]
+                ch_name = raw.ch_names[0]
+            else:
+                # Fallback for NumPy
+                ch_data = raw[0, :stop_idx] if isinstance(raw, np.ndarray) else np.array([])
+                times = np.arange(ch_data.shape[0])
+                ch_name = "0"
+
+            fig.add_trace(go.Scatter(x=times, y=ch_data[0, :] if ch_data.ndim > 1 else ch_data, mode="lines", name=titles[i]), row=i + 1, col=1)
+            # Update subplot titles to include subject and channel
+            fig.layout.annotations[i].text = f"{titles[i]} - Subject {recording.subject_id}, Channel {ch_name}"
+
+        fig.update_layout(height=300 * n_copies, title_text="Raw Augmentation Variety Check", template="plotly_white")
+        fig.update_xaxes(title_text="Time (s)")
+        fig.update_yaxes(title_text="Amplitude")
+
+        self._handle_output(fig, "raw_augmentation_interactive.html")
 
     def visualize_epochs(self, data: EpochPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes ERP (average) of the epoched data using Plotly."""

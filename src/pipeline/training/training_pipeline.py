@@ -83,6 +83,9 @@ class TrainingPipeline(IPipeline):
         raw_augmentation_input = RawAugmentationInputDTO(config.raw_augmentation, raw_preprocessing_result.data)
         raw_augmentation_result = self._raw_augmentation.run(raw_augmentation_input, run_ctx)
 
+        copies_per_sample_raw = getattr(config.raw_augmentation, "copies_per_sample", 0)
+        self._visualizer.visualize_raw_augmentation(raw_augmentation_result.data, run_ctx, copies_per_sample_raw)
+
         paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
