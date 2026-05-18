@@ -18,7 +18,7 @@ class LoggingConfig(BaseModel):
     file_path: str | None = None
     format: LogFormat = LogFormat.PLAIN
 
-    context: Field(default_factory=LoggingContextConfig)
+    context: LoggingContextConfig = Field(default_factory=LoggingContextConfig)
 
     @model_validator(mode="after")
     def validate_file_path(self) -> "LoggingConfig":

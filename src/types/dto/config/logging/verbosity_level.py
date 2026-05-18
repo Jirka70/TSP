@@ -1,7 +1,7 @@
-from enum import StrEnum
+from enum import Enum
 
 
-class VerbosityLevel(StrEnum):
+class VerbosityLevel(str, Enum):
     QUIET = "quiet"
     NORMAL = "normal"
     DETAILED = "detailed"
