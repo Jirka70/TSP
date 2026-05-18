@@ -37,6 +37,7 @@ class Mode(str, Enum):
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
+    logging
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig
     final_trainer: FinalTrainerConfig
