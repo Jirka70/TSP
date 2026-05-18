@@ -9,6 +9,7 @@ from src.types.dto.config.augmentation_config import (
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
+from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.model_path_config import ModelPathConfig
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
@@ -37,7 +38,7 @@ class Mode(str, Enum):
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
-    logging
+    logging: LoggingConfig
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig
     final_trainer: FinalTrainerConfig
