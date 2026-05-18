@@ -1,7 +1,7 @@
 import logging
 import hydra
 
-from src.logging.setup_logging import setup_logging
+from src.pipeline_logging.setup_logging import setup_pipeline_logging
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
@@ -20,7 +20,6 @@ def my_app(cfg):
 
     log.info("Experiment start")
 
-
     validator = ExperimentConfigValidator()
     validation_res = validator.validate(cfg)
     if validation_res.is_valid:
@@ -30,7 +29,9 @@ def my_app(cfg):
         return
 
     ex_conf = validation_res.config
-    setup_logging(ex_conf.logging)
+
+    # Logging setup
+    setup_pipeline_logging(ex_conf.logging)
 
     sf = StageFactory(ex_conf)
 

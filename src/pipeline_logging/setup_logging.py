@@ -1,6 +1,6 @@
 import logging
 
-from src.logging.format.Json_formatter import JsonFormatter
+from src.pipeline_logging.format.Json_formatter import JsonFormatter
 from src.types.dto.config.logging.log_format import LogFormat
 from src.types.dto.config.logging.logging_config import LoggingConfig
 from logging import Formatter
@@ -9,7 +9,7 @@ from logging import Formatter
 DEFAULT_LEVEL: int = logging.DEBUG
 ENCODING = "utf-8"
 
-def setup_logging(config: LoggingConfig) -> None:
+def setup_pipeline_logging(config: LoggingConfig) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(DEFAULT_LEVEL)
 
@@ -33,7 +33,7 @@ def setup_logging(config: LoggingConfig) -> None:
 
     if config.file:
         if config.file_path is None or config.file_path.strip() == "":
-            raise ValueError("file_path must be provided when file logging is enabled.")
+            raise ValueError("file_path must be provided when file pipeline_logging is enabled.")
 
         file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
         file_handler.setFormatter(formatter)

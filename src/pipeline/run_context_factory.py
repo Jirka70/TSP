@@ -3,7 +3,7 @@ import subprocess
 from datetime import datetime
 from uuid import uuid4
 
-from src.logging.pipeline_logger import PipelineLogger
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.pipeline.context.run_context import RunContext
 from src.types.dto.config.experiment_config import ExperimentConfig
 

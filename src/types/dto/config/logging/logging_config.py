@@ -21,6 +21,6 @@ class LoggingConfig(BaseModel):
     @model_validator(mode="after")
     def validate_file_path(self) -> "LoggingConfig":
         if self.file and is_blank(self.file_path):
-            raise ValueError("file_path must be provided when file logging is enabled")
+            raise ValueError("file_path must be provided when file pipeline_logging is enabled")
 
         return self

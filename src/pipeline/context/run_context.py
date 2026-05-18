@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from src.logging.pipeline_logger import PipelineLogger
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 
 
 # ============================================================
