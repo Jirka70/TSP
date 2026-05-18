@@ -1,0 +1,5 @@
+verbosity: trace
+console: true
+file: false
+file_path: null
+format: plain
