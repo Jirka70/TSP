@@ -25,7 +25,7 @@ class PipelineLogger:
         if self._should_log(verbosity):
             self._logger.info(self._format(message))
 
-    def debug(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.NORMAL) -> None:
+    def debug(self, message: str, verbosity: VerbosityLevel = VerbosityLevel.TRACE) -> None:
         if message is None:
             raise ValueError("Message cannot be defined as None")
 

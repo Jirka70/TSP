@@ -1,4 +1,6 @@
-from pydantic import BaseModel, model_validator
+
+
+from pydantic import BaseModel, model_validator, Field
 
 from src.types.dto.config.logging.log_format import LogFormat
 from src.types.dto.config.logging.logging_context_config import LoggingContextConfig
@@ -16,7 +18,7 @@ class LoggingConfig(BaseModel):
     file_path: str | None = None
     format: LogFormat = LogFormat.PLAIN
 
-    context: LoggingContextConfig = LoggingContextConfig()
+    context: Field(default_factory=LoggingContextConfig)
 
     @model_validator(mode="after")
     def validate_file_path(self) -> "LoggingConfig":

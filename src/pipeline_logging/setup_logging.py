@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 from src.pipeline_logging.format.Json_formatter import JsonFormatter
 from src.types.dto.config.logging.log_format import LogFormat
@@ -48,12 +49,15 @@ def setup_pipeline_logging(config: LoggingConfig) -> None:
         if config.file_path is None or config.file_path.strip() == "":
             raise ValueError("file_path must be provided when file pipeline_logging is enabled.")
 
-        file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
+        log_file_path = Path(config.file_path)
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_handler = logging.FileHandler(log_file_path, encoding=ENCODING)
         file_handler.setFormatter(formatter)
         file_handler.setLevel(DEBUG_LEVEL)
         pipeline_logger.addHandler(file_handler)
 
-        root_file_handler = logging.FileHandler(config.file_path, encoding=ENCODING)
+        root_file_handler = logging.FileHandler(log_file_path, encoding=ENCODING)
         root_file_handler.setFormatter(formatter)
         root_file_handler.setLevel(WARNING_LEVEL)
         root_logger.addHandler(root_file_handler)
