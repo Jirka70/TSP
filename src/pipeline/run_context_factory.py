@@ -1,7 +1,9 @@
+import logging
 import subprocess
 from datetime import datetime
 from uuid import uuid4
 
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.pipeline.context.run_context import RunContext
 from src.types.dto.config.experiment_config import ExperimentConfig
 
@@ -24,7 +26,7 @@ class RunContextFactory:
         self,
         config: ExperimentConfig,
         experiment_name: str,
-        pipeline_name: str,
+        pipeline_name: str
     ) -> RunContext:
 
         run_id = str(uuid4())
@@ -36,6 +38,15 @@ class RunContextFactory:
         if config.augmentation.enabled:
             augmentation_backend = config.augmentation.backend
 
+        logger = PipelineLogger(logger=logging.getLogger("pipeline"),
+                                logging_config=config.logging,
+                                verbosity=config.logging.verbosity,
+                                ctx={
+                                    "run_id": run_id,
+                                    "git_commit_hash": git_commit_hash or "unknown",
+                                    "pipeline_name": pipeline_name
+                                })
+
         return RunContext(
             run_id=run_id,
             started_at=started_at,
@@ -46,4 +57,5 @@ class RunContextFactory:
             experiment_name=experiment_name,
             pipeline_name=pipeline_name,
             git_commit_hash=git_commit_hash,
+            logger=logger
         )

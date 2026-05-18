@@ -1,5 +1,7 @@
 defaults:
   - _self_
+  - logging: detailed
+  - source: external
   - raw_preprocessing: default
   - raw_augmentation: raw_torcheeg
   - paradigm: default
@@ -11,7 +13,6 @@ defaults:
   - final_trainer: eegnet
   - evaluation: default
   - visualization: matplotlib
-  - source: external
   - save_artifacts: default
   - model_path: default
 
