@@ -17,7 +17,7 @@ from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEval
 from src.types.dto.config.model.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
-from src.types.dto.config.model_path_config import ModelPathConfig
+from src.types.dto.config.model.model_path_config import ModelPathConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.config.raw_augmentation_config import (
     RawAugmentationConfigNone,
