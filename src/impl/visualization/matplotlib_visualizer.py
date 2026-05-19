@@ -1,6 +1,5 @@
 import logging
 import warnings
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -125,7 +124,7 @@ class MatplotlibVisualizer(IVisualizer):
             plt.ylabel("Amplitude")
 
         plt.tight_layout()
-        self._handle_output("raw_augmentation_comparison.png")
+        self._handle_output("raw_augmentation_comparison.png", run_ctx)
 
     def visualize_epochs(self, data: EpochPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes ERP (average) of the epoched data."""
