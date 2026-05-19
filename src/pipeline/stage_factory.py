@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -9,16 +9,16 @@ from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 
 # from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
+from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.dummy_model_trainer import DummyModelTrainer
-from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
-from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
-from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
+from src.impl.model.deep_learning.trainer.final_eegnet_trainer import FinalEEGNetTrainer
+from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
+from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.model_loader import ModelLoader
-from src.impl.model.pytorch_serializer import PyTorchSerializer
-from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
+from src.impl.save_artifacts.deep_learning.eegnet_model_serializer import EEGNetModelSerializer
+from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
@@ -31,6 +31,7 @@ from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
+from src.types.interfaces.dataset_exporter import IDatasetExporter
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
 from src.types.interfaces.evaluator import IEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
@@ -61,6 +62,7 @@ class StageType(Enum):
     MODEL_SERIALIZER = "serializer"
     VISUALIZER = "visualizer"
     MODEL_PATH = "model_path"
+    DATASET_EXPORT = "dataset_export"
 
 
 class StageFactory:
@@ -100,7 +102,7 @@ class StageFactory:
         StageType.SAVER: {"default": ArtifactSaver},
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
-            "eegnet": PyTorchSerializer,
+            "eegnet": EEGNetModelSerializer,
         },
         StageType.VISUALIZER: {
             "matplotlib": MatplotlibVisualizer,
@@ -108,6 +110,10 @@ class StageFactory:
         },
         StageType.MODEL_PATH: {
             "default": ModelLoader,
+        },
+        StageType.DATASET_EXPORT: {
+            "fif": FifDatasetExporter,
+            "none": None,
         },
     }
 
@@ -160,3 +166,6 @@ class StageFactory:
 
     def create_model_loader(self) -> IModelLoader:
         return StageFactory._targets[StageType.MODEL_PATH][self._config.model_path.backend]()
+
+    def create_dataset_exporter_stage(self) -> IDatasetExporter:
+        return StageFactory._targets[StageType.DATASET_EXPORT][self._config.dataset_export.backend]()
