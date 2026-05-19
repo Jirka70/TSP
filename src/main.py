@@ -1,6 +1,7 @@
 import logging
 import hydra
 
+from src.pipeline_logging.setup_logging import setup_bootstrap_logging, setup_pipeline_logging
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
@@ -16,6 +17,8 @@ log = logging.getLogger(__name__)
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def my_app(cfg):
+    setup_bootstrap_logging()
+
     log.info("Experiment start")
 
     validator = ExperimentConfigValidator()
@@ -27,6 +30,9 @@ def my_app(cfg):
         return
 
     ex_conf = validation_res.config
+
+    # Logging setup
+    setup_pipeline_logging(ex_conf.logging)
 
     sf = StageFactory(ex_conf)
 
@@ -45,6 +51,7 @@ def my_app(cfg):
     pipeline: IPipeline
 
     if ex_conf.mode == Mode.TRAINING.value:
+        raw_augmentation = sf.create_raw_augmentation_stage()
         split = sf.create_split_stage()
         augmentation = sf.create_augmentation_stage()
         model_trainer = sf.create_model_trainer_stage()
@@ -52,7 +59,7 @@ def my_app(cfg):
         final_trainer = sf.create_final_trainer_stage()
 
         pipeline = TrainingPipeline(
-            dl, raw_preprocessing, paradigm, epoch_preprocessing,
+            dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing,
             split, augmentation, model_trainer, metrics_aggregator,
             final_trainer, evaluator, visualizer, saver, model_serializer
         )

@@ -1,16 +1,18 @@
 defaults:
   - _self_
+  - logging: detailed
+  - source: external
   - raw_preprocessing: default
+  - raw_augmentation: raw_torcheeg
   - paradigm: default
   - epoch_preprocessing: default
   - split: moabb_within_session
   - augmentation: torcheeg
-  - model: machine_learning/riemannian_svm
+  - model: deep_learning/eegnet
   - metrics_aggregator: default
-  - final_trainer: default
+  - final_trainer: eegnet
   - evaluation: default
   - visualization: matplotlib
-  - source: external
   - save_artifacts: default
   - model_path: default
 

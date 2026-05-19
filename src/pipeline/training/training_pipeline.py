@@ -17,6 +17,7 @@ from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
+from src.types.dto.raw_augmentation.raw_augmentation_input_dto import RawAugmentationInputDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
 from src.types.dto.save_artifacts.save_artifacts_input_dto import SaveArtifactsInputDTO
@@ -31,6 +32,7 @@ from src.types.interfaces.model.final_trainer import IFinalTrainer
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
+from src.types.interfaces.raw_augmentor import IRawAugmentor
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.splitter import ISplitter
 from src.types.interfaces.visualizer import IVisualizer
@@ -41,6 +43,7 @@ class TrainingPipeline(IPipeline):
         self,
         data_loader: IDataLoader,
         raw_preprocessing: IRawPreprocessing,
+        raw_augmentation: IRawAugmentor,
         paradigm: IParadigm,
         epoch_preprocessing: IEpochPreprocessing,
         splitting: ISplitter,
@@ -56,6 +59,7 @@ class TrainingPipeline(IPipeline):
         self._data_loader = data_loader
         self._run_context_factory = RunContextFactory()
         self._raw_preprocessing = raw_preprocessing
+        self._raw_augmentation = raw_augmentation
         self._paradigm = paradigm
         self._epoch_preprocessing = epoch_preprocessing
         self._splitting = splitting
@@ -76,7 +80,10 @@ class TrainingPipeline(IPipeline):
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
         self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
 
-        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_preprocessing_result.data)
+        raw_augmentation_input = RawAugmentationInputDTO(config.raw_augmentation, raw_preprocessing_result.data)
+        raw_augmentation_result = self._raw_augmentation.run(raw_augmentation_input, run_ctx)
+
+        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
         epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
@@ -90,6 +97,9 @@ class TrainingPipeline(IPipeline):
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx) # TODO: tohle by melo byt typed
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
+        copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
+        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
+
         folds = augmentation_result.data.folds
         if not folds:
             raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
@@ -97,18 +107,22 @@ class TrainingPipeline(IPipeline):
         training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        is_eegnet = getattr(config.model, "backend", None) == "eegnet"
-        evaluation_result = None
-        if is_eegnet and model_training_result.data.trained_models:
-            self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
-            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation, trained_models=model_training_result.data.trained_models, folds=folds, validation_data=augmentation_result.data.validation_data, dataset_split=augmentation_result.data)
-            evaluation_result = self._evaluator.run(fold_evaluation_input, run_ctx)
+        self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
+        fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
+                                                   trained_models=model_training_result.data.trained_models,
+                                                   folds=folds,
+                                                   dataset_split=augmentation_result.data)
+        # Not using step result because it does not return anything (just log and future visualization)
+        self._evaluator.run(fold_evaluation_input, run_ctx)
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
         # Not using step result because it does not return anything (just log and future visualization)
         self._metrics_aggregator.run(metrics_input, run_ctx)
 
-        final_trainer_input = FinalTrainingInputDTO(config=config.model, folds=folds, train_data=epoch_preprocessing_result.data if is_eegnet else None, validation_data=augmentation_result.data.validation_data)
+        final_trainer_input = FinalTrainingInputDTO(config=config.model,
+                                                    folds=folds,
+                                                    training_data=epoch_preprocessing_result.data,
+                                                    validation_data=augmentation_result.data.validation_data)
         final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
 
         evaluation_input = EvaluationInputDTO(
@@ -118,13 +132,15 @@ class TrainingPipeline(IPipeline):
             dataset_split=augmentation_result.data,
         )
         evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
-        self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, final_training_result.data.trained_model.model_name)
+        self._visualizer.visualize_evaluation(evaluation_result.data,
+                                              run_ctx,
+                                              final_training_result.data.trained_model.model_name)
 
         trained_model = final_training_result.data.trained_model
         save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
-            output_path=Path("ahoj.txt"),
+            output_path=Path("model_output"),
             evaluation_result=evaluation_result.data if evaluation_result is not None else None,
             trained_model=trained_model,
             model_serializer=self._model_serializer,

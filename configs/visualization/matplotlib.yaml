@@ -26,4 +26,4 @@ n_fft: 2048
 # Save generated plots to the output directory
 save_plots: True
 # Open a window to show plots (Note: this blocks execution until the window is closed)
-show_plots: True
+show_plots: False

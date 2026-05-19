@@ -8,6 +8,7 @@ from src.types.dto.config.augmentation_config import (
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
+from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.model.model_path_config import ModelPathConfig
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
@@ -16,6 +17,10 @@ from src.types.dto.config.model.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
+from src.types.dto.config.raw_augmentation_config import (
+    RawAugmentationConfigNone,
+    RawAugmentationConfigTorchEEG,
+)
 from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
@@ -32,6 +37,7 @@ class Mode(str, Enum):
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
+    logging: LoggingConfig
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig
     final_trainer: FinalTrainerConfig
@@ -42,6 +48,7 @@ class ExperimentConfig(BaseModel):
     model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
+    raw_augmentation: RawAugmentationConfigNone | RawAugmentationConfigTorchEEG = Field(discriminator="backend")
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
     split: SplitConfig | SplitMoabbWithinSessionConfig | SplitMoabbWithinSubjectConfig | SplitMoabbCrossSessionConfig | SplitMoabbCrossSubjectConfig = Field(discriminator="backend")
