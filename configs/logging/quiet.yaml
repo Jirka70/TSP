@@ -1,0 +1,11 @@
+verbosity: quiet
+console: true
+file: false
+file_path: null
+format: plain
+
+context:
+  run_id: false
+  git_commit_hash: false
+  pipeline_name: false
+  step: true

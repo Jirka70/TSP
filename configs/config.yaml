@@ -1,5 +1,7 @@
 defaults:
   - _self_
+  - logging: detailed
+  - source: external
   - raw_preprocessing: default
   - raw_augmentation: none
   - paradigm: default
@@ -12,7 +14,6 @@ defaults:
   - final_trainer: default
   - evaluation: default
   - visualization: matplotlib
-  - source: external
   - save_artifacts: default
   - model_path: default
 

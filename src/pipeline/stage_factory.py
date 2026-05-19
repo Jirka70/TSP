@@ -1,5 +1,6 @@
 from enum import Enum
 
+from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -11,14 +12,13 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.eegnet_model_trainer import EEGNetModelTrainer
-from src.impl.model.final_eegnet_trainer import FinalEEGNetTrainer
-from src.impl.model.final_sklearn_trainer import FinalSklearnTrainer
-from src.impl.model.generic_sklearn_trainer import GenericSklearnTrainer
+from src.impl.model.deep_learning.trainer.final_eegnet_trainer import FinalEEGNetTrainer
+from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
+from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.model_loader import ModelLoader
-from src.impl.model.pytorch_serializer import PyTorchSerializer
-from src.impl.model.sklearn_model_serializer import SklearnModelSerializer
+from src.impl.save_artifacts.deep_learning.eegnet_model_serializer import EEGNetModelSerializer
+from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
@@ -92,14 +92,17 @@ class StageFactory:
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
-        StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer, "eegnet": FinalEEGNetTrainer},
+        StageType.FINAL_TRAINER: {
+            "sklearn": FinalSklearnTrainer,
+            "eegnet": FinalEEGNetTrainer
+        },
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
         },
         StageType.SAVER: {"default": ArtifactSaver},
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
-            "eegnet": PyTorchSerializer,
+            "eegnet": EEGNetModelSerializer,
         },
         StageType.VISUALIZER: {
             "matplotlib": MatplotlibVisualizer,

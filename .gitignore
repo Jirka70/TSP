@@ -111,6 +111,11 @@ datasets/
 Thumbs.db
 
 # ==============================
+# Model output
+# ==============================
+model_output/
+
+# ==============================
 # Misc
 # ==============================
 .env
@@ -119,3 +124,4 @@ Thumbs.db
 *.bak
 .claude/settings.local.json
 *.joblib
+
