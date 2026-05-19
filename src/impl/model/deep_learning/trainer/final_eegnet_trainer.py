@@ -1,5 +1,4 @@
 import copy
-import logging
 
 import numpy as np
 
@@ -9,12 +8,12 @@ from src.impl.model.deep_learning.reproducibility.set_torch_seed import set_torc
 from src.impl.model.util.extract.extract_learning_data import extract_learning_data
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.interfaces.model.final_trainer import IFinalTrainer
-
-log = logging.getLogger(__name__)
 
 
 def extract_final_training_data(
@@ -33,11 +32,12 @@ def _evaluate_model(
         model: EEGNetModel,
         x_validation: np.ndarray | None,
         y_validation: np.ndarray | None,
+        log: PipelineLogger
 ) -> float | None:
     if x_validation is None or y_validation is None:
-        log.warning("Validation data are not present. Model will not be validated")
         return None
 
+    log.info("Evaluating validation data", VerbosityLevel.TRACE)
     _, validation_accuracy = model.evaluate(x_validation, y_validation)
 
     return validation_accuracy
@@ -45,19 +45,16 @@ def _evaluate_model(
 
 def _log_epoch_metrics(
         model: EEGNetModel,
+        log: PipelineLogger,
         epoch: int,
 ) -> None:
     if model.history is None:
-        log.warning("Epoch %s has no training history to summarize.", epoch + 1)
+        log.warning(f"Epoch {epoch + 1} has no training history to summarize.")
         return
 
     train_accuracy = model.history.train_metrics.get("accuracy", [])
     if train_accuracy:
-        log.info(
-            "Epoch %s train accuracy=%s",
-            epoch + 1,
-            train_accuracy[-1],
-        )
+        log.info(f"Epoch {epoch + 1} train accuracy={train_accuracy[-1]}", VerbosityLevel.DETAILED)
 
 
 def _train_one_epoch(
@@ -65,8 +62,9 @@ def _train_one_epoch(
         x_train: np.ndarray,
         y_train: np.ndarray,
         epoch: int,
+        log: PipelineLogger
 ) -> None:
-    log.info("Epoch %s train", epoch + 1)
+    log.info(f"Epoch {epoch + 1} train", VerbosityLevel.DETAILED)
     model.train_one_epoch(x_train, y_train)
 
 
@@ -87,47 +85,55 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
+        log = run_ctx.logger.for_step("EEGNET FINAL TRAINING")
+        log.info("Started training EEGNET model", VerbosityLevel.QUIET)
         epochs = input_dto.config.training.epochs
 
+        log.info("Extracting training data", VerbosityLevel.DETAILED)
         x_train, y_train = extract_final_training_data(input_dto)
+        log.info(f"Training data extracted: samples={len(y_train)} shape={x_train.shape}", VerbosityLevel.TRACE)
 
         seed = input_dto.config.training.random_state
         if seed is not None:
             set_torch_seed(seed, input_dto.config.training.deterministic)
+            log.info("Seed from input config was applied successfully", VerbosityLevel.TRACE)
+        else:
+            log.info("Seed was set to None. No initial seed is being applied...", VerbosityLevel.TRACE)
 
         model = self._model_factory.create(config=input_dto.config, input_shape=x_train.shape)
+        log.info("EEGNET model created successfully")
 
         model.initialize_training(y_train)
+        log.info("Initializing EEGNET training...")
 
         x_validation = None
         y_validation = None
         if input_dto.validation_data is not None:
+            log.info("Extracting validation data", VerbosityLevel.TRACE)
             x_validation, y_validation = extract_learning_data(input_dto.validation_data)
+            log.info(f"Validation data extracted: samples={len(y_validation)} shape={x_validation.shape}", VerbosityLevel.TRACE)
+        else:
+            log.warning("Validation data are not present. Model will not be validated")
 
         best_validation_accuracy: float | None = None
         best_epoch: int | None = None
         best_state: dict | None = None
         for epoch in range(epochs):
-            log.info("Epoch %s/%s started", epoch + 1, epochs)
-            _train_one_epoch(model, x_train, y_train, epoch)
-            _log_epoch_metrics(model, epoch)
-            log.info("Epoch %s evaluate validation data", epoch + 1)
-            validation_accuracy = _evaluate_model(model, x_validation, y_validation)
+            log.info(f"Training EEGNET model for epoch {epoch + 1}", VerbosityLevel.TRACE)
+            _train_one_epoch(model, x_train, y_train, epoch, log)
+            _log_epoch_metrics(model, log, epoch)
+            validation_accuracy = _evaluate_model(model, x_validation, y_validation, log)
             if validation_accuracy is not None:
                 if best_validation_accuracy is None or validation_accuracy > best_validation_accuracy:
                     best_validation_accuracy = validation_accuracy
                     best_epoch = epoch
                     best_state = copy.deepcopy(model.get_network_state_dict())
-            log.info(
-                "Epoch %s validation accuracy=%s",
-                epoch + 1,
-                validation_accuracy,
-            )
+            log.info(f"Epoch {epoch + 1} validation accuracy={validation_accuracy}", VerbosityLevel.DETAILED)
 
         training_data_source = "train_data" if input_dto.training_data is not None else "fold_fallback"
 
         if best_state is not None:
-            log.info("Applying best model state from epoch %s.", best_epoch + 1)
+            log.info(f"Applying best model state from epoch {best_epoch + 1}.", VerbosityLevel.DETAILED)
             model.load_network_state_dict(best_state)
         else:
             best_epoch = epochs - 1
@@ -149,6 +155,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
                 "training_data_source": training_data_source
             },
         )
+        log.info("Finished training EEGNET model", VerbosityLevel.QUIET)
         return StepResult(
             FinalTrainingResultDTO(
                 trained_model=trained_model,
