@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from src.pipeline.context.run_context import RunContext
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
+from src.types.dto.raw_augmentation.raw_augmented_dto import RawAugmentedDTO
 from src.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 
@@ -13,6 +14,11 @@ class IVisualizer(ABC):
     @abstractmethod
     def visualize_raw(self, data: RawPreprocessedDTO, run_ctx: RunContext) -> None:
         """Visualizes raw preprocessed data (e.g., PSD, signal traces)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def visualize_raw_augmentation(self, data: RawAugmentedDTO, run_ctx: RunContext, copies_per_sample: int = 0) -> None:
+        """Visualizes raw augmented data."""
         raise NotImplementedError
 
     @abstractmethod

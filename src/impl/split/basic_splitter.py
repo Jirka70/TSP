@@ -71,10 +71,14 @@ class BasicSplitter(ISplitter):
             row_data = {"subject": subj, "session": sess, "run": run}
             if isinstance(rec.metadata, dict):
                 for k, v in rec.metadata.items():
-                    if k not in ["subject", "session", "run", "labels"] and np.isscalar(v):
+                    if k not in ["subject", "session", "run", "labels"] and (np.isscalar(v) or k in ["ch_names", "sfreq"]):
                         row_data[k] = v
 
             df_meta = pd.DataFrame([row_data] * len(labels))
+            # We need to handle non-scalar data like ch_names manually if they were included
+            if "ch_names" in row_data and not np.isscalar(row_data["ch_names"]):
+                df_meta["ch_names"] = [row_data["ch_names"]] * len(labels)
+
             all_metadata.append(df_meta)
 
         # Concatenate all extracted components

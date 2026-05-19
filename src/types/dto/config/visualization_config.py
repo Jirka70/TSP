@@ -10,6 +10,7 @@ class VisualizationConfig(AStageConfig):
 
     # Switches for different pipeline stages
     visualize_raw: bool
+    visualize_raw_augmentation: bool
     visualize_epochs: bool
     visualize_augmentation: bool
     visualize_evaluation: bool

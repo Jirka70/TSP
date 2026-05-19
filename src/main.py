@@ -1,4 +1,5 @@
 import logging
+
 import hydra
 
 from src.pipeline_logging.setup_logging import setup_bootstrap_logging, setup_pipeline_logging
@@ -54,15 +55,12 @@ def my_app(cfg):
         raw_augmentation = sf.create_raw_augmentation_stage()
         split = sf.create_split_stage()
         augmentation = sf.create_augmentation_stage()
+        dataset_exporter = sf.create_dataset_exporter_stage()
         model_trainer = sf.create_model_trainer_stage()
         metrics_aggregator = sf.create_metrics_aggregator_stage()
         final_trainer = sf.create_final_trainer_stage()
 
-        pipeline = TrainingPipeline(
-            dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing,
-            split, augmentation, model_trainer, metrics_aggregator,
-            final_trainer, evaluator, visualizer, saver, model_serializer
-        )
+        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, dataset_exporter, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
 
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         model_loader = sf.create_model_loader()
@@ -76,7 +74,7 @@ def my_app(cfg):
             evaluator=evaluator,
             visualizer=visualizer,
             artifact_saver=saver,
-            model_serializer=model_serializer
+            model_serializer=model_serializer,
         )
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
