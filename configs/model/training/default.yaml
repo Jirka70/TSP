@@ -1,11 +1,15 @@
 # Number of training epochs.
-epochs: 50
+epochs: 2
 
 # Batch size used during training.
-batch_size: 32
+batch_size: 16
 
 # Learning rate for the optimizer.
-learning_rate: 0.001
+learning_rate: 0.0005
 
 # Optimizer name.
 optimizer: adam
+
+# Model reproducibility
+random_state: 67
+deterministic: True # by default = False

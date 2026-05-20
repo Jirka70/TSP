@@ -1,0 +1,11 @@
+verbosity: detailed
+console: true
+file: true
+file_path: "log_output.log"
+format: json
+
+context:
+  run_id: false
+  git_commit_hash: true
+  pipeline_name: true
+  step: true

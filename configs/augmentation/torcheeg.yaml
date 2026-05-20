@@ -8,7 +8,7 @@ enabled: true
 backend: torcheeg
 
 # Number of augmented variants generated per original sample.
-copies_per_sample: 5
+copies_per_sample: 1
 
 # Standard deviation of Gaussian noise added to the signal.
 gaussian_noise_std: 0.01

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from src.types.dto.config.model.model_config import ModelConfig, SklearnModelConfig
+from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
+from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.split.dataset_split_dto import FoldDTO
 
 
@@ -8,5 +9,5 @@ from src.types.dto.split.dataset_split_dto import FoldDTO
 class TrainingInputDTO:
     """Input data for the fold-based training stage."""
 
-    config: ModelConfig | SklearnModelConfig
+    config: EEGNetConfig | SklearnModelConfig
     folds: list[FoldDTO]

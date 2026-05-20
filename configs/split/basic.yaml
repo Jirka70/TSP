@@ -4,14 +4,17 @@ backend: basic
 # Whether the basic splitting strategy is enabled.
 enabled: true
 
+# Global validation settings - if pre_split_validation is true, a portion of the data will be set aside for validation before applying the basic splitting strategy.
+pre_split_validation: true
+
 # Fraction of the dataset to be used for training (0.0 - 1.0).
 train_ratio: 0.7
 
 # Fraction of the dataset to be used for validation (0.0 - 1.0).
-validation_ratio: 0.0
+validation_ratio: 0.1
 
 # Fraction of the dataset to be used for testing (0.0 - 1.0).
-test_ratio: 0.3
+test_ratio: 0.2
 
 # Whether to shuffle the data before splitting.
 shuffle: true

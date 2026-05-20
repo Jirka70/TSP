@@ -1,0 +1,1 @@
+backend: eegnet               # Deep learning backend specialized for EEG convolutional neural networks

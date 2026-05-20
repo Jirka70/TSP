@@ -12,3 +12,4 @@ class ISamplePreparer(ABC):
         self, input_dto: SamplePreparationInputDTO, run_context: RunContext
     ) -> PreparedSamplesDTO:
         raise NotImplementedError
+    

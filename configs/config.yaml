@@ -1,17 +1,21 @@
 defaults:
   - _self_
-  - raw_preprocessing: testing
-  - paradigm: testing
-  - epoch_preprocessing: testing
+  - logging: trace
+  - source: external
+  - raw_preprocessing: default
+  - raw_augmentation: none
+  - paradigm: default
+  - epoch_preprocessing: default
   - split: moabb_within_session
   - augmentation: torcheeg
+  - dataset_export: default
   - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
   - final_trainer: default
   - evaluation: default
   - visualization: matplotlib
-  - source: external
   - save_artifacts: default
+  - model_path: default
 
-mode: training
+mode: experiment
 output_dir: ./outputs

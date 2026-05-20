@@ -1,0 +1,25 @@
+backend: default              # Used by program logic, changing this may break the pipeline if not handled properly
+
+# --- Paradigm Preprocessing Configuration ---
+
+# Some blocks can be enabled/disabled independently, based on the enabled true/false flag.
+
+events:
+  left_hand: 1               # Trigger code mapping for the 'left hand' condition
+  right_hand: 2              # Trigger code mapping for the 'right hand' condition
+
+filter:
+  fmin: 8.0                  # High-pass filter (Hz). 8Hz starts the Alpha/Mu band range
+  fmax: 35.0                 # Low-pass filter (Hz). 35Hz captures Beta band and avoids power line noise
+
+window:
+  tmin: -0.5                 # Start time relative to event (seconds). Includes pre-stimulus buffer
+  tmax: 4.0                  # End time relative to event (seconds)
+  baseline: [-0.5, 0.0]      # Period used for mean signal subtraction (pre-stimulus is standard)
+
+resampling:
+  enabled: true
+  sfreq: 128.0               # Resample to 128Hz to reduce computational load (Nyquist freq is 64Hz)
+
+reject_by_annotation: true   # Automatically drop epochs that overlap with 'BAD' annotations in raw data
+preload: true                # Load data into memory for faster processing (requires more RAM)

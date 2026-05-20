@@ -1,10 +1,12 @@
 from pathlib import Path
+from typing import List
 
 import joblib
 
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 from src.types.interfaces.model.model_serializer import IModelSerializer
+from src.types.dto.save_artifacts.artifact_ref import ArtifactRef
 
 
 class SklearnModelSerializer(IModelSerializer):
@@ -27,7 +29,14 @@ class SklearnModelSerializer(IModelSerializer):
             bool: True if the model is a supported Scikit-learn method, False otherwise.
         """
         # Models supporter in factory
-        supported_methods = ["csp_lda", "riemannian_lda", "riemannian_svm", "rimannian_lr", "riamannian_rf", "riamannian_mdm"]
+        supported_methods : List[str] = [
+            "csp_lda",
+            "riemannian_lda",
+            "riemannian_svm",
+            "rimannian_lr",
+            "riamannian_rf",
+            "riamannian_mdm"
+        ]
         return model_name in supported_methods
 
     def save(self, trained_model: TrainedModelDTO, output_path: Path) -> SavedArtifactsDTO:
@@ -47,9 +56,16 @@ class SklearnModelSerializer(IModelSerializer):
             SavedArtifactsDTO: A DTO containing the path to the generated .joblib artifact.
         """
         output_path.mkdir(parents=True, exist_ok=True)
-        file_path = output_path / f"{trained_model.model_name}.joblib"
+        file_path : Path = output_path / f"{trained_model.model_name}.joblib"
 
-        # Saving inner dictionary (state_dict)
+        # Serialize and save the internal state dictionary
         joblib.dump(trained_model.model.get_state_dict(), file_path)
 
-        return SavedArtifactsDTO(artifacts=[file_path])
+        # Create wrapper for the saved model
+        model_artifact: ArtifactRef = ArtifactRef(
+            name="trained_model",
+            path=file_path,
+            kind="model"
+        )
+
+        return SavedArtifactsDTO(artifacts=[model_artifact])

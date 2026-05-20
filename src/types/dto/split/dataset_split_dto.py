@@ -13,23 +13,23 @@ class FoldDTO:
     Attributes:
         fold_idx: Index of the fold (starting from 0).
         train_data: Preprocessed data to be used for model training.
-        validation_data: Preprocessed data to be used for hyperparameter tuning (optional).
         test_data: Preprocessed data to be used for final model evaluation.
     """
 
     fold_idx: int
     train_data: EpochPreprocessedDTO
-    validation_data: EpochPreprocessedDTO | None
     test_data: EpochPreprocessedDTO | None
 
 
 @dataclass(frozen=True)
-class DatasetSplitDTO:
+class DatasetSplitDTO: # TODO: necheceme toto DTO prejmenovat na AugmentedDataDTO / AugmentedDatasetSplitDTO
     """
     Main output of the splitting stage, containing all generated folds.
 
     Attributes:
         folds: A list of FoldDTO objects representing the partitions of the dataset.
+        validation_data: Global preprocessed data for validation (optional).
     """
 
     folds: list[FoldDTO]
+    validation_data: EpochPreprocessedDTO | None

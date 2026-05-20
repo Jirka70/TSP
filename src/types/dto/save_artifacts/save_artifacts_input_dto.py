@@ -16,6 +16,6 @@ class SaveArtifactsInputDTO:
     For saving whole pipeline configuration
     """
     output_path: Path
-    model_serializer: IModelSerializer
+    model_serializer: IModelSerializer | None = None
     trained_model: TrainedModelDTO | None = None
     evaluation_result: EvaluationResultDTO | None = None
