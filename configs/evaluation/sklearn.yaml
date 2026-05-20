@@ -1,6 +1,0 @@
-backend: "sklearn"
-
-metrics:
-  - "accuracy"
-  - "f1_macro"
-  - "precision_macro"
