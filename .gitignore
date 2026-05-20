@@ -120,8 +120,9 @@ model_output/
 # ==============================
 .env
 .env.*
+ansible/inventory.ini
+.ansible/
 *.tmp
 *.bak
 .claude/settings.local.json
 *.joblib
-
