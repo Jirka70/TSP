@@ -1,0 +1,158 @@
+import logging
+from pathlib import Path
+
+from tsp_eeg_classification.pipeline.context.run_context import RunContext
+from tsp_eeg_classification.pipeline.contracts.step_result import StepResult
+from tsp_eeg_classification.pipeline.pipeline import IPipeline
+from tsp_eeg_classification.pipeline.run_context_factory import RunContextFactory
+from tsp_eeg_classification.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
+from tsp_eeg_classification.types.dto.config.experiment_config import ExperimentConfig
+from tsp_eeg_classification.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
+from tsp_eeg_classification.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
+from tsp_eeg_classification.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from tsp_eeg_classification.types.dto.load.raw_data_dto import RawDataDTO
+from tsp_eeg_classification.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
+from tsp_eeg_classification.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
+from tsp_eeg_classification.types.dto.model.training_input_dto import TrainingInputDTO
+from tsp_eeg_classification.types.dto.model.training_result_dto import TrainingResultDTO
+from tsp_eeg_classification.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
+from tsp_eeg_classification.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
+from tsp_eeg_classification.types.dto.raw_augmentation.raw_augmentation_input_dto import RawAugmentationInputDTO
+from tsp_eeg_classification.types.dto.raw_preprocessing.raw_preprocessed_dto import RawPreprocessedDTO
+from tsp_eeg_classification.types.dto.raw_preprocessing.raw_preprocessing_input_dto import RawPreprocessingInputDTO
+from tsp_eeg_classification.types.dto.save_artifacts.save_artifacts_input_dto import SaveArtifactsInputDTO
+from tsp_eeg_classification.types.dto.split.split_input_dto import SplitInputDTO
+from tsp_eeg_classification.types.interfaces.artifact_saver import IArtifactSaver
+from tsp_eeg_classification.types.interfaces.augmentor import IAugmentor
+from tsp_eeg_classification.types.interfaces.data_loader import IDataLoader
+from tsp_eeg_classification.types.interfaces.dataset_exporter import IDatasetExporter
+from tsp_eeg_classification.types.interfaces.epoch_preprocessing import IEpochPreprocessing
+from tsp_eeg_classification.types.interfaces.evaluator import IEvaluator
+from tsp_eeg_classification.types.interfaces.metrics_aggregator import IMetricsAggregator
+from tsp_eeg_classification.types.interfaces.model.final_trainer import IFinalTrainer
+from tsp_eeg_classification.types.interfaces.model.model_serializer import IModelSerializer
+from tsp_eeg_classification.types.interfaces.model.model_trainer import IModelTrainer
+from tsp_eeg_classification.types.interfaces.paradigm import IParadigm
+from tsp_eeg_classification.types.interfaces.raw_augmentor import IRawAugmentor
+from tsp_eeg_classification.types.interfaces.raw_preprocessing import IRawPreprocessing
+from tsp_eeg_classification.types.interfaces.splitter import ISplitter
+from tsp_eeg_classification.types.interfaces.visualizer import IVisualizer
+
+
+class TrainingPipeline(IPipeline):
+    def __init__(
+        self,
+        data_loader: IDataLoader,
+        raw_preprocessing: IRawPreprocessing,
+        raw_augmentation: IRawAugmentor,
+        paradigm: IParadigm,
+        epoch_preprocessing: IEpochPreprocessing,
+        splitting: ISplitter,
+        augmentation: IAugmentor,
+        dataset_exporter: IDatasetExporter,
+        model_trainer: IModelTrainer,
+        metrics_aggregator: IMetricsAggregator,
+        final_trainer: IFinalTrainer,
+        evaluator: IEvaluator,
+        visualizer: IVisualizer,
+        artifact_saver: IArtifactSaver,
+        model_serializer: IModelSerializer,
+    ) -> None:
+        self._data_loader = data_loader
+        self._run_context_factory = RunContextFactory()
+        self._raw_preprocessing = raw_preprocessing
+        self._raw_augmentation = raw_augmentation
+        self._paradigm = paradigm
+        self._epoch_preprocessing = epoch_preprocessing
+        self._splitting = splitting
+        self._log = logging.getLogger(__name__)
+        self._augmentation = augmentation
+        self._dataset_exporter = dataset_exporter
+        self._model_trainer = model_trainer
+        self._metrics_aggregator = metrics_aggregator
+        self._final_trainer = final_trainer
+        self._evaluator = evaluator
+        self._visualizer = visualizer
+        self._artifact_saver = artifact_saver
+        self._model_serializer = model_serializer
+
+    def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
+        load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
+
+        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
+        raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
+        self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
+
+        raw_augmentation_input = RawAugmentationInputDTO(config.raw_augmentation, raw_preprocessing_result.data)
+        raw_augmentation_result = self._raw_augmentation.run(raw_augmentation_input, run_ctx)
+
+        copies_per_sample_raw = getattr(config.raw_augmentation, "copies_per_sample", 0)
+        self._visualizer.visualize_raw_augmentation(raw_augmentation_result.data, run_ctx, copies_per_sample_raw)
+
+        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
+        paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
+
+        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
+        epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)
+        self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
+
+        splitting_input = SplitInputDTO(config.split, epoch_preprocessing_result.data)
+        splitting_result = self._splitting.run(splitting_input, run_ctx) # TODO: tohle by melo byt typed
+
+        augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
+        augmentation_result = self._augmentation.run(augmentation_input, run_ctx) # TODO: tohle by melo byt typed
+        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
+
+        self._dataset_exporter.run(config.dataset_export, augmentation_result.data, run_ctx)
+
+        copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
+        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
+
+        folds = augmentation_result.data.folds
+        if not folds:
+            raise ValueError("Splitting/Augmentation returned no folds. Cannot continue training.")
+
+        training_input = TrainingInputDTO(config=config.model, folds=folds)
+        model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
+
+        if model_training_result.data.trained_models:
+            self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
+            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
+                                                       trained_models=model_training_result.data.trained_models,
+                                                       folds=folds,
+                                                       dataset_split=augmentation_result.data)
+            # Not using step result because it does not return anything (just log and future visualization)
+            self._evaluator.run(fold_evaluation_input, run_ctx)
+
+        metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
+        # Not using step result because it does not return anything (just log and future visualization)
+        self._metrics_aggregator.run(metrics_input, run_ctx)
+
+        final_trainer_input = FinalTrainingInputDTO(config=config.model,
+                                                    folds=folds,
+                                                    training_data=epoch_preprocessing_result.data,
+                                                    validation_data=augmentation_result.data.validation_data)
+        final_training_result: StepResult[FinalTrainingResultDTO] = self._final_trainer.run(final_trainer_input, run_ctx)
+
+        evaluation_input = EvaluationInputDTO(
+            config=config.evaluation,
+            trained_models=[final_training_result.data.trained_model],
+            folds=folds,
+            dataset_split=augmentation_result.data,
+        )
+        evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
+        self._visualizer.visualize_evaluation(evaluation_result.data,
+                                              run_ctx,
+                                              final_training_result.data.trained_model.model_name)
+
+        trained_model = final_training_result.data.trained_model
+        save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
+            config.save_artifacts,
+            config,
+            output_path=Path("model_output"),
+            evaluation_result=evaluation_result.data if evaluation_result is not None else None,
+            trained_model=trained_model,
+            model_serializer=self._model_serializer,
+        )
+
+        self._artifact_saver.run(save_artifacts_input, run_ctx)
