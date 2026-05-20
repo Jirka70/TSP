@@ -22,4 +22,4 @@ RUN pip install -r requirements.torcheeg.txt --no-deps
 
 COPY . .
 
-CMD ["python", "-m", "tsp_eeg_classification.main.main"]
+CMD ["python", "-m", "tsp_eeg_classification.main"]
