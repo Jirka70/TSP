@@ -47,7 +47,7 @@ jobs:
             name="${name%.yaml}"
 
             echo "Running smoke config: ${name}"
-            python -m src.main --config-name "${name}"
+            python -m tsp_eeg_classification.main --config-name "${name}"
           done
 
       - name: Build package
