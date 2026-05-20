@@ -115,13 +115,14 @@ class TrainingPipeline(IPipeline):
         training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
-        self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
-        fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
-                                                   trained_models=model_training_result.data.trained_models,
-                                                   folds=folds,
-                                                   dataset_split=augmentation_result.data)
-        # Not using step result because it does not return anything (just log and future visualization)
-        self._evaluator.run(fold_evaluation_input, run_ctx)
+        if model_training_result.data.trained_models:
+            self._log.info("Evaluating EEGNet fold-trained models on their held-out fold test data.")
+            fold_evaluation_input = EvaluationInputDTO(config=config.evaluation,
+                                                       trained_models=model_training_result.data.trained_models,
+                                                       folds=folds,
+                                                       dataset_split=augmentation_result.data)
+            # Not using step result because it does not return anything (just log and future visualization)
+            self._evaluator.run(fold_evaluation_input, run_ctx)
 
         metrics_input = TrainingResultDTO(model_training_result.data.trained_models)
         # Not using step result because it does not return anything (just log and future visualization)

@@ -115,5 +115,6 @@ class ExperimentPipeline(IPipeline):
             evaluation_result=evaluation_result.data,
         )
 
-        self._artifact_saver.run(save_artifacts_input, run_ctx)
+        # TODO: Implement custom artifact saver for experiment pipeline.
+        #self._artifact_saver.run(save_artifacts_input, run_ctx)
         self._log.info("Experiment pipeline finished successfully.")
