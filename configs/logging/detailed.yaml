@@ -1,8 +1,8 @@
 verbosity: detailed
 console: true
-file: false
-file_path: null
-format: plain
+file: true
+file_path: "log_output.log"
+format: json
 
 context:
   run_id: false

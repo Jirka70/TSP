@@ -12,6 +12,14 @@ def _validate_message(message: str | None) -> None:
         raise ValueError("Message cannot be defined as None")
 
 
+def _format_context_value(value: Any) -> str:
+    text = str(value)
+    if any(char.isspace() for char in text):
+        return f'"{text}"'
+
+    return text
+
+
 class PipelineLogger:
     def __init__(self,
                  logger: logging.Logger,
@@ -70,19 +78,19 @@ class PipelineLogger:
         parts: list[str] = []
 
         if context_config.run_id:
-            parts.append(f"run_id={self._context.get('run_id', UNKNOWN)}")
+            parts.append(f"run_id={_format_context_value(self._context.get('run_id', UNKNOWN))}")
 
         if context_config.git_commit_hash:
-            parts.append(f"git={self._context.get('git_commit_hash', UNKNOWN)}")
+            parts.append(f"git={_format_context_value(self._context.get('git_commit_hash', UNKNOWN))}")
 
         if context_config.pipeline_name:
-            parts.append(f"pipeline={self._context.get('pipeline_name', UNKNOWN)}")
+            parts.append(f"pipeline={_format_context_value(self._context.get('pipeline_name', UNKNOWN))}")
 
         if context_config.step and self._context.get("step") is not None:
-            parts.append(f"[{self._context['step']}]")
+            parts.append(f"step={_format_context_value(self._context['step'])}")
 
-        prefix = " ".join(parts)
-        return f"{prefix} {message}" if prefix else message
+        context = " ".join(parts)
+        return f"[{context}] - {message}" if context else message
 
     def _should_log(self, message_verbosity: VerbosityLevel) -> bool:
         return VERBOSITY_ORDER[message_verbosity] <= VERBOSITY_ORDER[self._verbosity]

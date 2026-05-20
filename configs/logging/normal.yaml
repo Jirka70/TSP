@@ -6,6 +6,6 @@ format: plain
 
 context:
   run_id: false
-  git_commit_hash: true
+  git_commit_hash: false
   pipeline_name: false
   step: true

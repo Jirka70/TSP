@@ -4,6 +4,8 @@ from moabb.datasets.base import BaseDataset
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.load.recording import RecordingDTO
@@ -33,13 +35,37 @@ class MOABBDataLoader(IDataLoader):
         allowed_str = {str(v) for v in allowed_values}
         return value_str in allowed_str
 
-    def _load_raw_recordings(self, dataset: BaseDataset, config: ExternalDatasetConfig):
-        data = dataset.get_data(subjects=config.subject_ids)
+    @staticmethod
+    def _get_loadable_subject_ids(dataset: BaseDataset, requested_subject_ids: list[int], log: PipelineLogger) -> list[int]:
+        subject_list = getattr(dataset, "subject_list", None)
+        if subject_list is None:
+            return requested_subject_ids
+
+        available_subject_ids = {str(subject_id) for subject_id in subject_list}
+        loadable_subject_ids: list[int] = []
+
+        for subject_id in requested_subject_ids:
+            if str(subject_id) in available_subject_ids:
+                loadable_subject_ids.append(subject_id)
+            else:
+                log.warning(f'subject_id "{subject_id}" was not found. Skipping...')
+
+        return loadable_subject_ids
+
+    def _load_raw_recordings(self, dataset: BaseDataset, config: ExternalDatasetConfig, log: PipelineLogger):
+        subject_ids = self._get_loadable_subject_ids(dataset, config.subject_ids, log)
+        if not subject_ids:
+            return []
+
+        data = dataset.get_data(subjects=subject_ids)
 
         recordings: list[RecordingDTO] = []
 
+        log.info(f"Started loading dataset {config.name}")
         for subject_id, sessions in data.items():
+            log.info(f"Started loading subject with id: {subject_id}", VerbosityLevel.DETAILED)
             for session_id, runs in sessions.items():
+                log.info(f"Started loading session {session_id} of subject {subject_id}", VerbosityLevel.TRACE)
                 if not self._matches_optional_filter(session_id, config.session_ids):
                     continue
 
@@ -73,10 +99,12 @@ class MOABBDataLoader(IDataLoader):
             raise ValueError(f"Paradigm {name} was not found")
 
     def run(self, config: ExternalDatasetConfig, run_ctx: RunContext) -> StepResult[RawDataDTO]:
+        log = run_ctx.logger.for_step("MOABB_DATA_LOAD")
+        log.info("Starting loading MOABB data", VerbosityLevel.QUIET)
         dataset_name: str = config.name
 
         dataset = self._create_dataset(dataset_name)
-        recordings = self._load_raw_recordings(dataset, config=config)
+        recordings = self._load_raw_recordings(dataset, config=config, log=log)
 
         res: RawDataDTO = RawDataDTO(recordings)
         return StepResult(res)
