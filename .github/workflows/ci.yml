@@ -30,9 +30,23 @@ jobs:
         run: |
           ruff check .
       
-      - name: Run tests
+      - name: Training smoke tests
         run: |
-          pytest
+          shopt -s nullglob
+          configs=(configs/smoke/*.yaml)
+
+          if [ ${#configs[@]} -eq 0 ]; then
+            echo "No smoke configs found in configs/smoke/"
+            exit 1
+          fi
+
+          for config in "${configs[@]}"; do
+            name="${config#configs/}"
+            name="${name%.yaml}"
+
+            echo "Running smoke config: ${name}"
+            python -m src.main --config-name "${name}"
+          done
 
       - name: Build package
         run: | 
