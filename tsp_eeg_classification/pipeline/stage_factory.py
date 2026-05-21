@@ -84,7 +84,7 @@ class StageFactory:
         },
         StageType.AUGMENTATION: {
             "basic": BasicAugmentor,
-            "torcheeg": DummyAugmentor,
+            "torcheeg": TorchEEGAugmentor,
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
