@@ -1,19 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
-from src.types.dto.config.logging.logging_config import LoggingConfig
-from src.types.dto.config.model.model_path_config import ModelPathConfig
-from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
+from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.model.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
@@ -46,8 +44,6 @@ class ExperimentConfig(BaseModel):
     final_trainer: FinalTrainerConfig
     model_path: ModelPathConfig
 
-    # union enables multiple options which pydantic differentiates by looking at backend field
-    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")
     model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
@@ -59,3 +55,24 @@ class ExperimentConfig(BaseModel):
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")
     visualization: VisualizationConfig = Field(discriminator="backend")
     dataset_export: DatasetExportConfig = Field(discriminator="backend")
+
+    @model_validator(mode="after")
+    def validate_ml_dl_combination(self) -> "ExperimentConfig":
+        """
+        Validate the ML DL combination (model + final_trainer).
+
+        Possible combinations:
+            DL: eegnet + eegnet
+            ML: default + [csp_lda, riemannian_lda, ...]
+        Validation is made **after** basic validation, so that only combinations need to be checked (not backends)
+        """
+        if self.model.model_name == "eegnet":
+            # deep learning
+            if self.final_trainer.backend != "eegnet":
+                raise ValueError(f"DL model 'eegnet' doesn't support final trainer '{self.final_trainer.backend}'")
+        else:
+            # machine learning
+            if self.final_trainer.backend == "eegnet":
+                raise ValueError(f"ML model '{self.model.model_name}' doesn't support final trainer '{self.final_trainer.backend}'")
+
+        return self
