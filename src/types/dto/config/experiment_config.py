@@ -44,8 +44,6 @@ class ExperimentConfig(BaseModel):
     final_trainer: FinalTrainerConfig
     model_path: ModelPathConfig
 
-    # union enables multiple options which pydantic differentiates by looking at backend field
-    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")
     model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
@@ -66,7 +64,7 @@ class ExperimentConfig(BaseModel):
         Possible combinations:
             DL: eegnet + eegnet
             ML: default + [csp_lda, riemannian_lda, ...]
-        Validation is made after basic validation, so that only combinations need to be checked (not backends)
+        Validation is made **after** basic validation, so that only combinations need to be checked (not backends)
         """
         if self.model.model_name == "eegnet":
             # deep learning
