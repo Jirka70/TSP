@@ -99,7 +99,10 @@ class StageFactory:
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
         },
-        StageType.SAVER: {"default": ArtifactSaver},
+        StageType.SAVER: {
+            "default": ArtifactSaver,
+            "experiment": ArtifactSaver,
+        },
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
             "eegnet": EEGNetModelSerializer,
