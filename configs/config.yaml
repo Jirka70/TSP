@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - logging: trace
+  - logging: quiet
   - source: external
   - raw_preprocessing: default
   - raw_augmentation: none
