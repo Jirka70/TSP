@@ -1,4 +1,4 @@
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.types.dto.config.model.model_config import EEGNetConfig
 

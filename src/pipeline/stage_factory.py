@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -12,7 +12,7 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.deep_learning.trainer.final_eegnet_trainer import FinalEEGNetTrainer
+from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
@@ -110,6 +110,7 @@ class StageFactory:
         },
         StageType.MODEL_PATH: {
             "default": ModelLoader,
+            "eegnet": EEGNetModelLoader
         },
         StageType.DATASET_EXPORT: {
             "fif": FifDatasetExporter,

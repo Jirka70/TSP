@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.types.dto.config.model.model_config import EEGNetConfig
 
 

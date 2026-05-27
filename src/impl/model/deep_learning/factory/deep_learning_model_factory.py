@@ -1,6 +1,6 @@
 from src.impl.model.deep_learning.factory.deep_learning_model_registry import DeepLearningModelRegistry
 from src.impl.model.deep_learning.factory.eegnet_builder import build_eegnet_model
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.types.dto.config.model.model_config import EEGNetConfig
 
 

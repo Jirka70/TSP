@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.save_artifacts.artifact_ref import ArtifactRef
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
