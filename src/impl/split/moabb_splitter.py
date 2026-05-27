@@ -1,7 +1,5 @@
 """MOABB splitting module for advanced data partitioning strategies."""
 
-import logging
-
 import mne
 import numpy as np
 import pandas as pd
@@ -14,8 +12,7 @@ from src.types.dto.load.recording import RecordingDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.splitter import ISplitter
-
-log = logging.getLogger(__name__)
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 
 
 class MoabbSplitter(ISplitter):
@@ -152,15 +149,29 @@ class MoabbSplitter(ISplitter):
 
     def run(self, input_dto: SplitInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
-        Executes the MOABB-based splitting logic.
+        Executes advanced data splitting logic using MOABB evaluation strategies.
+
+        This method partitions the input recordings into cross-validation folds (train/test sets)
+        and handles optional validation data extraction. The process follows these stages:
+        1. Validation & Initialization: Verifies configuration and instantiates the MOABB splitter.
+        2. Data Aggregation: Collects signals, labels, and MOABB-required metadata (subject, session).
+        3. Pre-split Validation: (Optional) Extracts a global validation set by withholding specific subjects.
+        4. MOABB Partitioning: Delegates the core splitting logic to the instantiated MOABB strategy.
+        5. Fold Packaging: Reconstructs RecordingDTOs for each fold and handles post-split validation.
 
         Args:
-            input_dto: Contains the MOABB evaluator configuration and input data.
-            run_ctx: Context of the current pipeline execution.
+            input_dto (SplitInputDTO): Contains the MOABB evaluator configuration and input recordings.
+            run_ctx (RunContext): Context keeping track of the current pipeline execution.
 
         Returns:
-            StepResult containing a list of generated FoldDTOs and global validation data.
+            StepResult[DatasetSplitDTO]: A result wrapping the generated folds (FoldDTOs) and optional
+                global validation data.
+
+        Raises:
+            RuntimeError: If the splitter is disabled or if the MOABB partitioning logic fails.
+            ValueError: If metadata aggregation fails or if data requirements are not met.
         """
+        log = run_ctx.logger.for_step("MOABB_SPLITTER")
         config = input_dto.config
         recordings = input_dto.data.data
         dataset_name = recordings[0].dataset_name if recordings else "unknown"
@@ -169,37 +180,38 @@ class MoabbSplitter(ISplitter):
         pre_split_validation = config.pre_split_validation
         validation_ratio = config.validation_ratio
 
-        # 1. Handle disabled splitter
+        # --- 1. Validation & Initialization ---
         if not config.enabled:
-            log.info("MoabbSplitter is disabled.")
+            log.info("MoabbSplitter is disabled.", VerbosityLevel.QUIET)
             raise RuntimeError(f"MoabbSplitter is disabled. Check config settings for {type(self).__name__} to enable it or use a different splitter.")
 
-        log.info("Starting MOABB Splitter")
+        log.info("Starting MOABB Splitter", VerbosityLevel.QUIET)
 
-        # 2. Instantiate the MOABB splitter using Hydra
+        # Instantiate the MOABB splitter using Hydra
         evaluator_cfg = config.evaluator.model_dump(by_alias=True)
 
         if "cv_class" in evaluator_cfg and isinstance(evaluator_cfg["cv_class"], str):
             try:
                 evaluator_cfg["cv_class"] = get_class(evaluator_cfg["cv_class"])
-                log.info(f"Resolved cv_class to: {evaluator_cfg['cv_class']}")
+                log.info(f"Resolved cv_class to: {evaluator_cfg['cv_class']}", VerbosityLevel.TRACE)
             except Exception as e:
                 log.error(f"Failed to resolve cv_class '{evaluator_cfg['cv_class']}': {e}")
                 del evaluator_cfg["cv_class"]
 
         splitter = instantiate(evaluator_cfg)
-        log.info(f"Successfully created splitter: {type(splitter).__name__}")
+        log.info(f"Successfully created splitter: {type(splitter).__name__}", VerbosityLevel.DETAILED)
 
-        # 3. Aggregate data from all input recordings
+        # --- 2. Data Aggregation ---
         x, y, metadata = self.extract_data(recordings)
 
         if metadata is None:
+            log.error("Metadata aggregation failed or no recordings provided. MOABB splitter requires valid metadata (subject, session, run) for partitioning.")
             raise ValueError("Metadata aggregation failed or no recordings provided. MOABB splitter requires valid metadata (subject, session, run) for partitioning.")
 
         validation_data_global = None
         main_indices = np.arange(len(y))
 
-        # 4. Handle pre-split validation
+        # --- 3. Pre-split Validation ---
         if validation_ratio > 0 and pre_split_validation:
             random_state = config.evaluator.random_state
             if random_state is not None:
@@ -210,7 +222,7 @@ class MoabbSplitter(ISplitter):
 
             if num_val_subjects > 0:
                 val_subjects = np.random.choice(subjects, num_val_subjects, replace=False)
-                log.info(f"Global pre-split validation: extracted {num_val_subjects} subjects: {val_subjects}")
+                log.info(f"Global pre-split validation: extracted {num_val_subjects} subjects: {val_subjects}", VerbosityLevel.NORMAL)
                 val_mask = metadata["subject"].isin(val_subjects)
                 val_indices = np.where(val_mask)[0]
                 main_indices = np.where(~val_mask)[0]
@@ -218,6 +230,7 @@ class MoabbSplitter(ISplitter):
                 if len(val_indices) > 0:
                     validation_data_global = self.create_dto(val_indices, x, y, metadata, dataset_name, "validation_global")
             else:
+                log.error("Not enough subjects found. Consider using a different validation strategy or check subject metadata.")
                 raise ValueError(f"Subject-based validation requested (ratio {validation_ratio}), but not enough subjects found (total subjects: {len(subjects)}). Consider using a different validation strategy or check subject metadata.")
 
         # Subset data for MOABB splitter
@@ -228,12 +241,12 @@ class MoabbSplitter(ISplitter):
         folds = []
 
         try:
-            # 5. Generate splits using MOABB logic
-            log.info(f"Calling splitter.split with y shape {y_main.shape}")
+            # --- 4. MOABB Partitioning ---
+            log.info(f"Calling splitter.split with y shape {y_main.shape}", VerbosityLevel.TRACE)
             splits = list(splitter.split(y_main, metadata_main))
-            log.info(f"Successfully generated {len(splits)} fold(s).")
+            log.info(f"Successfully generated {len(splits)} fold(s).", VerbosityLevel.TRACE)
 
-            # 6. Package each split into a FoldDTO and handle post-split validation
+            # --- 5. Fold Packaging ---
             all_val_indices = []
             for fold_idx, (train_idx, test_idx) in enumerate(splits):
                 actual_train_idx = train_idx
@@ -250,8 +263,9 @@ class MoabbSplitter(ISplitter):
                         val_idx_in_fold = shuffled_train_idx[:num_val]
                         actual_train_idx = shuffled_train_idx[num_val:]
                         all_val_indices.append(val_idx_in_fold)
-                    log.info(f"Fold {fold_idx}: added {num_val} samples to validation pool.")
+                    log.info(f"Fold {fold_idx}: added {num_val} samples to validation pool.", VerbosityLevel.TRACE)
 
+                log.info(f"Packaging fold {fold_idx}: extracting train/test DTOs", VerbosityLevel.NORMAL)
                 train_dto = self.create_dto(actual_train_idx, x_main, y_main, metadata_main, dataset_name, "train")
                 test_dto = self.create_dto(test_idx, x_main, y_main, metadata_main, dataset_name, "test")
 
@@ -262,11 +276,13 @@ class MoabbSplitter(ISplitter):
                 combined_val_idx = np.unique(np.concatenate(all_val_indices))
                 validation_data_global = self.create_dto(combined_val_idx, x_main, y_main, metadata_main, dataset_name, "validation_global_post")
 
-        except Exception as e:
-            if isinstance(e, ValueError):
-                # Re-raise descriptive ValueErrors (e.g. from MOABB about insufficient data)
-                raise
+        except ValueError as e:
+            # Re-raise descriptive ValueErrors (e.g. from MOABB about insufficient data)
+            log.error(f"MOABB splitter raised ValueError: {e}. This likely indicates that the data does not meet the requirements for the requested split (e.g., not enough subjects/sessions). Check the error message for details.")
             raise RuntimeError(f"MOABB splitter {type(splitter).__name__} failed: {e}. Check if the data satisfies the splitter's requirements (e.g., enough subjects/sessions for the requested split).") from e
+        except Exception as e:
+            log.error(f"MOABB splitter {type(splitter).__name__} failed with an unexpected error: {e}")
+            raise
 
         result_data = DatasetSplitDTO(folds=folds, validation_data=validation_data_global)
         return StepResult(result_data)
