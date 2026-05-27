@@ -1,0 +1,3 @@
+backend: "eegnet"
+
+path: "./model_output/eegnet-20260519_135925"

@@ -8,10 +8,12 @@ from src.types.dto.save_artifacts.artifact_ref import ArtifactRef
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 from src.types.interfaces.model.model_serializer import IModelSerializer
 
+EEGNET_MODEL_NAME = "eegnet"
+
 
 class EEGNetModelSerializer(IModelSerializer):
     def supports(self, model_name: str) -> bool:
-        return True
+        return model_name == EEGNET_MODEL_NAME
 
     def save(self, trained_model: TrainedModelDTO, output_path: Path) -> SavedArtifactsDTO:
         if not isinstance(trained_model.model, EEGNetModel):

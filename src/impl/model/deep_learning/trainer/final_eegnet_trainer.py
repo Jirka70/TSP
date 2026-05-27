@@ -69,13 +69,6 @@ def _train_one_epoch(
 
 
 class FinalEEGNetTrainer(IFinalTrainer):
-    """
-    Trains one final EEGNet model.
-
-    This trainer is not for fold-based evaluation. Prefer passing train_data that
-    contains each final-training sample once. Cross-validation folds are accepted
-    only as a backward-compatible fallback.
-    """
 
     def __init__(self, model_factory: DeepLearningModelFactory | None = None) -> None:
         self._model_factory = model_factory or DeepLearningModelFactory()
