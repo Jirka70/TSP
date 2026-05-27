@@ -30,9 +30,9 @@ class EEGNetModelSerializer(IModelSerializer):
             "format": "eegnet_checkpoint",
             "model_name": trained_model.model_name,
             "model_state": model.get_state_dict(),
-            #"best_epoch": model.best_epoch,
-            #"best_validation_metric_name": trained_model.best_validation_metric_name,
-            #"best_validation_metric_value": trained_model.best_validation_metric_value,
+            "best_epoch": model.best_epoch,
+            "best_validation_metric_name": trained_model.best_validation_metric_name,
+            "best_validation_metric_value": trained_model.best_validation_metric_value,
             "metadata": trained_model.metadata,
         }
 
