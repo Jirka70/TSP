@@ -1,7 +1,7 @@
-# No-op augmentation configuration.
-# This explicitly disables data augmentation.
+backend: null               # Used by program logic, changing this may break the pipeline if not handled properly
 
-enabled: false
+# --- No Augmentation Configuration ---
 
-# Backend is null because no augmentation implementation is used.
-backend: null
+# This configuration explicitly disables the data augmentation stage.
+
+enabled: true               # Data augmentation is skipped, passing data to the next stage unchanged
