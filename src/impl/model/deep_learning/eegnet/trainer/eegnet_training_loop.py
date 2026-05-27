@@ -20,7 +20,8 @@ class EEGNetTrainingLoop:
         for epoch in range(epochs):
             model.train_one_epoch(train_data.x, train_data.y)
 
-            if validation_data is None: continue
+            if validation_data is None:
+                continue
 
             _, validation_accuracy = model.validate(validation_data.x, validation_data.y)
 
@@ -42,4 +43,3 @@ class EEGNetTrainingLoop:
             best_validation_accuracy=model.best_validation_accuracy,
             best_state_dict=best_state_dict
         )
-
