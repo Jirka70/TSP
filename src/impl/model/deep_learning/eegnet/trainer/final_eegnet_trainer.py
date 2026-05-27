@@ -11,6 +11,8 @@ from src.types.dto.model.learning_dataset import LearningDataset
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.interfaces.model.final_trainer import IFinalTrainer
 
+STEP_NAME = "EEGNET FINAL TRAINING"
+
 
 def _extract_final_training_data(
         input_dto: FinalTrainingInputDTO,
@@ -34,7 +36,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
             input_dto: FinalTrainingInputDTO,
             run_ctx: RunContext,
     ) -> StepResult[FinalTrainingResultDTO]:
-        log = run_ctx.logger.for_step("EEGNET FINAL TRAINING")
+        log = run_ctx.logger.for_step(STEP_NAME)
         log.info("Started training EEGNET model", VerbosityLevel.QUIET)
 
         log.info("Extracting training data", VerbosityLevel.DETAILED)

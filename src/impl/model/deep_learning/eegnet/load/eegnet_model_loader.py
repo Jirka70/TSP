@@ -8,6 +8,7 @@ from src.types.interfaces.model.model_loader import IModelLoader
 
 STEP_NAME = "EEGNET_LOADER"
 
+
 class EEGNetModelLoader(IModelLoader):
     def load(self, model_path: Path, run_ctx: RunContext) -> Any:
         log = run_ctx.logger.for_step(STEP_NAME)
