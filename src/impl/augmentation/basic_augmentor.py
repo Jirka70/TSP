@@ -1,46 +1,67 @@
-"""Basic data augmentation module for EEG data."""
-
-import logging
-
 import mne
 import numpy as np
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
 from src.types.dto.config.augmentation_config import AugmentationConfigBasic
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 from src.types.interfaces.augmentor import IAugmentor
 
-log = logging.getLogger(__name__)
-
 
 class BasicAugmentor(IAugmentor):
-    """Augmentor applying basic transformations like noise, shift, and dropout."""
+    """
+    Basic augmentation pipeline for EEG data.
+    Ensures training data within dataset splits is augmented with basic transformations.
+    """
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
-        """Iterates over folds, applies basic augmentation to train_data, and returns updated folds."""
+        """
+        Executes basic preprocessing augmentation steps on epoched neural data.
+
+        This method processes a collection of dataset splits by applying a
+        configurable multi-stage augmentation pipeline to the training data:
+        1. Gaussian Noise: Adds random normal noise.
+        2. Time Shift: Shifts epochs randomly along the time axis.
+        3. Channel Dropout: Randomly sets channel values to zero.
+
+        Args:
+            input_dto (AugmentationInputDTO): Input object containing the
+                dataset splits and augmentation configuration.
+            run_ctx (RunContext): Context keeping track of the current pipeline execution.
+
+        Returns:
+            StepResult[DatasetSplitDTO]: A step result wrapping the updated dataset splits,
+                with training data augmented according to the configuration.
+        """
+        log = run_ctx.logger.for_step("BASIC_AUGMENTATION")
         config: AugmentationConfigBasic = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
         # 1. Check if augmentation is enabled
         if not config.enabled:
-            log.info("Basic Augmentation is disabled. Passing data through unchanged.")
+            log.info("Basic Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
             return StepResult(dataset_splits)
 
-        log.info(f"Running BasicAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.")
-        log.info(f"Using random seed: {config.random_seed}")
+        log.info(f"Running BasicAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+        log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         np.random.seed(config.random_seed)
         active_augs = []
         if config.gaussian_noise_std > 0:
+            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise_std}", VerbosityLevel.TRACE)
             active_augs.append(f"Gaussian Noise (std={config.gaussian_noise_std})")
         if config.max_time_shift > 0:
+            log.info(f"Time shift enabled with max shift: {config.max_time_shift} samples", VerbosityLevel.TRACE)
             active_augs.append(f"Time Shift (max={config.max_time_shift})")
         if config.channel_dropout_prob > 0:
+            log.info(f"Channel dropout enabled with probability: {config.channel_dropout_prob}", VerbosityLevel.TRACE)
             active_augs.append(f"Channel Dropout (prob={config.channel_dropout_prob})")
+
         if active_augs:
-            log.info(f"Active augmentations: {', '.join(active_augs)}")
+            log.info(f"Active augmentations: {', '.join(active_augs)}", VerbosityLevel.NORMAL)
         else:
             log.warning("Basic Augmentation is enabled but no specific transformations are configured. Only copies will be created.")
 
@@ -48,19 +69,20 @@ class BasicAugmentor(IAugmentor):
 
         # 2. Loop over all folds
         for fold in dataset_splits.folds:
-            log.info(f"Augmenting Fold {fold.fold_idx}...")
+            log.info(f"Augmenting Fold {fold.fold_idx} / {len(dataset_splits.folds)}", VerbosityLevel.DETAILED)
 
             # Augment ONLY the training data
-            augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, config=config)
+            augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, config=config, log=log)
 
             # Reconstruct the Fold with augmented training data and untouched test data
             new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
         # 3. Return wrapped in DatasetSplitDTO
+        log.info(f"Basic augmentation completed. Total folds processed: {len(augmented_folds)}", VerbosityLevel.QUIET)
         return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
 
-    def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, config: AugmentationConfigBasic) -> EpochPreprocessedDTO:
+    def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, config: AugmentationConfigBasic, log: PipelineLogger) -> EpochPreprocessedDTO:
         """Core logic for augmenting a single EpochPreprocessedDTO with basic transformations."""
         from src.types.dto.load.recording import RecordingDTO
 
@@ -122,7 +144,7 @@ class BasicAugmentor(IAugmentor):
             final_labels = np.concatenate(augmented_labels_list)
             total_augmented_samples += final_signal.shape[0]
 
-            log.debug(f"Recording {rec.subject_id}_{rec.session_id}_{rec.run_id}: Original shape: {original_shape}, Augmented shape: {final_signal.shape}")
+            log.debug(f"Recording run id: {rec.subject_id}_{rec.session_id}_{rec.run_id}. Original shape: {original_shape}. Augmented shape: {final_signal.shape}", VerbosityLevel.TRACE)
 
             # Metadata replication
             final_metadata = rec.metadata.copy()
@@ -132,5 +154,5 @@ class BasicAugmentor(IAugmentor):
             new_rec = RecordingDTO(data=final_signal, dataset_name=rec.dataset_name, subject_id=rec.subject_id, session_id=rec.session_id, run_id=rec.run_id, metadata=final_metadata)
             augmented_recordings.append(new_rec)
 
-        log.info(f"Fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}")
+        log.info(f"Single fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}", VerbosityLevel.DETAILED)
         return EpochPreprocessedDTO(data=augmented_recordings)
