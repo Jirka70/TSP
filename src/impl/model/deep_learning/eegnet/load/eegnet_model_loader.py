@@ -75,7 +75,7 @@ def _optional_float(source: dict[str, Any], key: str) -> float | None:
     return float(value)
 
 
-def _parse_input_shape(self, raw_input_shape: Any) -> tuple[int, int, int]:
+def _parse_input_shape(raw_input_shape: Any) -> tuple[int, int, int]:
     if raw_input_shape is None:
         raise InvalidEEGNetCheckpointError(
             "Missing 'model_state.input_shape'. "
@@ -88,11 +88,15 @@ def _parse_input_shape(self, raw_input_shape: Any) -> tuple[int, int, int]:
         )
 
     try:
-        input_shape = tuple(int(value) for value in raw_input_shape)
+        n_epochs = int(raw_input_shape[0])
+        n_channels = int(raw_input_shape[1])
+        n_times = int(raw_input_shape[2])
     except (TypeError, ValueError) as exc:
         raise InvalidEEGNetCheckpointError(
             "'model_state.input_shape' contains non-integer values."
         ) from exc
+
+    input_shape = (n_epochs, n_channels, n_times)
 
     if any(value <= 0 for value in input_shape):
         raise InvalidEEGNetCheckpointError(
@@ -112,6 +116,7 @@ def _build_model(model_state: EEGNetModelState) -> EEGNetModel:
         network=network,
         model_name=model_state.model_name,
         config=model_state.config,
+        input_shape=model_state.input_shape
     )
 
 
@@ -131,23 +136,54 @@ def _restore_runtime_state(
         best_validation_accuracy=model_state.best_validation_accuracy,
     )
 
+def _parse_model_state(
+        model_state: dict[str, Any],
+        fallback_model_name: str,
+) -> EEGNetModelState:
+    model_name = model_state.get("model_name", fallback_model_name)
+
+    if not isinstance(model_name, str) or not model_name:
+        raise InvalidEEGNetCheckpointError("'model_state.model_name' must be a non-empty string.")
+
+    config = _parse_config(_required_dict(model_state, "config"))
+    input_shape = _parse_input_shape(model_state.get("input_shape"))
+    network_state_dict = _required_dict(model_state, "network_state_dict")
+
+    classes = model_state.get("classes")
+    if classes is not None and not isinstance(classes, list):
+        raise InvalidEEGNetCheckpointError("'model_state.classes' must be a list or null.")
+
+    return EEGNetModelState(
+        model_name=model_name,
+        config=config,
+        input_shape=input_shape,
+        network_state_dict=network_state_dict,
+        classes=classes,
+        best_epoch=_optional_int(model_state, "best_epoch"),
+        best_validation_accuracy=_optional_float(
+            model_state,
+            "best_validation_accuracy",
+        ),
+    )
+
 
 class EEGNetModelLoader(IModelLoader):
     CHECKPOINT_FORMAT: Final[str] = "eegnet_checkpoint"
     SUPPORTED_FORMAT_VERSIONS: Final[set[int]] = {1}
-    SUPPORTED_SUFFIXES: Final[set[str]] = {".pt", ".pth"}
     MANIFEST_FILENAME: Final[str] = "manifest.json"
+    CHECKPOINT_RELATIVE_PATH: Final[Path] = Path("models") / "eegnet.pt"
+
 
     def __init__(self, map_location: str | torch.device = "cpu") -> None:
         self._map_location = map_location
 
     def load(self, model_path: Path, run_ctx: RunContext) -> Any:
-        model_path = model_path.expanduser().resolve()
+        artifact_dir = model_path.expanduser().resolve()
         log = run_ctx.logger.for_step(STEP_NAME)
 
-        self._validate_model_path(model_path=model_path)
+        checkpoint_path = self._resolve_checkpoint_path(artifact_dir)
 
-        raw_checkpoint = self._load_checkpoint(model_path)
+        raw_checkpoint = self._load_checkpoint(checkpoint_path)
         checkpoint = self._parse_checkpoint(raw_checkpoint)
 
         log.info(f"Loading EEGNet model {checkpoint.model_name} from {model_path}")
@@ -157,19 +193,6 @@ class EEGNetModelLoader(IModelLoader):
         _restore_runtime_state(model, checkpoint.model_state)
 
         return model
-
-    def _validate_model_path(self, model_path: Path) -> None:
-        if not model_path.exists():
-            raise FileNotFoundError(f"EEGNet model file does not exist: {model_path}")
-
-        if not model_path.is_file():
-            raise InvalidEEGNetCheckpointError(f"EEGNet model path is not a file: {model_path}")
-
-        if model_path.suffix.lower() not in self.SUPPORTED_SUFFIXES:
-            raise InvalidEEGNetCheckpointError(
-                f"Unsupported EEGNet model suffix '{model_path.suffix}'. "
-                f"Supported suffixes: {sorted(self.SUPPORTED_SUFFIXES)}"
-            )
 
     def _load_checkpoint(self, model_path: Path) -> dict[str, Any]:
         try:
@@ -207,7 +230,7 @@ class EEGNetModelLoader(IModelLoader):
             )
 
         model_name = _required_str(checkpoint, "model_name")
-        model_state = self._parse_model_state(
+        model_state = _parse_model_state(
             _required_dict(checkpoint, "model_state"),
             fallback_model_name=model_name,
         )
@@ -224,33 +247,23 @@ class EEGNetModelLoader(IModelLoader):
             metadata=metadata,
         )
 
-    def _parse_model_state(
-            self,
-            model_state: dict[str, Any],
-            fallback_model_name: str,
-    ) -> EEGNetModelState:
-        model_name = model_state.get("model_name", fallback_model_name)
+    def _resolve_checkpoint_path(self, artifact_dir: Path) -> Path:
+        if not artifact_dir.exists():
+            raise FileNotFoundError(f"EEGNet artifact directory does not exist: {artifact_dir}")
 
-        if not isinstance(model_name, str) or not model_name:
-            raise InvalidEEGNetCheckpointError("'model_state.model_name' must be a non-empty string.")
+        if not artifact_dir.is_dir():
+            raise InvalidEEGNetCheckpointError(
+                f"EEGNet loader expects artifact directory, got file: {artifact_dir}"
+            )
 
-        config = _parse_config(_required_dict(model_state, "config"))
-        input_shape = _parse_input_shape(model_state.get("input_shape"))
-        network_state_dict = _required_dict(model_state, "network_state_dict")
+        checkpoint_path = artifact_dir / self.CHECKPOINT_RELATIVE_PATH
 
-        classes = model_state.get("classes")
-        if classes is not None and not isinstance(classes, list):
-            raise InvalidEEGNetCheckpointError("'model_state.classes' must be a list or null.")
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"EEGNet checkpoint does not exist: {checkpoint_path}")
 
-        return EEGNetModelState(
-            model_name=model_name,
-            config=config,
-            input_shape=input_shape,
-            network_state_dict=network_state_dict,
-            classes=classes,
-            best_epoch=_optional_int(model_state, "best_epoch"),
-            best_validation_accuracy=_optional_float(
-                model_state,
-                "best_validation_accuracy",
-            ),
-        )
+        if not checkpoint_path.is_file():
+            raise InvalidEEGNetCheckpointError(
+                f"EEGNet checkpoint path is not a file: {checkpoint_path}"
+            )
+
+        return checkpoint_path
