@@ -12,6 +12,9 @@ EEGNET_MODEL_NAME = "eegnet"
 
 
 class EEGNetModelSerializer(IModelSerializer):
+
+    EEGNET_CHECKPOINT_FORMAT = "eegnet_checkpoint"
+    EEGNET_FORMAT_VERSION = 1
     def supports(self, model_name: str) -> bool:
         return model_name == EEGNET_MODEL_NAME
 
@@ -29,7 +32,8 @@ class EEGNetModelSerializer(IModelSerializer):
 
         model = trained_model.model
         checkpoint = {
-            "format": "eegnet_checkpoint",
+            "format": self.EEGNET_CHECKPOINT_FORMAT,
+            "format_version": self.EEGNET_FORMAT_VERSION,
             "model_name": trained_model.model_name,
             "model_state": {
                 **model.get_state_dict(),
