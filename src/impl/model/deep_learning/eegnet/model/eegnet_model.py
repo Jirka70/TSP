@@ -18,7 +18,10 @@ class EEGNetModel(IModel):
     IModel wrapper around a PyTorch EEGNet network.
     """
 
-    def __init__(self, network: nn.Module, model_name: str, config: EEGNetConfig) -> None:
+    def __init__(self, network: nn.Module,
+                 model_name: str,
+                 config: EEGNetConfig,
+                 input_shape: tuple[int, int, int]) -> None:
         self._network = network
         self._model_name = model_name
         self._config = config
@@ -34,6 +37,8 @@ class EEGNetModel(IModel):
 
         self._classes: np.ndarray | None = None
         self._class_to_index: dict | None = None
+
+        self.input_shape = input_shape
 
     def name(self) -> str:
         return self._model_name
@@ -184,10 +189,35 @@ class EEGNetModel(IModel):
         return {
             "classes": self._classes.tolist() if self._classes is not None else None,
             "model_name": self._model_name,
+            "input_shape": self.input_shape,
             "network_state_dict": self._network.state_dict(),
             "config": self._config.model_dump(),
             "best_epoch": self.best_epoch,
             "best_validation_accuracy": self.best_validation_accuracy,
+        }
+
+    def restore_runtime_state(self,
+                              classes: list | np.ndarray | None,
+                              best_epoch: int | None,
+                              best_validation_accuracy: float | None
+                              ) -> None:
+        self.best_epoch = best_epoch
+        self.best_validation_accuracy = best_validation_accuracy
+
+        if classes is None:
+            self._classes = None
+            self._class_to_index = None
+            return
+
+        restored_classes = np.asarray(classes)
+
+        if restored_classes.size == 0:
+            raise ValueError("Classes must not be empty")
+
+        self._classes = restored_classes
+        self._class_to_index = {
+            class_label: index
+            for index, class_label in enumerate(self._classes)
         }
 
     def get_network_state_dict(self) -> dict:

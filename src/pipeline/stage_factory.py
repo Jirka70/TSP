@@ -1,5 +1,6 @@
 from enum import Enum
 
+from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
 from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor

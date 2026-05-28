@@ -15,7 +15,7 @@ defaults:
   - evaluation: default
   - visualization: matplotlib
   - save_artifacts: default
-  - model_path: default
+  - model_path: deep_learning/eegnet
 
 mode: experiment
 output_dir: ./outputs

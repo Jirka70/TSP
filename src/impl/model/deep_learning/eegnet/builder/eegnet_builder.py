@@ -13,4 +13,5 @@ def build_eegnet_model(
         network=network,
         model_name=config.model_name,
         config=config,
+        input_shape=input_shape
     )
