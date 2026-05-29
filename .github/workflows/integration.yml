@@ -2,6 +2,9 @@ name: Integration
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/TMSPKED-380-CICD-Implement-CICD-Pipeline
   schedule:
     - cron: "0 2 * * *" # every day at 02:00 UTC
 
