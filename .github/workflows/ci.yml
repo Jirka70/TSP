@@ -2,9 +2,9 @@ name: "CI"
 
 on:
   push:
-    branches: [feature/TMSPKED-380-CICD-Implement-CICD-Pipeline]
+    branches: [main]
   pull_request:
-    branches: [feature/TMSPKED-380-CICD-Implement-CICD-Pipeline]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -16,6 +16,16 @@ jobs:
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          docker system prune -af
+          df -h
 
       - name: Setup python
         uses: actions/setup-python@v5
@@ -79,22 +89,3 @@ jobs:
         run: |
           docker run --rm src:${{ github.sha }} \
             python -m src.main --config-name test/smoke/synthetic/training_ml
-
-      - name: Save Docker image
-        run: |
-          docker save \
-            src:${{ github.sha }} \
-            src:latest \
-            -o src-image.tar
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: src-image.tar
-
-
-
-      
-    
-      

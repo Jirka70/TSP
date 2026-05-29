@@ -46,7 +46,7 @@ split:
   test_ratio: 0.2
 
 model:
-  fold_training: false
+  fold_training: true
   training:
     epochs: 2
     batch_size: 8
