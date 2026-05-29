@@ -7,4 +7,4 @@ services:
       - ./input:/app/input
       - ./outputs:/app/outputs
       - ./model_output:/app/model_output
-    command: python -m tsp_eeg_classification.main
+    command: python -m src.main

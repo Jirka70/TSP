@@ -10,7 +10,7 @@ The pipeline uses [Hydra](https://hydra.cc/) for configuration management. Run f
 # source .venv/bin/activate     # Linux/macOS
 
 # Run with default config
-python tsp_eeg_classification/main.py
+python src/main.py
 ```
 
 Hydra automatically saves the full resolved config and logs to `outputs/` after each run.
@@ -59,7 +59,7 @@ run_ids: null
 ```
 
 ```bash
-python tsp_eeg_classification/main.py
+python src/main.py
 ```
 
 ---
