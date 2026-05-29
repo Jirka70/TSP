@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.impl.model.util.network.create_eegnet_network import create_eegnet_network
 from src.pipeline.context.run_context import RunContext
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.deep_learning.eegnet.error.invalid_eegnet_checkpoint_error import InvalidEEGNetCheckpointError
 from src.types.dto.model.deep_learning.eegnet.load.eegnet_checkpoint import EEGNetCheckpoint
@@ -136,6 +137,7 @@ def _restore_runtime_state(
         best_validation_accuracy=model_state.best_validation_accuracy,
     )
 
+
 def _parse_model_state(
         model_state: dict[str, Any],
         fallback_model_name: str,
@@ -169,28 +171,44 @@ def _parse_model_state(
 
 class EEGNetModelLoader(IModelLoader):
     CHECKPOINT_FORMAT: Final[str] = "eegnet_checkpoint"
-    SUPPORTED_FORMAT_VERSIONS: Final[set[int]] = {1}
-    MANIFEST_FILENAME: Final[str] = "manifest.json"
+    SUPPORTED_FORMAT_VERSIONS: Final[frozenset[int]] = frozenset({1})
+    DEFAULT_FORMAT_VERSION: Final[int] = 1
     CHECKPOINT_RELATIVE_PATH: Final[Path] = Path("models") / "eegnet.pt"
-
 
     def __init__(self, map_location: str | torch.device = "cpu") -> None:
         self._map_location = map_location
 
-    def load(self, model_path: Path, run_ctx: RunContext) -> Any:
+    def load(self, model_path: Path, run_ctx: RunContext) -> EEGNetModel:
         artifact_dir = model_path.expanduser().resolve()
         log = run_ctx.logger.for_step(STEP_NAME)
 
+        log.info(f"Starting EEGNet model loading from artifact directory: {artifact_dir}", VerbosityLevel.QUIET)
+
         checkpoint_path = self._resolve_checkpoint_path(artifact_dir)
+        log.info(f"Resolved EEGNet checkpoint path: {checkpoint_path}", VerbosityLevel.DETAILED)
 
         raw_checkpoint = self._load_checkpoint(checkpoint_path)
+        log.info("EEGNet checkpoint file loaded successfully", VerbosityLevel.TRACE)
+
         checkpoint = self._parse_checkpoint(raw_checkpoint)
+        log.info(
+            f"Parsed EEGNet checkpoint: model={checkpoint.model_name}, format={checkpoint.format}, version={checkpoint.format_version}",
+            VerbosityLevel.DETAILED,
+        )
 
-        log.info(f"Loading EEGNet model {checkpoint.model_name} from {model_path}")
-
+        log.info(
+            f"Building EEGNet model from checkpoint: input_shape={checkpoint.model_state.input_shape}",
+            VerbosityLevel.DETAILED,
+        )
         model = _build_model(checkpoint.model_state)
+
+        log.info("Loading EEGNet network state dictionary", VerbosityLevel.TRACE)
         model.load_network_state_dict(checkpoint.model_state.network_state_dict)
+
+        log.info("Restoring EEGNet runtime state", VerbosityLevel.TRACE)
         _restore_runtime_state(model, checkpoint.model_state)
+
+        log.info(f"EEGNet model loaded successfully: {checkpoint.model_name}", VerbosityLevel.QUIET)
 
         return model
 
@@ -222,7 +240,10 @@ class EEGNetModelLoader(IModelLoader):
                 f"Expected '{self.CHECKPOINT_FORMAT}'."
             )
 
-        format_version = _required_int(checkpoint, "format_version")
+        format_version = checkpoint.get("format_version", self.DEFAULT_FORMAT_VERSION)
+        if not isinstance(format_version, int):
+            raise InvalidEEGNetCheckpointError("'format_version' must be an integer.")
+
         if format_version not in self.SUPPORTED_FORMAT_VERSIONS:
             raise InvalidEEGNetCheckpointError(
                 f"Unsupported EEGNet checkpoint version {format_version}. "

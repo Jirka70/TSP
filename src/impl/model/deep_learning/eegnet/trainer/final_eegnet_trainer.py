@@ -75,6 +75,9 @@ class FinalEEGNetTrainer(IFinalTrainer):
         best_validation_metric_name = "accuracy" if training_result.best_validation_accuracy is not None else None
         training_data_source = "train_data" if input_dto.training_data is not None else "fold_fallback"
 
+        model.best_epoch = training_result.best_epoch
+        model.best_validation_accuracy = training_result.best_validation_accuracy
+
         trained_model = TrainedModelDTO(
             model=model,
             model_name=input_dto.config.model_name,
