@@ -32,7 +32,7 @@ jobs:
             name="${config#configs/}"
             name="${name%.yaml}"
             echo "Running integration config: ${name}"
-            python -m tsp_eeg_classification.main --config-name "${name}"
+            python -m src.main --config-name "${name}"
           done
           
       - name: Upload integration outputs
