@@ -72,9 +72,11 @@ jobs:
             -t src:latest \
             .
 
+
       - name: Smoke test Docker image
         run: |
-          docker run --rm src:${{ github.sha }}
+          docker run --rm src:${{ github.sha }} \
+            python -m src.main --config-name test/smoke/synthetic/training_ml
 
       - name: Save Docker image
         run: |
