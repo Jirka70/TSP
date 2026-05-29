@@ -33,7 +33,7 @@ jobs:
             exit 1
           fi
           
-          for config in configs/test/smoke/moabb/*.yaml; do
+          for config in "${configs[@]}"; do
             name="${config#configs/}"
             name="${name%.yaml}"
             echo "Running integration config: ${name}"
