@@ -28,7 +28,7 @@ jobs:
           
       - name: Run MOABB smoke tests
         run: |
-          for config in configs/integration/*.yaml; do
+          for config in configs/smoke/*.yaml; do
             name="${config#configs/}"
             name="${name%.yaml}"
             echo "Running integration config: ${name}"
