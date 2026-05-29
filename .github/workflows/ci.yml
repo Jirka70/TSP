@@ -2,11 +2,10 @@ name: "CI"
 
 on:
   push:
-    branches:
-      - "feature/TMSPKED-380-CICD-Implement-CICD-Pipeline"
+    branches: [main]
   pull_request:
-    branches:
-      - "feature/TMSPKED-380-CICD-Implement-CICD-Pipeline"
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   test-build:
