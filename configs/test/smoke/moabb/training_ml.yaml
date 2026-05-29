@@ -25,7 +25,7 @@ split:
   test_ratio: 0.2
 
 model:
-  fold_training: false
+  fold_training: true
 
 visualization:
   save_plots: false
