@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: |
             requirements.lock.txt
             requirements.torcheeg.txt
-            pyproject.toml
+            pyproject.toml        
         
       - name: Install CI tools
         run: |
