@@ -31,8 +31,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.lock.txt
+            requirements.torcheeg.txt
+            pyproject.toml
+        
+      - name: Install CI tools
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.lock.txt
