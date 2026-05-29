@@ -2,9 +2,24 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY dist/*.whl /tmp/
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV MPLBACKEND=Agg
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install /tmp/*.whl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+    && rm -rf /var/lib/apt/lists/*
 
-CMD ["python", "-c", "import importlib.metadata as m; print(m.version('tsp-eeg-classification'))"]
+COPY requirements.lock.txt requirements.lock.txt
+COPY requirements.torcheeg.txt requirements.torcheeg.txt
+
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install -r requirements.lock.txt
+RUN pip install -r requirements.torcheeg.txt --no-deps
+
+COPY . .
+
+CMD ["python", "-m", "src.main"]

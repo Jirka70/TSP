@@ -1,7 +1,14 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "tsp-eeg-classification"
+name = "src"
 version = "0.0.4"
 requires-python = ">=3.10"
+dependencies = [
+    # sem časem přesunout runtime dependencies z requirements.lock.txt
+]
 
 [project.optional-dependencies]
 dev = [
@@ -10,6 +17,17 @@ dev = [
     "mypy",
     "build"
 ]
+
+[project.scripts]
+tsp-train = "src.main:my_app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff]
 # Matches your requirement for line length.
