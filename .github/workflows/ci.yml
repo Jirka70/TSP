@@ -51,7 +51,7 @@ jobs:
             name="${name%.yaml}"
 
             echo "Running smoke config: ${name}"
-            python -m tsp_eeg_classification.main --config-name "${name}"
+            python -m src.main --config-name "${name}"
           done
 
       - name: Build package
@@ -69,26 +69,26 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -t tsp-eeg-classification:${{ github.sha }} \
-            -t tsp-eeg-classification:latest \
+            -t src:${{ github.sha }} \
+            -t src:latest \
             .
 
       - name: Smoke test Docker image
         run: |
-          docker run --rm tsp-eeg-classification:${{ github.sha }}
+          docker run --rm src:${{ github.sha }}
 
       - name: Save Docker image
         run: |
           docker save \
-            tsp-eeg-classification:${{ github.sha }} \
-            tsp-eeg-classification:latest \
-            -o tsp-eeg-classification-image.tar
+            src:${{ github.sha }} \
+            src:latest \
+            -o src-image.tar
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: tsp-eeg-classification-image.tar
+          path: src-image.tar
 
 
 
