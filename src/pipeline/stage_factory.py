@@ -1,7 +1,6 @@
 from enum import Enum
 
 from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
-from src.impl.evaluator.dummy_evaluator import DummyEvaluator
 from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
@@ -102,7 +101,7 @@ class StageFactory:
             "eegnet": FinalEEGNetTrainer
         },
         StageType.EVALUATOR: {
-            "default": DummyEvaluator,
+            "default": StandardEvaluator,
         },
         StageType.SAVER: {
             "default": ArtifactSaver,
