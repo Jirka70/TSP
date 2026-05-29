@@ -38,10 +38,10 @@ jobs:
       - name: Training smoke tests
         run: |
           shopt -s nullglob
-          configs=(configs/test/smoke/*.yaml)
+          configs=(configs/test/smoke/synthetic/*.yaml)
 
           if [ ${#configs[@]} -eq 0 ]; then
-            echo "No smoke configs found in configs/smoke/"
+            echo "No smoke configs found in configs/test/smoke/synthetic/"
             exit 1
           fi
 
