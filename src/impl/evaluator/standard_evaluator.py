@@ -35,7 +35,8 @@ class StandardEvaluator(IEvaluator):
             ValueError: If no model is provided or validation data is missing.
         """
         if not input_dto.trained_models:
-            raise ValueError("EvaluationInputDTO does not include any model.")
+            log.info("EvaluationInputDTO does not include any model.")
+            return StepResult(EvaluationResultDTO(metrics={}, fold_results=[], predictions=[], targets=[], probabilities=None, confusion_matrix=None))
 
         #  There is always only one model at this stage phase of pipeline
         model_dto = input_dto.trained_models[0]
