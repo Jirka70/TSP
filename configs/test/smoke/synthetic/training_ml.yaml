@@ -1,0 +1,53 @@
+# @package _global_
+
+defaults:
+  - /config
+  - override /raw_augmentation: none
+  - override /augmentation: none
+  - override /split: basic
+  - override /model: machine_learning/riemannian_lda
+  - override /final_trainer: default
+  - override /logging: trace
+  - _self_
+
+mode: training
+output_dir: ./outputs/smoke-synthetic-ml
+
+source:
+  backend: synthetic
+  s_freq: 128.0
+  n_channels: 8
+  n_trials: 24
+  random_seed: 42
+
+raw_preprocessing:
+  high_pass_filter:
+    enabled: false
+  notch_filter:
+    enabled: false
+  bad_channels_interpolation:
+    enabled: false
+  re_referencing:
+    enabled: false
+  annotate_break:
+    enabled: false
+
+epoch_preprocessing:
+  alignment:
+    enabled: false
+  ica:
+    enabled: false
+  autoreject:
+    enabled: false
+
+split:
+  train_ratio: 0.7
+  validation_ratio: 0.1
+  test_ratio: 0.2
+
+model:
+  fold_training: false
+
+visualization:
+  save_plots: false
+  show_plots: false

@@ -2,9 +2,9 @@ name: "CI"
 
 on:
   push:
-    branches: [main]
+    branches: [feature/TMSPKED-380-CICD-Implement-CICD-Pipeline]
   pull_request:
-    branches: [main]
+    branches: [feature/TMSPKED-380-CICD-Implement-CICD-Pipeline]
   workflow_dispatch:
 
 jobs:
@@ -38,7 +38,7 @@ jobs:
       - name: Training smoke tests
         run: |
           shopt -s nullglob
-          configs=(configs/smoke/*.yaml)
+          configs=(configs/test/smoke/*.yaml)
 
           if [ ${#configs[@]} -eq 0 ]; then
             echo "No smoke configs found in configs/smoke/"

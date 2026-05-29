@@ -2,7 +2,6 @@
 
 defaults:
   - /config
-  - override /source: external
   - override /raw_augmentation: none
   - override /augmentation: none
   - override /split: basic
@@ -12,12 +11,34 @@ defaults:
   - _self_
 
 mode: training
-output_dir: ./outputs/smoke-dl-fold
+output_dir: ./outputs/smoke-synthetic-dl-fold
 
 source:
-  subject_ids: [1]
-  session_ids: null
-  run_ids: null
+  backend: synthetic
+  s_freq: 128.0
+  n_channels: 8
+  n_trials: 24
+  random_seed: 42
+
+raw_preprocessing:
+  high_pass_filter:
+    enabled: false
+  notch_filter:
+    enabled: false
+  bad_channels_interpolation:
+    enabled: false
+  re_referencing:
+    enabled: false
+  annotate_break:
+    enabled: false
+
+epoch_preprocessing:
+  alignment:
+    enabled: false
+  ica:
+    enabled: false
+  autoreject:
+    enabled: false
 
 split:
   train_ratio: 0.7
