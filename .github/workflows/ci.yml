@@ -89,7 +89,6 @@ jobs:
             -t src:latest \
             .
 
-
       - name: Smoke test Docker image
         run: |
           docker run --rm src:${{ github.sha }} \
