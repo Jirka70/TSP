@@ -1,0 +1,8 @@
+backend: experiment           # Identifier for the run type (indicates an experimental setup)
+
+# --- Experiment Artifact Saver Configuration ---
+
+save_model: false             # The trained model WILL/WILL NOT be saved to disk
+save_metrics: true            # The resulting metrics (e.g., accuracy) WILL BE/WILL NOT BE saved for later analysis
+save_config: true             # A copy of this YAML file WILL BE/WILL NOT BE saved for reproducibility
+save_training_history: false  # The training history (loss function across epochs) WILL/WILL NOT be saved

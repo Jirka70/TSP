@@ -1,15 +1,14 @@
-import logging
 from collections import defaultdict
 
 import numpy as np
 
 from src.pipeline.context.run_context import RunContext
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.model.aggregated_metrics_dto import AggregatedMetricsDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
-
-log = logging.getLogger(__name__)
 
 
 class MetricsAggregator(IMetricsAggregator):
@@ -37,6 +36,8 @@ class MetricsAggregator(IMetricsAggregator):
             Optional[AggregatedMetricsDTO]: DTO containing global and fold-level statistics,
                 or None if no trained models were provided.
         """
+        log: PipelineLogger = run_ctx.logger.for_step("METRICS_AGGREGATION")
+
         if not result_dto.trained_models or len(result_dto.trained_models) == 0:
             log.warning("No trained models were provided for aggregation.")
             return None
@@ -69,15 +70,15 @@ class MetricsAggregator(IMetricsAggregator):
         global_mean : float = float(np.mean(all_values))
         global_std : float = float(np.std(all_values))
 
-        log.info(f"\n=== Global results: {model_name} ===")
-        log.info(f"Mean: {global_mean:.4f} ± {global_std:.4f}")
+        log.info(f"\n=== Global results: {model_name} ===", VerbosityLevel.QUIET)
+        log.info(f"Mean: {global_mean:.4f} ± {global_std:.4f}", VerbosityLevel.QUIET)
 
         if self._group_by_key and grouped_values:
-            log.info(f"\n--- Results grouped by: {self._group_by_key} ---")
+            log.info(f"\n--- Results grouped by: {self._group_by_key} ---", VerbosityLevel.NORMAL)
             for group_id, values in grouped_values.items():
                 g_mean : float = float(np.mean(values))
                 g_std : float = float(np.std(values))
-                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Folds: {len(values)})")
+                log.info(f"[{self._group_by_key}: {group_id}] -> Mean: {g_mean:.4f} ± {g_std:.4f} (Folds: {len(values)})", VerbosityLevel.DETAILED)
 
         return AggregatedMetricsDTO(
             model_name=model_name,

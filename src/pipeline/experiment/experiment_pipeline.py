@@ -70,6 +70,7 @@ class ExperimentPipeline(IPipeline):
         """
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
 
+
         raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
         self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
@@ -115,6 +116,5 @@ class ExperimentPipeline(IPipeline):
             evaluation_result=evaluation_result.data,
         )
 
-        # TODO: Implement custom artifact saver for experiment pipeline.
-        #self._artifact_saver.run(save_artifacts_input, run_ctx)
+        self._artifact_saver.run(save_artifacts_input, run_ctx)
         self._log.info("Experiment pipeline finished successfully.")

@@ -1,0 +1,32 @@
+# @package _global_
+
+defaults:
+  - /config
+  - override /source: external
+  - override /raw_augmentation: none
+  - override /augmentation: none
+  - override /split: basic
+  - override /model: machine_learning/riemannian_lda
+  - override /final_trainer: default
+  - override /logging: trace
+  - _self_
+
+mode: training
+output_dir: ./outputs/smoke-ml
+
+source:
+  subject_ids: [1]
+  session_ids: null
+  run_ids: null
+
+split:
+  train_ratio: 0.7
+  validation_ratio: 0.1
+  test_ratio: 0.2
+
+model:
+  fold_training: true
+
+visualization:
+  save_plots: false
+  show_plots: false

@@ -9,6 +9,8 @@ from src.impl.model.machine_learning.generic_sklearn_model import GenericSklearn
 from src.impl.model.model_factory import ModelFactory
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
@@ -33,15 +35,17 @@ class GenericSklearnTrainer(IModelTrainer):
         Returns:
             StepResult[TrainingResultDTO]: Encapsulated results containing all trained models.
         """
+        log: PipelineLogger = run_ctx.logger.for_step("SKLEARN_TRAINING")
+
         if not input_dto.config.fold_training:
-            log.info("Fold training is disabled. Skipping fold training stage.")
+            log.info("Fold training is disabled. Skipping fold training stage.", VerbosityLevel.QUIET)
             return StepResult(TrainingResultDTO(trained_models=[]))
 
         method_id : str = input_dto.config.model_name
         params : Dict[str, Any] = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
-        log.info(f"Training started: {method_id} (Run: {run_ctx.run_id})")
-        log.info(f"Number of folds: {len(input_dto.folds)}")
+        log.info(f"Training started: {method_id} (Run: {run_ctx.run_id})", VerbosityLevel.QUIET)
+        log.info(f"Number of folds: {len(input_dto.folds)}", VerbosityLevel.NORMAL)
 
         trained_models: list[TrainedModelDTO] = []
 
@@ -59,7 +63,7 @@ class GenericSklearnTrainer(IModelTrainer):
             val_metrics : Dict[str, List[float]] = {}
             val_loss : List[float] = []
             if fold.test_data:
-                log.info(f"Validation data exists for fold {fold.fold_idx}.")
+                log.info(f"Validation data exists for fold {fold.fold_idx}.", VerbosityLevel.DETAILED)
                 x_val, y_val = self._extract_data_and_labels(fold.test_data)
 
                 val_acc : float = float(accuracy_score(y_val, model.predict(x_val)))
@@ -88,10 +92,8 @@ class GenericSklearnTrainer(IModelTrainer):
 
         for train_model in trained_models:
             log.info(
-                "Trained model %s: train accuracy=%s, validation accuracy=%s",
-                train_model.model_name,
-                train_model.history.train_metrics["accuracy"],
-                train_model.history.validation_metrics.get("accuracy", []),
+                f"Trained model {train_model.model_name}: train accuracy={train_model.history.train_metrics['accuracy']}, validation accuracy={train_model.history.validation_metrics.get('accuracy', [])}",
+                VerbosityLevel.NORMAL,
             )
 
         return StepResult(TrainingResultDTO(trained_models=trained_models))

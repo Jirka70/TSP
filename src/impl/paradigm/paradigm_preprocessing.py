@@ -9,6 +9,8 @@ import numpy as np
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.config.paradigm_config import ParadigmConfig
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
@@ -50,12 +52,11 @@ class ParadigmPreprocessor(IParadigm):
             StepResult[ParadigmResultDTO]: A step result container holding the
                 processed, epoched, and optionally resampled data entries.
         """
-        log: logging.Logger = logging.getLogger(__name__)
+        log: PipelineLogger = run_ctx.logger.for_step("PARADIGM_PREPROCESSING")
         config: ParadigmConfig = input_dto.paradigm_preprocessing_config
 
-        processed_items: List[Any] = []
+        processed_items: List[Any] = [] # Replace Any with specific Recording Entry DTO type if available
 
-        # Unify event parsing (takes key from dictionary or value from list)
         configured_events: List[str]
         if isinstance(config.events, dict):
             configured_events = list(config.events.keys())
@@ -66,12 +67,13 @@ class ParadigmPreprocessor(IParadigm):
 
         configured_events_normalized: Set[str] = {self._normalize_event_name(name) for name in configured_events}
 
-        log.info(f"Starting paradigm preprocessing for {len(input_dto.data.data)} entries with configured events: {configured_events_normalized}")
+        log.info(f"Starting paradigm preprocessing for {len(input_dto.data.data)} entries with configured events: {configured_events_normalized}", VerbosityLevel.QUIET)
 
         for i, entry in enumerate(input_dto.data.data):
+            log.info(f"Processing paradigm for entry index: {i}", VerbosityLevel.DETAILED)
             raw: mne.io.Raw = entry.data
 
-            # Apply bandpass filter using nested filter configuration
+            log.info(f"Applying bandpass filter (fmin={config.filter.fmin}, fmax={config.filter.fmax})", VerbosityLevel.TRACE)
             raw.filter(
                 l_freq=config.filter.fmin,
                 h_freq=config.filter.fmax,
@@ -79,7 +81,6 @@ class ParadigmPreprocessor(IParadigm):
                 skip_by_annotation="edge"
             )
 
-            # mne.events_from_annotations returns an (N, 3) int array and a mapping dict
             events: np.ndarray
             event_id: Dict[str, int]
             events, event_id = mne.events_from_annotations(raw)
@@ -90,9 +91,10 @@ class ParadigmPreprocessor(IParadigm):
             }
 
             if not event_id_filtered:
+                log.info(f"No events found for entry {i}. Skipping.", VerbosityLevel.TRACE)
                 continue
 
-            # Segment Raw data into Epochs
+            log.info(f"Segmenting into epochs (tmin={config.window.tmin}, tmax={config.window.tmax})", VerbosityLevel.TRACE)
             epochs: mne.Epochs = mne.Epochs(
                 raw, events=events, event_id=event_id_filtered,
                 tmin=config.window.tmin, tmax=config.window.tmax,
@@ -102,11 +104,14 @@ class ParadigmPreprocessor(IParadigm):
             )
 
             if len(epochs) == 0:
+                log.info(f"Zero epochs created for entry {i}. Skipping.", VerbosityLevel.TRACE)
                 continue
 
             if config.resampling.enabled:
+                log.info(f"Resampling epochs to {config.resampling.sfreq} Hz", VerbosityLevel.TRACE)
                 epochs.resample(config.resampling.sfreq)
 
             processed_items.append(self._update_entry_data(entry, epochs))
 
+        log.info("Paradigm preprocessing completed successfully", VerbosityLevel.QUIET)
         return StepResult(ParadigmResultDTO(data=processed_items))
