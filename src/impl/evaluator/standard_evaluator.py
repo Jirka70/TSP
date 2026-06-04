@@ -1,17 +1,13 @@
-import logging
-
 import numpy as np
 from sklearn.metrics import confusion_matrix, get_scorer
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
 from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
-from src.types.dto.evaluation.fold_evaluation_result_dto import FoldEvaluationResultDTO
 from src.types.interfaces.evaluator import IEvaluator
-
-log = logging.getLogger(__name__)
 
 
 class StandardEvaluator(IEvaluator):
@@ -22,70 +18,89 @@ class StandardEvaluator(IEvaluator):
     """
 
     def run(self, input_dto: EvaluationInputDTO, run_ctx: RunContext) -> StepResult[EvaluationResultDTO]:
-        """Runs the evaluation process for the provided model and validation data.
+        """
+        Runs the evaluation process for a single model using global validation data.
+
+        This method supports evaluating a trained model strictly on the global validation
+        data partition. The process follows these sequential stages:
+        1. Initialization: Validates models and ensures global validation data is available.
+        2. Data Extraction: Prepares the validation feature matrix and true labels.
+        3. Model Evaluation: Generates predictions and class probabilities using the model.
+        4. Metrics Computation: Calculates requested performance metrics and confusion matrix.
 
         Args:
-            input_dto (EvaluationInputDTO): DTO containing the model and split data.
-            run_ctx (RunContext): Context of the current execution.
+            input_dto (EvaluationInputDTO): DTO containing models and split data.
+            run_ctx (RunContext): Context keeping track of the current pipeline execution.
 
         Returns:
-            StepResult[EvaluationResultDTO]: The result of the evaluation step.
+            StepResult[EvaluationResultDTO]: The evaluation results on the validation set.
 
         Raises:
-            ValueError: If no model is provided or validation data is missing.
+            ValueError: If no models are provided or if global validation data is missing.
         """
-        if not input_dto.trained_models:
-            log.info("EvaluationInputDTO does not include any model.")
-            return StepResult(EvaluationResultDTO(metrics={}, fold_results=[], predictions=[], targets=[], probabilities=None, confusion_matrix=None))
+        log = run_ctx.logger.for_step("STANDART_EVALUATION")
 
-        #  There is always only one model at this stage phase of pipeline
+        # --- 1. Initialization ---
+        if not input_dto.trained_models:
+            log.info("EvaluationInputDTO does not include any model. Skipping evaluation.", VerbosityLevel.NORMAL)
+            return StepResult(EvaluationResultDTO(
+                metrics={},
+                predictions=[],
+                targets=[],
+                probabilities=None,
+                confusion_matrix=None
+            ))
+
+        # We evaluate only the primary/first model
         model_dto = input_dto.trained_models[0]
 
-        validation_data = input_dto.dataset_split.validation_data
+        # Strictly use global validation data
+        validation_data = input_dto.dataset_split.validation_data if input_dto.dataset_split else None
+
         if not validation_data or not validation_data.data:
-            raise ValueError("No validation data found in DatasetSplitDTO. Evaluation requires global validation data.")
+            log.error("No global validation data found. Evaluation strictly requires 'validation_data' partition.")
+            raise ValueError("No global validation data found. Evaluation strictly requires 'validation_data' partition.")
 
-        log.info(f"Starting evaluation for model: {model_dto.model_name}")
+        log.info(f"Starting evaluation for model '{model_dto.model_name}' on global validation data", VerbosityLevel.QUIET)
 
-        # Extract validation data
+        # --- 2. Data Extraction ---
         x_val, y_true = self.extract_data(validation_data)
 
-        # Predict
+        # --- 3. Model Evaluation ---
+        log.info(f"Evaluating model...", VerbosityLevel.DETAILED)
+        
+        # Predict labels
         y_pred = model_dto.model.predict(x_val)
 
-        # Optional: Predict probabilities if supported
+        # Predict probabilities if supported by the model
         probabilities = None
         try:
             probabilities = model_dto.model.predict_class_probability(x_val)
         except (AttributeError, NotImplementedError):
             pass
 
-        # Compute metrics
-        requested_metrics = input_dto.config.metrics
+        # --- 4. Metrics Computation ---
         model_metrics = {}
-        for m_name in requested_metrics:
+        for m_name in input_dto.config.metrics:
             scorer = get_scorer(m_name)
             if hasattr(scorer, "_score_func"):
                 val = float(scorer._score_func(y_true, y_pred, **scorer._kwargs))
                 model_metrics[m_name] = val
-                log.info(f"Metric {m_name}: {val:.4f}")
+                log.info(f"Metric {m_name}: {val:.4f}", VerbosityLevel.TRACE)
             else:
                 log.warning(f"Could not calculate metric '{m_name}' directly from labels.")
 
         overall_cm = confusion_matrix(y_true, y_pred).tolist()
 
-        # Create the single result entry
-        fold_res = FoldEvaluationResultDTO( # TODO: zde se foldy vubec nepouzivaji, nachazi se zde stara implementace
-            fold_idx=model_dto.fold_idx if model_dto.fold_idx is not None else 0,
+        result = EvaluationResultDTO(
             metrics=model_metrics,
             predictions=y_pred.tolist(),
             targets=y_true.tolist(),
             probabilities=probabilities.tolist() if probabilities is not None else None,
-            confusion_matrix=overall_cm,
+            confusion_matrix=overall_cm
         )
 
-        result = EvaluationResultDTO(metrics=model_metrics, fold_results=[fold_res], predictions=y_pred.tolist(), targets=y_true.tolist(), probabilities=probabilities.tolist() if probabilities is not None else None, confusion_matrix=overall_cm)
-
+        log.info("Evaluation completed successfully", VerbosityLevel.QUIET)
         return StepResult(result)
 
 
