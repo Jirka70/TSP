@@ -8,6 +8,8 @@ from src.types.dto.config.augmentation_config import (
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
+
+from src.types.dto.config.source.SyntheticDatasetConfig import SyntheticDatasetConfig
 from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
@@ -51,7 +53,7 @@ class ExperimentConfig(BaseModel):
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
     split: SplitConfig | SplitMoabbWithinSessionConfig | SplitMoabbWithinSubjectConfig | SplitMoabbCrossSessionConfig | SplitMoabbCrossSubjectConfig = Field(discriminator="backend")
-    source: FilesystemDatasetConfig | ExternalDatasetConfig = Field(discriminator="backend")
+    source: FilesystemDatasetConfig | ExternalDatasetConfig | SyntheticDatasetConfig = Field(discriminator="backend")
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")
     visualization: VisualizationConfig = Field(discriminator="backend")
     dataset_export: DatasetExportConfig = Field(discriminator="backend")

@@ -1,0 +1,50 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # every day at 02:00 UTC
+
+jobs:
+  moabb-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.lock.txt
+          pip install -r requirements.torcheeg.txt --no-deps
+          
+      - name: Run MOABB smoke tests
+        run: |
+          shopt -s nullglob
+          configs=(configs/test/smoke/moabb/*.yaml)
+
+          if [ ${#configs[@]} -eq 0 ]; then
+            echo "No smoke configs found in configs/test/smoke/moabb/"
+            exit 1
+          fi
+          
+          for config in "${configs[@]}"; do
+            name="${config#configs/}"
+            name="${name%.yaml}"
+            echo "Running integration config: ${name}"
+            python -m src.main --config-name "${name}"
+          done
+          
+      - name: Upload integration outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-outputs
+          path: |
+            outputs/
+            model_output/
