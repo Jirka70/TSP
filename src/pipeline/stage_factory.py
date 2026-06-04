@@ -1,5 +1,6 @@
 from enum import Enum
 
+from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
 from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
@@ -24,6 +25,7 @@ from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from src.impl.split.basic_splitter import BasicSplitter
+from src.impl.split.dummy_splitter import DummySplitter
 from src.impl.split.moabb_splitter import MoabbSplitter
 from src.impl.visualization.matplotlib_visualizer import MatplotlibVisualizer
 from src.impl.visualization.plotly_visualizer import PlotlyVisualizer
@@ -67,7 +69,9 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
+        StageType.DATA_LOADER: {"external": MOABBDataLoader,
+                                "filesystem": FilesystemDatasetLoader,
+                                "synthetic": SyntheticDataLoader },
         StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
