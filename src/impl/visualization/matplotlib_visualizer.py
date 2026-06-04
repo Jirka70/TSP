@@ -24,20 +24,37 @@ class MatplotlibVisualizer(IVisualizer):
     evaluation reports with confusion matrices and class distributions.
     """
 
+    # --- Constants for automatic sizing ---
+    BASE_WIDTH = 1800
+    DEFAULT_ROW_HEIGHT = 450
+    EVALUATION_HEIGHT = 600
+
     def __init__(self, config: VisualizationConfig) -> None:
         """
         Initializes the visualizer with configuration.
 
         Args:
-            config (VisualizationConfig): Configuration for visualization settings (width, height, n_fft, etc.).
+            config (VisualizationConfig): Configuration for visualization settings (n_fft, etc.).
         """
         self._config = config
 
         # --- 1. Dimensions Setup ---
-        # We assume config.width and config.height are in PIXELS and convert them to inches for Matplotlib.
         self._dpi = 100
-        self._fig_width = config.width / self._dpi
-        self._fig_height = config.height / self._dpi
+        self._fig_width_px = self.BASE_WIDTH
+
+    def _get_height_pixels(self, n_rows: int = 1, min_height_per_row: int | None = None) -> int:
+        """
+        Calculates dynamic height in pixels based on internal constants.
+        
+        Args:
+            n_rows (int): Number of vertical subplots.
+            min_height_per_row (int): Optional override for pixels per row.
+            
+        Returns:
+            int: Height in pixels.
+        """
+        row_h = min_height_per_row if min_height_per_row is not None else self.DEFAULT_ROW_HEIGHT
+        return n_rows * row_h
 
     def visualize_raw(self, data: RawPreprocessedDTO, run_ctx: RunContext) -> None:
         """
@@ -85,7 +102,7 @@ class MatplotlibVisualizer(IVisualizer):
                     psd = raw.compute_psd(fmax=50, n_fft=n_fft, n_per_seg=n_fft, verbose=False)
                     fig = psd.plot(show=False)
                     # --- 3. Formatting ---
-                    fig.set_size_inches(self._fig_width, self._fig_height)
+                    fig.set_size_inches(self._fig_width_px / self._dpi, self._get_height_pixels(1) / self._dpi)
                     fig.set_dpi(self._dpi)
                     fig.suptitle(f"PSD: Subject {recording.subject_id}")
                 except Exception as e:
@@ -95,12 +112,12 @@ class MatplotlibVisualizer(IVisualizer):
                 # Older MNE versions
                 fig = raw.plot_psd(show=False, fmax=50, n_fft=n_fft, n_per_seg=n_fft, verbose=False)
                 # --- 3. Formatting ---
-                fig.set_size_inches(self._fig_width, self._fig_height)
+                fig.set_size_inches(self._fig_width_px / self._dpi, self._get_height_pixels(1) / self._dpi)
                 fig.set_dpi(self._dpi)
                 fig.suptitle(f"PSD: Subject {recording.subject_id}")
             else:
                 # Fallback for NumPy
-                plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
+                plt.figure(figsize=(self._fig_width_px / self._dpi, self._get_height_pixels(1) / self._dpi), dpi=self._dpi)
                 # Assuming (channels, time)
                 if isinstance(raw, np.ndarray) and raw.ndim >= 2:
                     plt.plot(raw[0, : min(1000, raw.shape[1])])
@@ -135,7 +152,7 @@ class MatplotlibVisualizer(IVisualizer):
         recordings = data.data[:n_copies]
 
         # --- 2. Layout Setup ---
-        plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
+        plt.figure(figsize=(self._fig_width_px / self._dpi, self._get_height_pixels(n_copies) / self._dpi), dpi=self._dpi)
 
         # --- 3. Subplot Generation ---
         for i, recording in enumerate(recordings):
@@ -195,12 +212,12 @@ class MatplotlibVisualizer(IVisualizer):
             evoked = epochs.average()
             fig = evoked.plot(show=False)
             # --- 3. Formatting ---
-            fig.set_size_inches(self._fig_width, self._fig_height)
+            fig.set_size_inches(self._fig_width_px / self._dpi, self._get_height_pixels(1) / self._dpi)
             fig.set_dpi(self._dpi)
             fig.suptitle(f"ERP Average: Subject {recording.subject_id}")
         else:
             # Fallback for NumPy (mean across epochs)
-            plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
+            plt.figure(figsize=(self._fig_width_px / self._dpi, self._get_height_pixels(1) / self._dpi), dpi=self._dpi)
             if isinstance(epochs, np.ndarray) and epochs.ndim == 3:
                 erp = np.mean(epochs, axis=0)
                 plt.plot(erp[0])  # Plot average of first channel
@@ -241,11 +258,11 @@ class MatplotlibVisualizer(IVisualizer):
         # --- 2. Index Mapping ---
         # If it's augmented, it should be a NumPy array now
         if isinstance(x, np.ndarray) and x.ndim == 3:
-            plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
-
             n_original_samples = x.shape[0] // (1 + copies_per_sample)
             # We want to show the first original sample and its augmented copies
             indices_to_plot = [0] + [(i + 1) * n_original_samples for i in range(copies_per_sample)]
+
+            plt.figure(figsize=(self._fig_width_px / self._dpi, self._get_height_pixels(len(indices_to_plot)) / self._dpi), dpi=self._dpi)
 
             # --- 3. Trace Comparison ---
             for i, idx in enumerate(indices_to_plot):
@@ -282,7 +299,7 @@ class MatplotlibVisualizer(IVisualizer):
             log.warning("Insufficient data for evaluation visualization.")
             return
 
-        plt.figure(figsize=(self._fig_width, self._fig_height), dpi=self._dpi)
+        plt.figure(figsize=(self._fig_width_px / self._dpi, self._get_height_pixels(1, min_height_per_row=self.EVALUATION_HEIGHT) / self._dpi), dpi=self._dpi)
 
         # --- 1. Confusion Matrix ---
         plt.subplot(1, 3, 1)

@@ -26,12 +26,16 @@ class PlotlyVisualizer(IVisualizer):
     metrics (confusion matrices, etc.).
     """
 
+    # --- Constants for automatic sizing ---
+    DEFAULT_ROW_HEIGHT = 350
+    AUGMENTATION_ROW_HEIGHT = 250
+
     def __init__(self, config: VisualizationConfig) -> None:
         """
         Initializes the visualizer with configuration.
 
         Args:
-            config (VisualizationConfig): Configuration for visualization settings (n_fft, save_plots, etc.).
+            config (VisualizationConfig): Configuration for visualization settings (n_fft, etc.).
         """
         self._config = config
 
@@ -139,7 +143,7 @@ class PlotlyVisualizer(IVisualizer):
             # Update subplot titles to include subject and channel
             fig.layout.annotations[i].text = f"{titles[i]} - Subject {recording.subject_id}, Channel {ch_name}"
 
-        fig.update_layout(height=300 * n_copies, title_text="Raw Augmentation Variety Check", template="plotly_white")
+        fig.update_layout(height=self.DEFAULT_ROW_HEIGHT * n_copies, title_text="Raw Augmentation Variety Check", template="plotly_white")
         fig.update_xaxes(title_text="Time (s)")
         fig.update_yaxes(title_text="Amplitude")
 
@@ -221,7 +225,7 @@ class PlotlyVisualizer(IVisualizer):
             for i, idx in enumerate(indices_to_plot):
                 fig.add_trace(go.Scatter(y=x[idx, 0, :], mode="lines", name="Original" if i == 0 else f"Copy {i}"), row=i + 1, col=1)
 
-            fig.update_layout(height=200 * len(indices_to_plot), title_text="Augmentation Variety Check", showlegend=False)
+            fig.update_layout(height=self.AUGMENTATION_ROW_HEIGHT * len(indices_to_plot), title_text="Augmentation Variety Check", showlegend=False)
             self._handle_output(fig, "augmentation_interactive.html", run_ctx)
 
     def visualize_evaluation(self, data: EvaluationResultDTO, run_ctx: RunContext, model_name: str) -> None:

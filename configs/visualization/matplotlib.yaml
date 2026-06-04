@@ -1,31 +1,16 @@
-# Visualization backend to use
-backend: matplotlib
+backend: matplotlib          # Visualization backend using Matplotlib and Seaborn for static image reports
 
-# --- Visualization flags for different pipeline stages ---
-# Plot Power Spectral Density (PSD) of raw data
-visualize_raw: True
-# Plot examples of raw data before raw augmentation and after raw augmentation
-visualize_raw_augmentation: True
-# Plot Event-Related Potentials (ERP) averages
-visualize_epochs: True
-# Plot examples of data after augmentation
-visualize_augmentation: True
-# Plot confusion matrix and metrics after evaluation
-visualize_evaluation: True
+# --- Matplotlib Visualization Configuration ---
 
-# --- Figure settings ---
-# Figure width in pixels
-width: 2000
-# Figure height in pixels
-height: 1500
+# This backend generates high-quality static plots (PNG) for different stages of the EEG pipeline.
+# It is ideal for documentation and final reports.
 
-# Number of points for Fast Fourier Transform. 
-# Higher value means better frequency resolution but requires more data.
-# Ideally a power of 2 (e.g., 256, 512, 1024, 2048).
-n_fft: 2048
+visualize_raw: True          # Plot Power Spectral Density (PSD) of raw data
+visualize_raw_augmentation: True # Plot comparison of original and augmented raw signals
+visualize_epochs: True       # Plot Event-Related Potential (ERP) averages
+visualize_augmentation: True # Plot comparison of original and augmented epoched data
+visualize_evaluation: True   # Plot confusion matrix and aggregate metrics
 
-# --- Output settings ---
-# Save generated plots to the output directory
-save_plots: True
-# Open a window to show plots (Note: this blocks execution until the window is closed)
-show_plots: False
+n_fft: 2048                  # Number of points for FFT (must be a power of 2 like 256, 1024, 2048)
+save_plots: True             # Whether to save generated plots to the output directory
+show_plots: True            # Whether to open a window to show plots (blocks execution)
