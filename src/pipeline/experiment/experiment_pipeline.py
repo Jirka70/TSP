@@ -36,17 +36,18 @@ class ExperimentPipeline(IPipeline):
     Coordinates data loading, multi-stage preprocessing, model restoration,
     downstream classification evaluation, and experimental artifact persistence.
     """
+
     def __init__(
-            self,
-            data_loader: IDataLoader,
-            raw_preprocessing: IRawPreprocessing,
-            paradigm: IParadigm,
-            epoch_preprocessing: IEpochPreprocessing,
-            model_loader: IModelLoader,
-            evaluator: IEvaluator,
-            visualizer: IVisualizer,
-            artifact_saver: IArtifactSaver,
-            model_serializer: IModelSerializer,
+        self,
+        data_loader: IDataLoader,
+        raw_preprocessing: IRawPreprocessing,
+        paradigm: IParadigm,
+        epoch_preprocessing: IEpochPreprocessing,
+        model_loader: IModelLoader,
+        evaluator: IEvaluator,
+        visualizer: IVisualizer,
+        artifact_saver: IArtifactSaver,
+        model_serializer: IModelSerializer,
     ) -> None:
         """Initialize the pipeline with all necessary functional stage engines."""
         self._log = logging.getLogger(__name__)
@@ -70,7 +71,6 @@ class ExperimentPipeline(IPipeline):
         """
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
 
-
         raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
         raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
         self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
@@ -85,31 +85,16 @@ class ExperimentPipeline(IPipeline):
         model_path: Path = Path(config.model_path.path)
         loaded_model_obj: Any = self._model_loader.load(model_path)
 
-        trained_model : TrainedModelDTO = TrainedModelDTO(
-            model=loaded_model_obj,
-            model_name=model_path.stem
-        )
+        trained_model: TrainedModelDTO = TrainedModelDTO(model=loaded_model_obj, model_name=model_path.stem)
 
-        dummy_split : DatasetSplitDTO = DatasetSplitDTO(
-            folds=[],
-            validation_data=epoch_preprocessing_result.data
-        )
+        dummy_split: DatasetSplitDTO = DatasetSplitDTO(folds=[], validation_data=epoch_preprocessing_result.data)
 
-        evaluation_input : EvaluationInputDTO = EvaluationInputDTO(
-            config=config.evaluation,
-            trained_models=[trained_model],
-            folds=[],
-            dataset_split=dummy_split
-        )
-        evaluation_result : StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
+        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split)
+        evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
-        self._visualizer.visualize_evaluation(
-            evaluation_result.data,
-            run_ctx,
-            trained_model.model_name
-        )
+        self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, trained_model.model_name)
 
-        save_artifacts_input : SaveArtifactsInputDTO = SaveArtifactsInputDTO(
+        save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
             output_path=Path("experiment_results.txt"),
