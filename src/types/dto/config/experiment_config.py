@@ -8,8 +8,6 @@ from src.types.dto.config.augmentation_config import (
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
-
-from src.types.dto.config.source.SyntheticDatasetConfig import SyntheticDatasetConfig
 from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
@@ -27,6 +25,7 @@ from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
+from src.types.dto.config.source.SyntheticDatasetConfig import SyntheticDatasetConfig
 from src.types.dto.config.split_config import SplitConfig, SplitMoabbCrossSessionConfig, SplitMoabbCrossSubjectConfig, SplitMoabbWithinSessionConfig, SplitMoabbWithinSubjectConfig
 from src.types.dto.config.visualization_config import VisualizationConfig
 
@@ -76,5 +75,24 @@ class ExperimentConfig(BaseModel):
             # machine learning
             if self.final_trainer.backend == "eegnet":
                 raise ValueError(f"ML model '{self.model.model_name}' doesn't support final trainer '{self.final_trainer.backend}'")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_artifact_saver(self) -> "ExperimentConfig":
+        """
+        Validate pipeline mode + artifact saver combinations
+
+        Possible combinations (mode - saver):
+            - training - default
+            - experiment - experiment
+        Validation is made **after** basic validation, so that only combinations need to be checked (not backends)
+        """
+        if self.mode == Mode.TRAINING:
+            if self.save_artifacts.backend != "default":
+                raise ValueError(f"Training mode doesn't support '{self.save_artifacts.backend}' saver")
+        elif self.mode == Mode.EXPERIMENT:
+            if self.save_artifacts.backend != "experiment":
+                raise ValueError(f"Experiment mode doesn't support '{self.save_artifacts.backend}' saver")
 
         return self
