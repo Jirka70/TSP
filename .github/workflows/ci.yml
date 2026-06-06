@@ -108,3 +108,13 @@ jobs:
         run: |
           docker run --rm src:${{ github.sha }} \
             python -m src.main --config-name test/smoke/synthetic/training_ml
+
+  deploy:
+    name: Deploy
+    needs: test-build
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
