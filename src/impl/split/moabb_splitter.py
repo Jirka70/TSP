@@ -177,7 +177,7 @@ class MoabbSplitter(ISplitter):
         dataset_name = recordings[0].dataset_name if recordings else "unknown"
 
         # Determine validation settings
-        pre_split_validation = config.pre_split_validation
+        exclude_validation_data_before_split = config.exclude_validation_data_before_split
         validation_ratio = config.validation_ratio
 
         # --- 1. Validation & Initialization ---
@@ -212,7 +212,7 @@ class MoabbSplitter(ISplitter):
         main_indices = np.arange(len(y))
 
         # --- 3. Pre-split Validation ---
-        if validation_ratio > 0 and pre_split_validation:
+        if validation_ratio > 0 and exclude_validation_data_before_split:
             random_state = config.evaluator.random_state
             if random_state is not None:
                 np.random.seed(random_state)
@@ -238,6 +238,30 @@ class MoabbSplitter(ISplitter):
         y_main = y[main_indices]
         metadata_main = metadata.iloc[main_indices].reset_index(drop=True)
 
+        # --- Data Requirements Validation (After pre-split) ---
+        main_subjects = metadata_main["subject"].unique()
+        main_sessions = metadata_main["session"].unique()
+
+        backend = getattr(config, "backend", "unknown")
+
+        if backend == "moabb_cross_subject" and len(main_subjects) < 2:
+            msg = (
+                f"Cross-subject split requested, but only {len(main_subjects)} subject(s) available after validation extraction. "
+                f"This splitter requires at least 2 subjects to perform cross-validation. "
+                f"Please add more subjects, decrease validation_ratio, or use a different splitting strategy."
+            )
+            log.error(msg)
+            raise ValueError(msg)
+
+        if backend == "moabb_cross_session" and len(main_sessions) < 2:
+            msg = (
+                f"Cross-session split requested, but only {len(main_sessions)} session(s) available after validation extraction. "
+                f"This splitter requires at least 2 sessions to perform cross-validation. "
+                f"Please add more sessions or use a different splitting strategy."
+            )
+            log.error(msg)
+            raise ValueError(msg)
+
         folds = []
 
         try:
@@ -252,7 +276,7 @@ class MoabbSplitter(ISplitter):
                 actual_train_idx = train_idx
 
                 # If post-split validation is requested, we take a portion of the training indices for validation
-                if validation_ratio > 0 and not pre_split_validation:
+                if validation_ratio > 0 and not exclude_validation_data_before_split:
                     num_val = int(len(train_idx) * validation_ratio)
                     if num_val > 0:
                         rs = config.evaluator.random_state
@@ -283,6 +307,17 @@ class MoabbSplitter(ISplitter):
         except Exception as e:
             log.error(f"MOABB splitter {type(splitter).__name__} failed with an unexpected error: {e}")
             raise
+
+        # --- Final Sanity Checks ---
+        if not folds and len(folds) == 0:
+            msg = f"Splitting process failed to generate any folds. Check your dataset and splitter configuration."
+            log.error(msg)
+            raise ValueError(msg)
+
+        if validation_data_global is None or not validation_data_global.data:
+            msg = f"No global validation data produced (validation_ratio: {validation_ratio}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
+            log.error(msg)
+            raise ValueError(msg)
 
         result_data = DatasetSplitDTO(folds=folds, validation_data=validation_data_global)
         return StepResult(result_data)

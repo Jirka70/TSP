@@ -1,27 +1,17 @@
-# MOABB Within-session splitting strategy.
-backend: moabb_within_session
+backend: moabb_within_session # Used by program logic, changing this may break the pipeline if not handled properly
 
-# Whether the within-session splitting strategy is enabled.
-enabled: true
+# --- MOABB Within-Session Configuration ---
 
-# Global validation settings - if pre_split_validation is true, a portion of the data will be set aside for validation before applying the MOABB splitting strategy.
-pre_split_validation: false
-# Fraction of data to use for global validation (0.0 to 1.0)
-validation_ratio: 0.2
+# This backend performs cross-validation within each individual session.
+# It evaluates the performance on a single session, typically using stratified K-fold.
 
-# Evaluator configuration for the MOABB within-session splitting strategy.
+enabled: true                # Whether the within-session splitting strategy is enabled.
+exclude_validation_data_before_split: false # Whether to set aside validation data before the MOABB split
+validation_ratio: 0.2        # Fraction of data to use for global validation (0.0 to 1.0)
+
 evaluator:
-  # MOABB target splitter class.
-  _target_: moabb.evaluations.WithinSessionSplitter
-  
-  # Random seed for reproducible splits.
-  random_state: 42
-  
-  # Number of folds to create for cross-validation.
-  n_folds: 2
-  
-  # Whether to shuffle the session recordings before splitting.
-  shuffle: true
-  
-  # Scikit-learn cross-validation class to use internally.
-  cv_class: sklearn.model_selection.StratifiedKFold
+  _target_: moabb.evaluations.WithinSessionSplitter # MOABB target splitter class
+  cv_class: sklearn.model_selection.StratifiedKFold # Scikit-learn cross-validation class
+  n_folds: 2                 # Number of folds to create for cross-validation
+  shuffle: true              # Whether to shuffle the session recordings before splitting
+  random_state: 42           # Random seed for reproducible splits

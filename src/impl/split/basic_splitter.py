@@ -181,7 +181,7 @@ class BasicSplitter(ISplitter):
         main_indices = indices
 
         # 1. Pre-split validation
-        if config.validation_ratio > 0 and config.pre_split_validation:
+        if config.validation_ratio > 0 and config.exclude_validation_data_before_split:
             num_val = int(n_samples * config.validation_ratio)
             if num_val > 0:
                 val_indices = indices[:num_val]
@@ -205,7 +205,7 @@ class BasicSplitter(ISplitter):
         actual_train_idx = train_idx_all
 
         # 2. Post-split validation
-        if config.validation_ratio > 0 and not config.pre_split_validation:
+        if config.validation_ratio > 0 and not config.exclude_validation_data_before_split:
             num_val = int(len(train_idx_all) * config.validation_ratio)
             if num_val > 0:
                 val_idx_in_fold = train_idx_all[:num_val]
@@ -218,6 +218,16 @@ class BasicSplitter(ISplitter):
         test_dto = self.create_dto(test_idx, x, y, metadata, dataset_name)
 
         log.info(f"Split completed: {len(actual_train_idx)} train, {len(test_idx)} test samples.", VerbosityLevel.QUIET)
+        # --- Final Sanity Checks ---
+        if not train_dto or not test_dto or len(train_dto.data) == 0 or len(test_dto.data) == 0:
+            msg = f"Splitting process failed to generate any folds. Check your dataset and splitter configuration."
+            log.error(msg)
+            raise ValueError(msg)
+
+        if validation_data_global is None or not validation_data_global.data:
+            msg = f"No global validation data produced (validation_ratio: {config.validation_ratio}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
+            log.error(msg)
+            raise ValueError(msg)
 
         # Package results into a single fold
         single_fold = FoldDTO(
