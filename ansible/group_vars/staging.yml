@@ -13,3 +13,5 @@ app_directories:
 docker_runtime_packages:
   - docker.io
   - python3-docker
+
+min_docker_free_gb: 8

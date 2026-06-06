@@ -38,6 +38,24 @@
         - ghcr_username | length > 0
         - ghcr_token | length > 0
 
+    - name: Remove unused Docker data before pulling image
+      ansible.builtin.command: docker system prune -af
+      register: docker_prune_result
+      changed_when: "'Total reclaimed space: 0B' not in docker_prune_result.stdout"
+
+    - name: Check free space for Docker images
+      ansible.builtin.shell: "df -BG --output=avail /var/lib/docker | tail -n 1 | tr -dc '0-9'"
+      register: docker_free_space_result
+      changed_when: false
+
+    - name: Require enough free Docker disk space
+      ansible.builtin.assert:
+        that:
+          - docker_free_space_result.stdout | int >= min_docker_free_gb
+        fail_msg: >-
+          Docker has only {{ docker_free_space_result.stdout }}GB free in /var/lib/docker.
+          Increase the VM disk to at least 20GB or clean Docker data before deploying.
+
     - name: Pull requested application image
       ansible.builtin.command: "docker pull {{ image }}"
       register: docker_pull_result
