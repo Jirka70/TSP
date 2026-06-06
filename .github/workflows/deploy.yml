@@ -113,6 +113,22 @@ jobs:
             "${NUADA_SSH_USER}@${NUADA_SSH_HOST}" \
             'sudo -n true'
 
+      - name: Verify Nuada Docker capacity
+        env:
+          NUADA_SSH_HOST: ${{ secrets.NUADA_SSH_HOST }}
+          NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
+          NUADA_SSH_PORT: ${{ secrets.NUADA_SSH_PORT || '22' }}
+          MIN_DOCKER_FREE_GB: "8"
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -p "$NUADA_SSH_PORT" \
+            "${NUADA_SSH_USER}@${NUADA_SSH_HOST}" \
+            "sudo -n sh -c 'docker system prune -af >/dev/null 2>&1 || true; path=/var/lib/docker; [ -d \"\$path\" ] || path=/; free_gb=\$(df -BG --output=avail \"\$path\" | tail -n 1 | tr -dc 0-9); echo \"Nuada free Docker space: \${free_gb}GB\"; [ \"\$free_gb\" -ge ${MIN_DOCKER_FREE_GB} ]'"
+
       - name: Free disk space
         if: ${{ steps.image.outputs.should_build == 'true' }}
         run: |
