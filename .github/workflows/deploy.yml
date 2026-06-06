@@ -7,6 +7,9 @@ on:
         description: "Existing Docker tag for rollback, for example sha-abc123. Leave empty to build the selected commit."
         required: false
         type: string
+  push:
+    branches:
+      - feature/TMSPKED-518-Implement-CD-via-Ansible
   workflow_run:
     workflows: ["CI"]
     types: [completed]
@@ -20,7 +23,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'feature/TMSPKED-518-Implement-CD-via-Ansible')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'feature/TMSPKED-518-Implement-CD-via-Ansible')) }}
     runs-on: ubuntu-latest
     environment: staging
 
