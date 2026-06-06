@@ -4,8 +4,6 @@
   gather_facts: false
 
   vars:
-    app_user: tsp
-    app_dir: /opt/tsp
     image: "{{ lookup('env', 'TSP_IMAGE') }}"
     ghcr_username: "{{ lookup('env', 'GHCR_USERNAME') }}"
     ghcr_token: "{{ lookup('env', 'GHCR_TOKEN') }}"
@@ -15,16 +13,30 @@
       ansible.builtin.assert:
         that:
           - image | length > 0
-          - ":sha-" in image or image.endswith(":latest") == false
-        fail_msg: "TSP_IMAGE must be set to an immutable image tag, for example ghcr.io/org/repo/tsp:sha-abc123."
+          - image is match('^ghcr\\.io/.+:.+$')
+          - image is search(':sha-[0-9a-f]{7,40}$')
+        fail_msg: "TSP_IMAGE must be a GHCR image with an immutable sha-* tag, for example ghcr.io/org/tsp-eeg-classification:sha-abc123."
 
   tasks:
+    - name: Ensure application directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+      loop: "{{ app_directories }}"
+
     - name: Log in to GHCR
       community.docker.docker_login:
         registry_url: ghcr.io
         username: "{{ ghcr_username }}"
         password: "{{ ghcr_token }}"
         reauthorize: true
+      no_log: true
+      when:
+        - ghcr_username | length > 0
+        - ghcr_token | length > 0
 
     - name: Pull requested application image
       community.docker.docker_image:
@@ -42,9 +54,15 @@
           #!/usr/bin/env bash
           set -euo pipefail
 
-          docker run --rm \
-            --name tsp-job \
-            -v {{ app_dir }}/input:/app/input \
+          app_uid="$(id -u "{{ app_user }}")"
+          app_gid="$(getent group "{{ app_user }}" | cut -d: -f3)"
+
+          exec docker run --rm \
+            --user "${app_uid}:${app_gid}" \
+            -e HOME=/tmp \
+            -e MPLBACKEND=Agg \
+            -v {{ app_dir }}/data:/app/data \
+            -v {{ app_dir }}/input:/app/input:ro \
             -v {{ app_dir }}/outputs:/app/outputs \
             -v {{ app_dir }}/model_output:/app/model_output \
             -v {{ app_dir }}/logs:/app/logs \

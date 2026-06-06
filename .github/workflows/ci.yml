@@ -2,7 +2,9 @@ name: "CI"
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - feature/TMSPKED-518-Implement-CD-via-Ansible
   pull_request:
     branches: [main]
   workflow_dispatch:

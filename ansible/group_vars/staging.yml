@@ -1,0 +1,15 @@
+app_user: tsp
+app_dir: /opt/tsp
+
+app_directories:
+  - "{{ app_dir }}"
+  - "{{ app_dir }}/bin"
+  - "{{ app_dir }}/data"
+  - "{{ app_dir }}/input"
+  - "{{ app_dir }}/logs"
+  - "{{ app_dir }}/model_output"
+  - "{{ app_dir }}/outputs"
+
+docker_runtime_packages:
+  - docker.io
+  - python3-docker

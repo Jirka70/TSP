@@ -3,16 +3,10 @@
   become: true
   gather_facts: true
 
-  vars:
-    app_user: tsp
-    app_dir: /opt/tsp
-
   tasks:
     - name: Install Docker runtime packages
       ansible.builtin.apt:
-        name:
-          - docker.io
-          - python3-docker
+        name: "{{ docker_runtime_packages }}"
         update_cache: true
         state: present
 
@@ -31,6 +25,15 @@
         groups: docker
         append: true
 
+    - name: Allow SSH deploy user to manage Docker
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+      when:
+        - ansible_user is defined
+        - ansible_user not in ["root", app_user]
+
     - name: Create persistent application directories
       ansible.builtin.file:
         path: "{{ item }}"
@@ -38,10 +41,4 @@
         owner: "{{ app_user }}"
         group: "{{ app_user }}"
         mode: "0755"
-      loop:
-        - "{{ app_dir }}"
-        - "{{ app_dir }}/input"
-        - "{{ app_dir }}/outputs"
-        - "{{ app_dir }}/model_output"
-        - "{{ app_dir }}/logs"
-        - "{{ app_dir }}/bin"
+      loop: "{{ app_directories }}"
