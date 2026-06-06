@@ -99,8 +99,125 @@ jobs:
   deploy-feature:
     needs: test-build
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/TMSPKED-518-Implement-CD-via-Ansible' }}
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    environment: CD
     permissions:
       contents: read
       packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          docker system prune -af
+          df -h
+
+      - name: Compute deployment image
+        id: image
+        run: |
+          set -euo pipefail
+
+          image_name="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tsp-eeg-classification"
+          tag="sha-${GITHUB_SHA}"
+
+          echo "image_name=$image_name" >> "$GITHUB_OUTPUT"
+          echo "image=$image_name:$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.image }}
+            ${{ steps.image.outputs.image_name }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install Ansible collections
+        run: |
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Validate deployment secrets
+        env:
+          NUADA_SSH_HOST: ${{ secrets.NUADA_SSH_HOST }}
+          NUADA_SSH_PRIVATE_KEY: ${{ secrets.NUADA_SSH_PRIVATE_KEY }}
+          NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
+          NUADA_KNOWN_HOSTS: ${{ secrets.NUADA_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          missing=0
+
+          for name in NUADA_SSH_HOST NUADA_SSH_PRIVATE_KEY NUADA_SSH_USER NUADA_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not configured in the CD environment secrets"
+              missing=1
+            fi
+          done
+
+          exit "$missing"
+
+      - name: Configure SSH
+        env:
+          NUADA_SSH_PRIVATE_KEY: ${{ secrets.NUADA_SSH_PRIVATE_KEY }}
+          NUADA_KNOWN_HOSTS: ${{ secrets.NUADA_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$NUADA_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          printf '%s\n' "$NUADA_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Create runtime inventory
+        env:
+          NUADA_SSH_HOST: ${{ secrets.NUADA_SSH_HOST }}
+          NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
+          NUADA_SSH_PORT: ${{ secrets.NUADA_SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+
+          cat > ansible/inventory.ini <<EOF
+          [staging]
+          nuada ansible_host=${NUADA_SSH_HOST} ansible_user=${NUADA_SSH_USER} ansible_port=${NUADA_SSH_PORT} ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      - name: Provision nuada
+        run: |
+          ansible-playbook ansible/playbooks/provision.yml
+
+      - name: Deploy to nuada
+        env:
+          TSP_IMAGE: ${{ steps.image.outputs.image }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ansible-playbook ansible/playbooks/deploy.yml
