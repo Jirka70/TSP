@@ -15,7 +15,7 @@
           - image | length > 0
           - image is match('^ghcr\\.io/.+:.+$')
           - image is search(':sha-[0-9a-f]{7,40}$')
-        fail_msg: "TSP_IMAGE must be a GHCR image with an immutable sha-* tag, for example ghcr.io/org/tsp-eeg-classification:sha-abc123."
+        fail_msg: "TSP_IMAGE must be a GHCR image with an immutable sha-* tag, for example ghcr.io/org/tsp-eeg-classification:sha-abc1234."
 
   tasks:
     - name: Ensure application directories exist

@@ -1,17 +1,11 @@
 name: Deploy
 
 on:
-  workflow_call:
-    inputs:
-      image_tag:
-        description: "Existing Docker tag for rollback, for example sha-abc123. Leave empty to build the selected commit."
-        required: false
-        type: string
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Existing Docker tag for rollback, for example sha-abc123. Leave empty to build the selected commit."
-        required: false
+        description: "Existing immutable Docker tag for rollback, for example sha-abc1234."
+        required: true
         type: string
   workflow_run:
     workflows: ["CI"]
@@ -19,14 +13,31 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-staging
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main'
+        )
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     environment: CD environment
 
     permissions:
@@ -42,10 +53,8 @@ jobs:
       - name: Compute deployment image
         id: image
         run: |
-          set -euo pipefail
-
           source_sha="${{ github.event.workflow_run.head_sha || github.sha }}"
-          requested_tag="${{ inputs.image_tag }}"
+          requested_tag="${{ github.event.inputs.image_tag || '' }}"
           image_name="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tsp-eeg-classification"
 
           if [ -z "$requested_tag" ]; then
@@ -69,12 +78,10 @@ jobs:
           NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
           NUADA_KNOWN_HOSTS: ${{ secrets.NUADA_KNOWN_HOSTS }}
         run: |
-          set -euo pipefail
-
           missing=0
 
           for name in NUADA_SSH_HOST NUADA_SSH_PRIVATE_KEY NUADA_SSH_USER NUADA_KNOWN_HOSTS; do
-            if [ -z "${!name}" ]; then
+            if [ -z "${!name-}" ]; then
               echo "::error::$name is not configured in the CD environment secrets"
               missing=1
             fi
@@ -87,8 +94,6 @@ jobs:
           NUADA_SSH_PRIVATE_KEY: ${{ secrets.NUADA_SSH_PRIVATE_KEY }}
           NUADA_KNOWN_HOSTS: ${{ secrets.NUADA_KNOWN_HOSTS }}
         run: |
-          set -euo pipefail
-
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
@@ -104,8 +109,6 @@ jobs:
           NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
           NUADA_SSH_PORT: ${{ secrets.NUADA_SSH_PORT || '22' }}
         run: |
-          set -euo pipefail
-
           ssh \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
@@ -120,8 +123,6 @@ jobs:
           NUADA_SSH_PORT: ${{ secrets.NUADA_SSH_PORT || '22' }}
           MIN_DOCKER_FREE_GB: "8"
         run: |
-          set -euo pipefail
-
           ssh \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
@@ -180,8 +181,6 @@ jobs:
           NUADA_SSH_USER: ${{ secrets.NUADA_SSH_USER }}
           NUADA_SSH_PORT: ${{ secrets.NUADA_SSH_PORT || '22' }}
         run: |
-          set -euo pipefail
-
           cat > ansible/inventory.ini <<EOF
           [staging]
           nuada ansible_host=${NUADA_SSH_HOST} ansible_user=${NUADA_SSH_USER} ansible_port=${NUADA_SSH_PORT} ansible_python_interpreter=/usr/bin/python3
