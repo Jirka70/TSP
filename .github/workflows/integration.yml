@@ -5,6 +5,7 @@ on:
   schedule:
     - cron: "0 2 * * *" # every day at 02:00 UTC
 
+
 jobs:
   moabb-smoke:
     runs-on: ubuntu-latest
