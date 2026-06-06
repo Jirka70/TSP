@@ -1,0 +1,56 @@
+- name: Deploy TSP Docker image
+  hosts: staging
+  become: true
+  gather_facts: false
+
+  vars:
+    app_user: tsp
+    app_dir: /opt/tsp
+    image: "{{ lookup('env', 'TSP_IMAGE') }}"
+    ghcr_username: "{{ lookup('env', 'GHCR_USERNAME') }}"
+    ghcr_token: "{{ lookup('env', 'GHCR_TOKEN') }}"
+
+  pre_tasks:
+    - name: Require immutable image reference
+      ansible.builtin.assert:
+        that:
+          - image | length > 0
+          - ":sha-" in image or image.endswith(":latest") == false
+        fail_msg: "TSP_IMAGE must be set to an immutable image tag, for example ghcr.io/org/repo/tsp:sha-abc123."
+
+  tasks:
+    - name: Log in to GHCR
+      community.docker.docker_login:
+        registry_url: ghcr.io
+        username: "{{ ghcr_username }}"
+        password: "{{ ghcr_token }}"
+        reauthorize: true
+
+    - name: Pull requested application image
+      community.docker.docker_image:
+        name: "{{ image }}"
+        source: pull
+        force_source: true
+
+    - name: Write batch runner script
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/bin/tsp-run"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          docker run --rm \
+            --name tsp-job \
+            -v {{ app_dir }}/input:/app/input \
+            -v {{ app_dir }}/outputs:/app/outputs \
+            -v {{ app_dir }}/model_output:/app/model_output \
+            -v {{ app_dir }}/logs:/app/logs \
+            {{ image }} \
+            python -m src.main "$@"
+
+    - name: Run deployment smoke test
+      ansible.builtin.command: "{{ app_dir }}/bin/tsp-run --config-name test/smoke/synthetic/training_ml"
+      changed_when: false
