@@ -95,3 +95,12 @@ jobs:
         run: |
           docker run --rm src:${{ github.sha }} \
             python -m src.main --config-name test/smoke/synthetic/training_ml
+
+  deploy-feature:
+    needs: test-build
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/TMSPKED-518-Implement-CD-via-Ansible' }}
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
