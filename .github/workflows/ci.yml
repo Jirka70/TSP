@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-#      - feature/TMSPKED-518-Implement-CD-via-Ansible
+      - feature/TMSPKED-518-Implement-CD-via-Ansible
   pull_request:
     branches: [main]
   workflow_dispatch:
