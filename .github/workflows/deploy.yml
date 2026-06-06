@@ -18,7 +18,6 @@ on:
     types: [completed]
     branches:
       - main
-      - feature/TMSPKED-518-Implement-CD-via-Ansible
 
 concurrency:
   group: deploy-staging
@@ -26,7 +25,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'feature/TMSPKED-518-Implement-CD-via-Ansible')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     environment: CD
 
@@ -121,7 +120,7 @@ jobs:
 
           for name in NUADA_SSH_HOST NUADA_SSH_PRIVATE_KEY NUADA_SSH_USER NUADA_KNOWN_HOSTS; do
             if [ -z "${!name}" ]; then
-              echo "::error::$name is not configured in the staging environment secrets"
+              echo "::error::$name is not configured in the CD environment secrets"
               missing=1
             fi
           done
