@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Tuple
 
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -65,25 +65,37 @@ class FinalSklearnTrainer(IFinalTrainer):
 
         return StepResult(FinalTrainingResultDTO(trained_model=trained_model))
 
-    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> tuple[np.ndarray, np.ndarray]:
+    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> Tuple[np.ndarray, np.ndarray]:
         """
         Collect and concatenate training samples and labels across all available folds.
+        Ensures no duplicate samples are returned.
 
         Args:
             input_dto (FinalTrainingInputDTO): Input container with fold data.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Concatenated feature matrix (X) and labels (y).
+            Tuple[np.ndarray, np.ndarray]: Unique concatenated feature matrix (X) and labels (y).
         """
         x_list: List[np.ndarray] = []
         y_list: List[np.ndarray] = []
 
         for fold in input_dto.folds:
             if fold.train_data:
-                x, y = self._extract_data_and_labels(fold.test_data) # TODO: Chceme skutecne vyuzivat test_date nebo chceme spise train_data.
+                x, y = self._extract_data_and_labels(fold.train_data)
                 x_list.append(x)
                 y_list.append(y)
-        return np.concatenate(x_list, axis=0), np.concatenate(y_list, axis=0)
+
+        if not x_list:
+            return np.array([]), np.array([])
+
+        x_concat = np.concatenate(x_list, axis=0)
+        y_concat = np.concatenate(y_list, axis=0)
+
+        _, unique_indices = np.unique(x_concat, axis=0, return_index=True)
+
+        unique_indices.sort()
+
+        return x_concat[unique_indices], y_concat[unique_indices]
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
