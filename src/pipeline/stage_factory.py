@@ -1,7 +1,6 @@
 from enum import Enum
 
-from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
-from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
@@ -13,6 +12,8 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
+from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
+from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
@@ -68,7 +69,9 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader},
+        StageType.DATA_LOADER: {"external": MOABBDataLoader,
+                                "filesystem": FilesystemDatasetLoader,
+                                "synthetic": SyntheticDataLoader },
         StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
@@ -100,7 +103,10 @@ class StageFactory:
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
         },
-        StageType.SAVER: {"default": ArtifactSaver},
+        StageType.SAVER: {
+            "default": ArtifactSaver,
+            "experiment": ArtifactSaver,
+        },
         StageType.MODEL_SERIALIZER: {
             "sklearn": SklearnModelSerializer,
             "eegnet": EEGNetModelSerializer,

@@ -11,7 +11,9 @@ from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
@@ -49,13 +51,12 @@ class EpochPreprocessor(IEpochPreprocessing):
                 Exception: Re-raises any exception caught during processing, logging the
                     exact recording index where the pipeline failed.
         """
-        log: logging.Logger = logging.getLogger(__name__)
+        log: PipelineLogger = run_ctx.logger.for_step("EPOCH_PREPROCESSING")
         config: EpochPreprocessingConfig = input_dto.epoch_preprocessing_config
 
-        log.info(f"Starting epoch preprocessing for {len(input_dto.data.data)} recordings")
-        processed_recordings: List[Any] = []  # Replace Any with your specific Recording Entry DTO type if available
+        log.info(f"Starting epoch preprocessing for {len(input_dto.data.data)} recordings", VerbosityLevel.QUIET)
+        processed_recordings: List[Any] = [] # Replace Any with specific Recording Entry DTO type if available
 
-        # Declare i outside the try block so it is safely scoped for the except block
         i: int = 0
 
         try:
@@ -64,20 +65,18 @@ class EpochPreprocessor(IEpochPreprocessing):
                     log.warning(f"Entry {i} contains no epochs. Skipping.")
                     continue
 
-                # Work on a copy of MNE Epochs
+                log.info(f"Processing epoch recording index: {i}", VerbosityLevel.DETAILED)
                 epochs: mne.Epochs = entry.data.copy()
 
                 # --- 1. Temporal Alignment ---
                 if config.alignment.enabled:
-                    log.info(f"Applying time shift for index {i}: {config.alignment.tmin_offset}s")
+                    log.info(f"Applying time shift for index {i}: {config.alignment.tmin_offset}s", VerbosityLevel.TRACE)
                     epochs.shift_time(config.alignment.tmin_offset, relative=True)
 
                 # --- 2. ICA: Artifact Removal ---
                 if config.ica.enabled:
-                    log.info(f"Fitting ICA for index {i}")
+                    log.info(f"Fitting ICA for index {i}", VerbosityLevel.TRACE)
 
-                    # We suppress the baseline warning because the data is already preloaded
-                    # and baseline-corrected from the previous Paradigm step.
                     with warnings.catch_warnings():
                         warnings.filterwarnings("ignore", message=".*baseline-corrected.*")
                         ica: ICA = ICA(
@@ -94,7 +93,7 @@ class EpochPreprocessor(IEpochPreprocessing):
 
                 # --- 3. AutoReject: Local Artifact Repair ---
                 if config.autoreject.enabled:
-                    log.info(f"Applying AutoReject for index {i}")
+                    log.info(f"Applying AutoReject for index {i}", VerbosityLevel.TRACE)
                     picks: np.ndarray = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
 
                     if len(picks) == 0:
@@ -112,7 +111,7 @@ class EpochPreprocessor(IEpochPreprocessing):
 
                 # --- 4. CSP & Data Formatting ---
                 if config.csp.enabled:
-                    log.info(f"Applying CSP and converting to ndarray for index {i}")
+                    log.info(f"Applying CSP and converting to ndarray for index {i}", VerbosityLevel.TRACE)
                     labels: np.ndarray = epochs.events[:, -1]
                     csp: CSP = CSP(
                         n_components=config.csp.n_components,
@@ -121,7 +120,6 @@ class EpochPreprocessor(IEpochPreprocessing):
                         norm_trace=config.csp.norm_trace
                     )
 
-                    # Transform to (n_epochs, n_csp_components)
                     signal_data: np.ndarray = csp.fit_transform(epochs.get_data(), labels)
                     new_entry: Any = dataclasses.replace(entry, data=signal_data)
                 else:
@@ -129,6 +127,7 @@ class EpochPreprocessor(IEpochPreprocessing):
 
                 processed_recordings.append(new_entry)
 
+            log.info("Epoch preprocessing completed successfully", VerbosityLevel.QUIET)
             return StepResult(EpochPreprocessedDTO(data=processed_recordings))
 
         except Exception as e:

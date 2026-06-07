@@ -1,19 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.types.dto.config.augmentation_config import (
     AugmentationConfigBasic,
     AugmentationConfigNone,
     AugmentationConfigTorchEEG,
 )
-from src.types.dto.config.logging.logging_config import LoggingConfig
-from src.types.dto.config.model.model_path_config import ModelPathConfig
-from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
 from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
+from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.model.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregatorConfig
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
@@ -27,6 +25,7 @@ from src.types.dto.config.raw_preprocessing_config import RawPreprocessingConfig
 from src.types.dto.config.save_artifacts_config import SaveArtifactsConfig
 from src.types.dto.config.source.external_dataset_config import ExternalDatasetConfig
 from src.types.dto.config.source.filesystem_dataset_config import FilesystemDatasetConfig
+from src.types.dto.config.source.SyntheticDatasetConfig import SyntheticDatasetConfig
 from src.types.dto.config.split_config import SplitConfig, SplitMoabbCrossSessionConfig, SplitMoabbCrossSubjectConfig, SplitMoabbWithinSessionConfig, SplitMoabbWithinSubjectConfig
 from src.types.dto.config.visualization_config import VisualizationConfig
 
@@ -46,8 +45,6 @@ class ExperimentConfig(BaseModel):
     final_trainer: FinalTrainerConfig
     model_path: ModelPathConfig
 
-    # union enables multiple options which pydantic differentiates by looking at backend field
-    # for example: Union[PreprocessingConfigMNE, ProprocessingConfigMoabb, ...] = Field(discriminator="backend")
     model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
     evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
@@ -55,7 +52,47 @@ class ExperimentConfig(BaseModel):
     paradigm: ParadigmConfig = Field(discriminator="backend")
     epoch_preprocessing: EpochPreprocessingConfig = Field(discriminator="backend")
     split: SplitConfig | SplitMoabbWithinSessionConfig | SplitMoabbWithinSubjectConfig | SplitMoabbCrossSessionConfig | SplitMoabbCrossSubjectConfig = Field(discriminator="backend")
-    source: FilesystemDatasetConfig | ExternalDatasetConfig = Field(discriminator="backend")
+    source: FilesystemDatasetConfig | ExternalDatasetConfig | SyntheticDatasetConfig = Field(discriminator="backend")
     augmentation: AugmentationConfigBasic | AugmentationConfigTorchEEG | AugmentationConfigNone = Field(discriminator="backend")
     visualization: VisualizationConfig = Field(discriminator="backend")
     dataset_export: DatasetExportConfig = Field(discriminator="backend")
+
+    @model_validator(mode="after")
+    def validate_ml_dl_combination(self) -> "ExperimentConfig":
+        """
+        Validate the ML DL combination (model + final_trainer).
+
+        Possible combinations:
+            DL: eegnet + eegnet
+            ML: default + [csp_lda, riemannian_lda, ...]
+        Validation is made **after** basic validation, so that only combinations need to be checked (not backends)
+        """
+        if self.model.model_name == "eegnet":
+            # deep learning
+            if self.final_trainer.backend != "eegnet":
+                raise ValueError(f"DL model 'eegnet' doesn't support final trainer '{self.final_trainer.backend}'")
+        else:
+            # machine learning
+            if self.final_trainer.backend == "eegnet":
+                raise ValueError(f"ML model '{self.model.model_name}' doesn't support final trainer '{self.final_trainer.backend}'")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_artifact_saver(self) -> "ExperimentConfig":
+        """
+        Validate pipeline mode + artifact saver combinations
+
+        Possible combinations (mode - saver):
+            - training - default
+            - experiment - experiment
+        Validation is made **after** basic validation, so that only combinations need to be checked (not backends)
+        """
+        if self.mode == Mode.TRAINING:
+            if self.save_artifacts.backend != "default":
+                raise ValueError(f"Training mode doesn't support '{self.save_artifacts.backend}' saver")
+        elif self.mode == Mode.EXPERIMENT:
+            if self.save_artifacts.backend != "experiment":
+                raise ValueError(f"Experiment mode doesn't support '{self.save_artifacts.backend}' saver")
+
+        return self

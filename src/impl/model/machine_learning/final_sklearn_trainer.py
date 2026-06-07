@@ -1,5 +1,4 @@
-import logging
-from typing import List, Any
+from typing import List, Any, Tuple
 
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -9,14 +8,14 @@ from src.impl.model.machine_learning.generic_sklearn_model import GenericSklearn
 from src.impl.model.model_factory import ModelFactory
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.interfaces.model.final_trainer import IFinalTrainer
-
-log = logging.getLogger(__name__)
 
 
 class FinalSklearnTrainer(IFinalTrainer):
@@ -33,10 +32,11 @@ class FinalSklearnTrainer(IFinalTrainer):
         Returns:
             StepResult[FinalTrainingResultDTO]: Encapsulated final trained model artifact.
         """
+        log: PipelineLogger = run_ctx.logger.for_step("FINAL_TRAINING")
         method_id = input_dto.config.model_name
         params = getattr(input_dto.config, "parameters", getattr(input_dto.config, "metadata", {}))
 
-        log.info(f"Final training: {method_id} (Run: {run_ctx.run_id})")
+        log.info(f"Final training: {method_id} (Run: {run_ctx.run_id})", VerbosityLevel.QUIET)
 
         # Accumulate all training samples from the provided folds
         x_all, y_all = self._collect_all_data(input_dto)
@@ -61,29 +61,41 @@ class FinalSklearnTrainer(IFinalTrainer):
             fold_idx=None,
         )
 
-        log.info(f"Final model trained: accuracy={train_acc:.4f} on {len(y_all)} samples")
+        log.info(f"Final model trained: accuracy={train_acc:.4f} on {len(y_all)} samples", VerbosityLevel.QUIET)
 
         return StepResult(FinalTrainingResultDTO(trained_model=trained_model))
 
-    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> tuple[np.ndarray, np.ndarray]:
+    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> Tuple[np.ndarray, np.ndarray]:
         """
         Collect and concatenate training samples and labels across all available folds.
+        Ensures no duplicate samples are returned.
 
         Args:
             input_dto (FinalTrainingInputDTO): Input container with fold data.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Concatenated feature matrix (X) and labels (y).
+            Tuple[np.ndarray, np.ndarray]: Unique concatenated feature matrix (X) and labels (y).
         """
         x_list: List[np.ndarray] = []
         y_list: List[np.ndarray] = []
 
         for fold in input_dto.folds:
             if fold.train_data:
-                x, y = self._extract_data_and_labels(fold.test_data) # TODO: Chceme skutecne vyuzivat test_date nebo chceme spise train_data.
+                x, y = self._extract_data_and_labels(fold.train_data)
                 x_list.append(x)
                 y_list.append(y)
-        return np.concatenate(x_list, axis=0), np.concatenate(y_list, axis=0)
+
+        if not x_list:
+            return np.array([]), np.array([])
+
+        x_concat = np.concatenate(x_list, axis=0)
+        y_concat = np.concatenate(y_list, axis=0)
+
+        _, unique_indices = np.unique(x_concat, axis=0, return_index=True)
+
+        unique_indices.sort()
+
+        return x_concat[unique_indices], y_concat[unique_indices]
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """

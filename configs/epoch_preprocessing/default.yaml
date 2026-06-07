@@ -16,7 +16,7 @@ ica:
   eog_threshold: 3.0         # Z-score threshold to automatically flag EOG (blink/eye move) components
 
 autoreject:
-  enabled: true
+  enabled: false
   n_interpolate: [ 1, 4, 8 ] # Number of sensors to interpolate (grid search values)
   consensus: [ 0.2, 0.5, 0.8 ] # Percentage of channels that must agree an epoch is 'bad'
   cv: 5                      # Cross-validation folds for finding optimal rejection thresholds

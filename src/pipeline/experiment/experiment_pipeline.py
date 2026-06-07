@@ -36,17 +36,18 @@ class ExperimentPipeline(IPipeline):
     Coordinates data loading, multi-stage preprocessing, model restoration,
     downstream classification evaluation, and experimental artifact persistence.
     """
+
     def __init__(
-            self,
-            data_loader: IDataLoader,
-            raw_preprocessing: IRawPreprocessing,
-            paradigm: IParadigm,
-            epoch_preprocessing: IEpochPreprocessing,
-            model_loader: IModelLoader,
-            evaluator: IEvaluator,
-            visualizer: IVisualizer,
-            artifact_saver: IArtifactSaver,
-            model_serializer: IModelSerializer,
+        self,
+        data_loader: IDataLoader,
+        raw_preprocessing: IRawPreprocessing,
+        paradigm: IParadigm,
+        epoch_preprocessing: IEpochPreprocessing,
+        model_loader: IModelLoader,
+        evaluator: IEvaluator,
+        visualizer: IVisualizer,
+        artifact_saver: IArtifactSaver,
+        model_serializer: IModelSerializer,
     ) -> None:
         """Initialize the pipeline with all necessary functional stage engines."""
         self._log = logging.getLogger(__name__)
@@ -84,37 +85,21 @@ class ExperimentPipeline(IPipeline):
         model_path: Path = Path(config.model_path.path)
         loaded_model_obj: Any = self._model_loader.load(model_path, run_ctx)
 
-        trained_model : TrainedModelDTO = TrainedModelDTO(
-            model=loaded_model_obj,
-            model_name=model_path.stem
-        )
+        trained_model: TrainedModelDTO = TrainedModelDTO(model=loaded_model_obj, model_name=model_path.stem)
 
-        dummy_split : DatasetSplitDTO = DatasetSplitDTO(
-            folds=[],
-            validation_data=epoch_preprocessing_result.data
-        )
+        dummy_split: DatasetSplitDTO = DatasetSplitDTO(folds=[], validation_data=epoch_preprocessing_result.data)
 
-        evaluation_input : EvaluationInputDTO = EvaluationInputDTO(
-            config=config.evaluation,
-            trained_models=[trained_model],
-            folds=[],
-            dataset_split=dummy_split
-        )
-        evaluation_result : StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
+        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split)
+        evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
-        self._visualizer.visualize_evaluation(
-            evaluation_result.data,
-            run_ctx,
-            trained_model.model_name
-        )
+        self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, trained_model.model_name)
 
-        save_artifacts_input : SaveArtifactsInputDTO = SaveArtifactsInputDTO(
+        save_artifacts_input: SaveArtifactsInputDTO = SaveArtifactsInputDTO(
             config.save_artifacts,
             config,
             output_path=Path("experiment_results.txt"),
             evaluation_result=evaluation_result.data,
         )
 
-        # TODO: Implement custom artifact saver for experiment pipeline.
-        #self._artifact_saver.run(save_artifacts_input, run_ctx)
+        self._artifact_saver.run(save_artifacts_input, run_ctx)
         self._log.info("Experiment pipeline finished successfully.")

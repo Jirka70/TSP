@@ -1,26 +1,16 @@
-# MOABB Cross-session splitting strategy.
-backend: moabb_cross_session
+backend: moabb_cross_session # Used by program logic, changing this may break the pipeline if not handled properly
 
-# Whether the cross-session splitting strategy is enabled.
-enabled: true
+# --- MOABB Cross-Session Configuration ---
 
-# Global validation settings - if pre_split_validation is true, a portion of the data will be set aside for validation before applying the MOABB splitting strategy.
-pre_split_validation: true
-# Fraction of data to use for global validation (0.0 to 1.0).
-validation_ratio: 0.0
+# This backend performs leave-one-session-out cross-validation.
+# It evaluates how well a model trained on some sessions generalizes to an unseen session.
 
-# Evaluator configuration for the MOABB cross-session splitting strategy.
+enabled: true                # Whether the cross-session splitting strategy is enabled.
+exclude_validation_data_before_split: true # Whether to set aside validation data before the MOABB split
+validation_ratio: 0.1        # Fraction of data to use for global validation (0.0 to 1.0)
+
 evaluator:
-  # MOABB target splitter class.
-  _target_: moabb.evaluations.CrossSessionSplitter
-  
-  # Scikit-learn cross-validation class to use internally.
-  cv_class: sklearn.model_selection.LeaveOneGroupOut
-  
-  # Whether to shuffle groups before splitting.
-  # Note: This depends on the cv_class used. Shuffle is NOT compatible with LeaveOneGroupOut.
-  shuffle: false
-  
-  # Random seed for reproducible splits (if shuffle is true).
-  random_state: 42
-
+  _target_: moabb.evaluations.CrossSessionSplitter # MOABB target splitter class
+  cv_class: sklearn.model_selection.LeaveOneGroupOut # Scikit-learn cross-validation class
+  shuffle: false             # Whether to shuffle groups. NOTE: LeaveOneGroupOut does NOT support shuffle=True.
+  random_state: null         # Random seed for reproducible splits (used only if shuffle=True)

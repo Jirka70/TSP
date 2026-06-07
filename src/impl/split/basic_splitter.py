@@ -12,8 +12,7 @@ from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPrepro
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.splitter import ISplitter
-
-log = logging.getLogger(__name__)
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 
 
 class BasicSplitter(ISplitter):
@@ -25,12 +24,13 @@ class BasicSplitter(ISplitter):
     containing a single fold (Fold 0).
     """
 
-    def extract_data(self, recordings: list) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    def extract_data(self, recordings: list, run_ctx: RunContext) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
         """
         Helper method to extract and aggregate signals, labels, and metadata from RecordingDTOs.
 
         Args:
             recordings: A list of RecordingDTO objects.
+            run_ctx: A RunContext object.
 
         Returns:
             A tuple containing:
@@ -38,6 +38,7 @@ class BasicSplitter(ISplitter):
                 - combined_labels: A NumPy array of all corresponding labels.
                 - combined_metadata: A Pandas DataFrame containing merged metadata.
         """
+        log = run_ctx.logger
         all_signals = []
         all_labels = []
         all_metadata = []
@@ -57,6 +58,7 @@ class BasicSplitter(ISplitter):
 
             # Final safety check for labels
             if labels is None:
+                log.error(f"No labels found for recording {rec.subject_id}. BasicSplitter requires labels for partitioning.")
                 raise ValueError(f"No labels found for recording {rec.subject_id}. BasicSplitter requires labels for partitioning.")
 
             all_signals.append(signal)
@@ -145,6 +147,7 @@ class BasicSplitter(ISplitter):
         """
         Executes the percentage-based splitting logic.
         """
+        log = run_ctx.logger.for_step("BASIC_SPLITTER")
         config = input_dto.config
         recordings = input_dto.data.data
         dataset_name = recordings[0].dataset_name if recordings else "unknown"
@@ -158,12 +161,13 @@ class BasicSplitter(ISplitter):
             )
             return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
 
-        log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})")
+        log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})", VerbosityLevel.QUIET)
 
         # Aggregate data from all input recordings
-        x, y, metadata = self.extract_data(recordings)
+        x, y, metadata = self.extract_data(recordings, run_ctx)
 
         if metadata is None:
+            log.error("Metadata aggregation failed or no recordings provided.")
             raise ValueError("Metadata aggregation failed or no recordings provided.")
 
         n_samples = len(y)
@@ -177,18 +181,19 @@ class BasicSplitter(ISplitter):
         main_indices = indices
 
         # 1. Pre-split validation
-        if config.validation_ratio > 0 and config.pre_split_validation:
+        if config.validation_ratio > 0 and config.exclude_validation_data_before_split:
             num_val = int(n_samples * config.validation_ratio)
             if num_val > 0:
                 val_indices = indices[:num_val]
                 main_indices = indices[num_val:]
                 validation_data_global = self.create_dto(val_indices, x, y, metadata, dataset_name)
-                log.info(f"Pre-split: extracted {num_val} samples for global validation.")
+                log.info(f"Pre-split: extracted {num_val} samples for global validation.", VerbosityLevel.NORMAL)
 
         # Calculate boundaries for the main split (train/test) within main_indices
         n_main = len(main_indices)
         total_tt = config.train_ratio + config.test_ratio
         if total_tt == 0:
+            log.error("No training data provided.")
             raise ValueError("Both train_ratio and test_ratio are zero.")
 
         train_share = config.train_ratio / total_tt
@@ -200,19 +205,29 @@ class BasicSplitter(ISplitter):
         actual_train_idx = train_idx_all
 
         # 2. Post-split validation
-        if config.validation_ratio > 0 and not config.pre_split_validation:
+        if config.validation_ratio > 0 and not config.exclude_validation_data_before_split:
             num_val = int(len(train_idx_all) * config.validation_ratio)
             if num_val > 0:
                 val_idx_in_fold = train_idx_all[:num_val]
                 actual_train_idx = train_idx_all[num_val:]
                 validation_data_global = self.create_dto(val_idx_in_fold, x, y, metadata, dataset_name)
-                log.info(f"Post-split: extracted {num_val} samples from training set for validation.")
+                log.info(f"Post-split: extracted {num_val} samples from training set for validation.", VerbosityLevel.NORMAL)
 
         # Create DTOs
         train_dto = self.create_dto(actual_train_idx, x, y, metadata, dataset_name)
         test_dto = self.create_dto(test_idx, x, y, metadata, dataset_name)
 
-        log.info(f"Split completed: {len(actual_train_idx)} train, {len(test_idx)} test samples.")
+        log.info(f"Split completed: {len(actual_train_idx)} train, {len(test_idx)} test samples.", VerbosityLevel.QUIET)
+        # --- Final Sanity Checks ---
+        if not train_dto or not test_dto or len(train_dto.data) == 0 or len(test_dto.data) == 0:
+            msg = f"Splitting process failed to generate any folds. Check your dataset and splitter configuration."
+            log.error(msg)
+            raise ValueError(msg)
+
+        if validation_data_global is None or not validation_data_global.data:
+            msg = f"No global validation data produced (validation_ratio: {config.validation_ratio}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
+            log.error(msg)
+            raise ValueError(msg)
 
         # Package results into a single fold
         single_fold = FoldDTO(

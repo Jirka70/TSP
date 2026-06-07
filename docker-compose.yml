@@ -1,0 +1,10 @@
+services:
+  tsp:
+    build: .
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./input:/app/input
+      - ./outputs:/app/outputs
+      - ./model_output:/app/model_output
+    command: python -m src.main

@@ -1,6 +1,3 @@
-"""Augmentor implementation using the torcheeg library."""
-
-import logging
 import random
 
 import mne
@@ -10,13 +7,13 @@ from torcheeg import transforms
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
+from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
 from src.types.dto.config.augmentation_config import AugmentationConfigTorchEEG
+from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 from src.types.interfaces.augmentor import IAugmentor
-
-log = logging.getLogger(__name__)
 
 
 class RandomAmplitudeScale:
@@ -53,83 +50,70 @@ class RandomAmplitudeScale:
 
 class TorchEEGAugmentor(IAugmentor):
     """
-    Performs data augmentation using the torcheeg library.
-
-    This augmentor applies a series of transformations from the torcheeg
-    library to the input EEG epochs, iterating over all cross-validation folds.
-    It generates multiple augmented copies for each original training sample.
+    Data augmentation pipeline using the torcheeg library.
+    Ensures training data within dataset splits is augmented with TorchEEG transformations.
     """
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
-        Main entry point for the augmentation stage.
-        Iterates over folds, applies augmentation only to training data, and returns updated folds.
+        Executes TorchEEG augmentation steps on epoched neural data.
+
+        This method processes dataset splits by applying a configurable
+        pipeline of TorchEEG transformations to the training data.
+        It generates multiple augmented copies for each original training sample.
 
         Args:
-            input_dto: Contains the augmentation configuration and the dataset splits.
-            run_ctx: Context of the current pipeline execution.
+            input_dto (AugmentationInputDTO): Input object containing the
+                dataset splits and augmentation configuration.
+            run_ctx (RunContext): Context keeping track of the current pipeline execution.
 
         Returns:
-            StepResult containing the DatasetSplitDTO with augmented training sets.
+            StepResult[DatasetSplitDTO]: A step result wrapping the updated
+                dataset splits, with training data augmented according to the configuration.
         """
+        log = run_ctx.logger.for_step("TORCHEEG_AUGMENTATION")
         config: AugmentationConfigTorchEEG = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
         # 1. Check if augmentation is enabled
         if not config.enabled:
-            log.info("TorchEEG Augmentation is disabled. Passing data through unchanged.")
+            log.info("TorchEEG Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
             return StepResult(dataset_splits)
 
-        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.")
+        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
 
         # 2. Initialize random seeds for all relevant libraries to ensure reproducibility
-        log.info(f"Using random seed: {config.random_seed}")
+        log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         torch.manual_seed(config.random_seed)
         np.random.seed(config.random_seed)
         random.seed(config.random_seed)
 
-        # Identify and log active transformations for better visibility
-        active_augs = []
-        if config.gaussian_noise_std > 0:
-            active_augs.append(f"Gaussian Noise (std={config.gaussian_noise_std})")
-        if config.mask_prob > 0:
-            active_augs.append(f"Masking (prob={config.mask_prob}, ratio={config.mask_ratio})")
-        if config.shift_prob > 0:
-            active_augs.append(f"Shift (prob={config.shift_prob})")
-        if config.sign_flip_prob > 0:
-            active_augs.append(f"Sign Flip (prob={config.sign_flip_prob})")
-        if config.scale_prob > 0:
-            active_augs.append(f"Amplitude Scale (prob={config.scale_prob}, range=[{config.scale_min}, {config.scale_max}])")
-
-        if active_augs:
-            log.info(f"Active augmentations: {', '.join(active_augs)}")
-        else:
-            log.warning("TorchEEG Augmentation is enabled but no specific transformations are configured. Only copies will be created.")
-
         # 3. Construct the TorchEEG transformation pipeline based on the config
-        torcheeg_transform = self._build_transforms(config)
-
-        if not torcheeg_transform:
-            log.warning("TorchEEG augmentation is enabled, but no transforms were configured. No new data will be generated.")
+        torcheeg_transform = self._build_transforms(config, log)
+        if torcheeg_transform is not None:
+            log.info(f"Applying augmentation steps: {', '.join([str(t) for t in torcheeg_transform.transforms])}", VerbosityLevel.NORMAL)
+        else:
+            log.warning("TorchEEG augmentation is enabled, but no transforms were configured. Augmentation stopped and returned original data.")
             return StepResult(dataset_splits)
 
         augmented_folds = []
 
         # 4. Loop over all folds (e.g., from cross-validation)
         for fold in dataset_splits.folds:
-            log.info(f"Augmenting Fold {fold.fold_idx}.")
+            log.info(f"Augmenting Fold {fold.fold_idx}.", VerbosityLevel.DETAILED)
 
             # Augment ONLY the training data; leave validation and test sets untouched
-            augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, torcheeg_transform=torcheeg_transform, copies_per_sample=config.copies_per_sample)
+            augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, torcheeg_transform=torcheeg_transform, copies_per_sample=config.copies_per_sample, log=log)
 
             # Reconstruct the fold with the newly augmented training data
             new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
         # 5. Wrap results in StepResult and return
+        log.info(f"TorchEEG augmentation completed. Total folds processed: {len(augmented_folds)}", VerbosityLevel.QUIET)
         return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
 
-    def _build_transforms(self, config: AugmentationConfigTorchEEG) -> transforms.Compose | None:
+    def _build_transforms(self, config: AugmentationConfigTorchEEG, log: PipelineLogger) -> transforms.Compose | None:
         """
         Helper method to construct the TorchEEG transformation pipeline.
 
@@ -143,27 +127,32 @@ class TorchEEGAugmentor(IAugmentor):
 
         # Add Random Noise
         if config.gaussian_noise_std > 0.0:
+            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise_std}", VerbosityLevel.TRACE)
             transform_list.append(transforms.RandomNoise(p=1.0, std=config.gaussian_noise_std))
 
         # Add Random Masking (zeroing out segments)
         if config.mask_prob > 0.0:
+            log.info(f"Mask probability enabled with value: {config.mask_prob}", VerbosityLevel.TRACE)
             transform_list.append(transforms.RandomMask(p=config.mask_prob, ratio=config.mask_ratio))
 
         # Add Random Shift (cyclic shift in time)
         if config.shift_prob > 0.0:
+            log.info(f"Shift propability enabled with value: {config.shift_prob}", VerbosityLevel.TRACE)
             transform_list.append(transforms.RandomShift(p=config.shift_prob))
 
         # Add Random Sign Flip
         if config.sign_flip_prob > 0.0:
+            log.info(f"Sign flip probability enabled with value: {config.sign_flip_prob}", VerbosityLevel.TRACE)
             transform_list.append(transforms.RandomSignFlip(p=config.sign_flip_prob))
 
         # Add Custom Amplitude Scaling
         if config.scale_prob > 0.0:
+            log.info(f"Amplitude scale probability enabled with value: {config.scale_prob}", VerbosityLevel.TRACE)
             transform_list.append(RandomAmplitudeScale(p=config.scale_prob, min_scale=config.scale_min, max_scale=config.scale_max))
 
         return transforms.Compose(transform_list) if transform_list else None
 
-    def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, torcheeg_transform: transforms.Compose, copies_per_sample: int) -> EpochPreprocessedDTO:
+    def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, torcheeg_transform: transforms.Compose, copies_per_sample: int, log: PipelineLogger) -> EpochPreprocessedDTO:
         """
         Core logic for augmenting all recordings within a single fold.
 
@@ -231,5 +220,5 @@ class TorchEEGAugmentor(IAugmentor):
             new_rec = RecordingDTO(data=final_signal, dataset_name=rec.dataset_name, subject_id=rec.subject_id, session_id=rec.session_id, run_id=rec.run_id, metadata=final_metadata)
             augmented_recordings.append(new_rec)
 
-        log.info(f"Fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}")
+        log.info(f"Fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}", VerbosityLevel.DETAILED)
         return EpochPreprocessedDTO(data=augmented_recordings)

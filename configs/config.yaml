@@ -14,7 +14,7 @@ defaults:
   - final_trainer: deep_learning/eegnet
   - evaluation: default
   - visualization: matplotlib
-  - save_artifacts: default
+  - save_artifacts: experiment
   - model_path: deep_learning/eegnet
 
 mode: experiment

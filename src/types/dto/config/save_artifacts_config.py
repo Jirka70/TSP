@@ -4,7 +4,7 @@ from src.types.dto.config.astageconfig import AStageConfig
 
 
 class SaveArtifactsConfig(AStageConfig):
-    backend: Literal["default"]
+    backend: Literal["default", "experiment"]
     save_model: bool
     save_metrics: bool
     save_config: bool
