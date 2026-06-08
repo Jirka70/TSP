@@ -7,6 +7,7 @@ defaults:
   - override /split: basic
   - override /model: machine_learning/riemannian_lda
   - override /final_trainer: default
+  - override /save_artifacts: default
   - override /logging: trace
   - _self_
 

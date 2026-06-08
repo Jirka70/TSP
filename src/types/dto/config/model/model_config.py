@@ -4,7 +4,7 @@
 
 from typing import Any, Literal
 
-from pydantic import Field, PositiveInt, field_validator
+from pydantic import Field, PositiveInt, field_validator, model_validator
 
 from src.types.dto.config.astageconfig import AStageConfig
 from src.types.dto.config.model.sklearn_model_parameters import validate_sklearn_model_parameters
@@ -24,7 +24,7 @@ class EEGNetConfig(AStageConfig):
 
     fold_training: bool
 
-    n_classes: PositiveInt
+    n_classes: PositiveInt = Field(ge=2)
 
     dropout: float = Field(ge=0, le=1)
     kernel_length: PositiveInt
@@ -33,6 +33,13 @@ class EEGNetConfig(AStageConfig):
     f2: PositiveInt
 
     training: TrainingConfig
+
+    @model_validator(mode="after")
+    def validate_eegnet_filters(self) -> "EEGNetConfig":
+        expected_f2 = self.f1 * self.d
+        if self.f2 != expected_f2:
+            raise ValueError(f"f2 ({self.f2}) must be equal to f1 * d ({expected_f2}) for EEGNet.")
+        return self
 
 
 class SklearnModelConfig(AStageConfig):

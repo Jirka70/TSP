@@ -7,7 +7,8 @@ defaults:
   - override /augmentation: none
   - override /split: basic
   - override /model: deep_learning/eegnet
-  - override /final_trainer: eegnet
+  - override /final_trainer: deep_learning/eegnet
+  - override /save_artifacts: default
   - override /logging: trace
   - _self_
 

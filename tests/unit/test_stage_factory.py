@@ -11,8 +11,8 @@ from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.deep_learning.trainer.eegnet_model_trainer import EEGNetModelTrainer
-from src.impl.model.deep_learning.trainer.final_eegnet_trainer import FinalEEGNetTrainer
+from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
@@ -21,7 +21,7 @@ from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
-from src.impl.save_artifacts.deep_learning.eegnet_model_serializer import EEGNetModelSerializer
+from src.impl.save_artifacts.deep_learning.eegnet.eegnet_model_serializer import EEGNetModelSerializer
 from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.split.basic_splitter import BasicSplitter
 from src.impl.split.moabb_splitter import MoabbSplitter

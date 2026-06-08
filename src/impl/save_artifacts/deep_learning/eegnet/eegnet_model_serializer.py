@@ -2,16 +2,21 @@ from pathlib import Path
 
 import torch
 
-from src.impl.model.deep_learning.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.save_artifacts.artifact_ref import ArtifactRef
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 from src.types.interfaces.model.model_serializer import IModelSerializer
 
+EEGNET_MODEL_NAME = "eegnet"
+
 
 class EEGNetModelSerializer(IModelSerializer):
+
+    EEGNET_CHECKPOINT_FORMAT = "eegnet_checkpoint"
+    EEGNET_FORMAT_VERSION = 1
     def supports(self, model_name: str) -> bool:
-        return True
+        return model_name == EEGNET_MODEL_NAME
 
     def save(self, trained_model: TrainedModelDTO, output_path: Path) -> SavedArtifactsDTO:
         if not isinstance(trained_model.model, EEGNetModel):
@@ -27,13 +32,18 @@ class EEGNetModelSerializer(IModelSerializer):
 
         model = trained_model.model
         checkpoint = {
-            "format": "eegnet_checkpoint",
+            "format": self.EEGNET_CHECKPOINT_FORMAT,
+            "format_version": self.EEGNET_FORMAT_VERSION,
             "model_name": trained_model.model_name,
-            "model_state": model.get_state_dict(),
-            #"best_epoch": model.best_epoch,
-            #"best_validation_metric_name": trained_model.best_validation_metric_name,
-            #"best_validation_metric_value": trained_model.best_validation_metric_value,
+            "model_state": {
+                **model.get_state_dict(),
+                "input_shape": model.input_shape
+            },
+            "best_epoch": model.best_epoch,
+            "best_validation_metric_name": trained_model.best_validation_metric_name,
+            "best_validation_metric_value": trained_model.best_validation_metric_value,
             "metadata": trained_model.metadata,
+
         }
 
         torch.save(checkpoint, file_path)

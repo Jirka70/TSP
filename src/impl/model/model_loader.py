@@ -3,6 +3,7 @@ import joblib
 from pathlib import Path
 import logging
 
+from src.pipeline.context.run_context import RunContext
 from src.types.interfaces.model.model_loader import IModelLoader
 
 
@@ -20,7 +21,7 @@ class ModelLoader:
             # ".h5": KerasModelLoader(),     # Future expansion for Keras models
         }
 
-    def load(self, model_path: Path) -> Any:
+    def load(self, model_path: Path, run_ctx: RunContext) -> Any:
         """
         Resolves the appropriate loader for the given file extension and loads the model.
 
@@ -40,7 +41,7 @@ class ModelLoader:
             raise ValueError(f"Unsupported model format: {suffix}. "
                              f"Available formats: {list(self._loaders.keys())}")
 
-        return loader.load(model_path)
+        return loader.load(model_path, run_ctx)
 
 
 class JoblibModelLoader(IModelLoader):
@@ -50,7 +51,7 @@ class JoblibModelLoader(IModelLoader):
     def __init__(self):
         self._log = logging.getLogger(__name__)
 
-    def load(self, model_path: Path) -> Any:
+    def load(self, model_path: Path, run_ctx: RunContext) -> Any:
         """
         Loads a Scikit-learn model or state dictionary from a .joblib file.
 

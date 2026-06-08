@@ -83,7 +83,7 @@ class ExperimentPipeline(IPipeline):
         self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         model_path: Path = Path(config.model_path.path)
-        loaded_model_obj: Any = self._model_loader.load(model_path)
+        loaded_model_obj: Any = self._model_loader.load(model_path, run_ctx)
 
         trained_model: TrainedModelDTO = TrainedModelDTO(model=loaded_model_obj, model_name=model_path.stem)
 

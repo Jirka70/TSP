@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - logging: quiet
+  - logging: trace
   - source: external
   - raw_preprocessing: default
   - raw_augmentation: none
@@ -11,11 +11,11 @@ defaults:
   - dataset_export: default
   - model: deep_learning/eegnet
   - metrics_aggregator: default
-  - final_trainer: eegnet
+  - final_trainer: deep_learning/eegnet
   - evaluation: default
   - visualization: matplotlib
-  - save_artifacts: default
-  - model_path: default
+  - save_artifacts: experiment
+  - model_path: deep_learning/eegnet
 
-mode: training
+mode: experiment
 output_dir: ./outputs

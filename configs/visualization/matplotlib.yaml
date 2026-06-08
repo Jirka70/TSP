@@ -13,4 +13,4 @@ visualize_evaluation: True   # Plot confusion matrix and aggregate metrics
 
 n_fft: 2048                  # Number of points for FFT (must be a power of 2 like 256, 1024, 2048)
 save_plots: True             # Whether to save generated plots to the output directory
-show_plots: True            # Whether to open a window to show plots (blocks execution)
+show_plots: False            # Whether to open a window to show plots (blocks execution)
