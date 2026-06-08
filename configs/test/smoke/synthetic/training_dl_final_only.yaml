@@ -6,7 +6,8 @@ defaults:
   - override /augmentation: none
   - override /split: basic
   - override /model: deep_learning/eegnet
-  - override /final_trainer: eegnet
+  - override /final_trainer: deep_learning/eegnet
+  - override /save_artifacts: default
   - override /logging: trace
   - _self_
 
@@ -46,7 +47,7 @@ split:
   test_ratio: 0.2
 
 model:
-  fold_training: true
+  fold_training: false
   training:
     epochs: 2
     batch_size: 8
