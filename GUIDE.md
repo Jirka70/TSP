@@ -66,12 +66,14 @@ python src/main.py
 
 ## Modes
 
-| Value        | Description                                                                   |
-|--------------|-------------------------------------------------------------------------------|
-| `training`   | Full pipeline: preprocessing → split → augmentation → train → evaluate → save |
-| `experiment` | Preprocessing only: load → raw preprocess → paradigm → epoch preprocess       |
+| Value        | Description                                                                              |
+|--------------|------------------------------------------------------------------------------------------|
+| `training`   | Full pipeline: preprocessing → split → augmentation → train → evaluate → save            |
+| `experiment` | Inference pipeline: load → raw preprocess → paradigm → epoch preprocess → load model → evaluate → save |
 
 Set in `config.yaml` or on the command line: `python src/main.py mode=experiment`
+
+For `experiment` mode you also need to specify the path to a saved model via `model_path` (see [Model path](#configsmodel_path--saved-model-path)).
 
 ---
 
@@ -85,12 +87,18 @@ All configs live under `configs/`. The root `config.yaml` selects one file per g
 |-----------------|------------------------|-------------------------------------------------------------------------------------------------------|
 | `mode`          | `training`             | `training`, `experiment`                                                                              |
 | `output_dir`    | `./outputs`            | any path                                                                                              |
-| `source`        | `external`             | `external`, `filesystem`                                                                              |
-| `split`         | `moabb_within_session` | `moabb_within_session`, `moabb_within_subject`, `moabb_cross_session`, `moabb_cross_subject`, `basic` |
-| `augmentation`  | `basic`                | `basic`, `torcheeg`, `none`                                                                           |
-| `model`         | `deep_learning/eegnet` | `deep_learning/eegnet`, `machine_learning/csp_lda`, `machine_learning/riemannian_*`                   |
-| `visualization` | `matplotlib`           | `matplotlib`, `plotly`                                                                                |
-| `evaluation`    | `default`              | `default`, `sklearn`                                                                                  |
+| `source`             | `external`             | `external`, `filesystem`, `synthetic`                                                                 |
+| `raw_augmentation`   | `none`                 | `none`, `raw_torcheeg`                                                                                |
+| `split`              | `moabb_within_session` | `moabb_within_session`, `moabb_within_subject`, `moabb_cross_session`, `moabb_cross_subject`, `basic` |
+| `augmentation`       | `basic`                | `basic`, `torcheeg`, `none`                                                                           |
+| `model`              | `deep_learning/eegnet` | `deep_learning/eegnet`, `machine_learning/csp_lda`, `machine_learning/riemannian_*`                   |
+| `final_trainer`      | `deep_learning/eegnet` | `deep_learning/eegnet`, `default`                                                                     |
+| `metrics_aggregator` | `default`              | `default`                                                                                             |
+| `visualization`      | `matplotlib`           | `matplotlib`, `plotly`                                                                                |
+| `evaluation`         | `default`              | `default`, `sklearn`                                                                                  |
+| `dataset_export`     | `default`              | `default`                                                                                             |
+| `logging`            | `normal`               | `trace`, `detailed`, `normal`, `quiet`                                                                |
+| `model_path`         | `default`              | `default`, `deep_learning/eegnet`                                                                     |
 
 ---
 
@@ -116,6 +124,20 @@ recursive: true
 subject_ids: [ 1, 2, 3, 4, 5 ]
 global_events_tsv_path: /path/to/task-motor-imagery_events.tsv
 ```
+
+#### `synthetic.yaml` — Generated data (for testing)
+
+```yaml
+backend: synthetic
+n_subjects: 2
+n_channels: 26
+n_times: 578
+n_epochs: 40
+n_classes: 2
+random_seed: 42
+```
+
+No real EEG files needed; useful for verifying the pipeline without a dataset.
 
 ---
 
@@ -207,6 +229,26 @@ random_seed: 42
 
 ---
 
+### `configs/raw_augmentation/` — Raw signal augmentation
+
+Applied before epoching, directly on the continuous raw signal.
+
+| Config         | Description                              |
+|----------------|------------------------------------------|
+| `none`         | Disabled (default)                       |
+| `raw_torcheeg` | TorchEEG transforms on raw signal        |
+
+#### `raw_torcheeg.yaml`
+
+```yaml
+backend: raw_torcheeg
+enabled: true
+copies_per_sample: 1
+random_seed: 42
+```
+
+---
+
 ### `configs/augmentation/` — Data augmentation
 
 | Config     | Description                                         |
@@ -225,6 +267,22 @@ gaussian_noise_std: 0.01
 max_time_shift: 10         # samples
 channel_dropout_prob: 0.0
 random_seed: 42
+```
+
+#### `torcheeg.yaml`
+
+```yaml
+enabled: true
+backend: torcheeg
+copies_per_sample: 2
+random_seed: 42
+# transforms applied per copy:
+gaussian_noise_std: 0.01
+mask_probability: 0.3
+mask_ratio: 0.1
+cyclic_shift_probability: 0.2
+sign_flip: true
+scale_range: [ 0.9, 1.1 ]
 ```
 
 ---
@@ -302,6 +360,86 @@ visualize_evaluation: true    # confusion matrix
 save_plots: true
 show_plots: true              # opens window — blocks execution
 n_fft: 2048
+```
+
+---
+
+### `configs/metrics_aggregator/default.yaml`
+
+Aggregates per-fold evaluation results into a final summary.
+
+```yaml
+backend: default
+aggregation: mean      # mean across folds
+include_std: true      # also report standard deviation
+```
+
+---
+
+### `configs/final_trainer/` — Final model training
+
+After cross-validation, the final trainer retrains the model on the full dataset.
+
+#### `deep_learning/eegnet.yaml`
+
+```yaml
+backend: eegnet
+enabled: true
+epochs: 10
+batch_size: 32
+learning_rate: 0.001
+```
+
+#### `default.yaml`
+
+```yaml
+backend: sklearn
+enabled: true
+```
+
+---
+
+### `configs/dataset_export/default.yaml`
+
+Exports the processed (raw-preprocessed) data to disk for later reuse.
+
+```yaml
+backend: fif
+enabled: false
+output_dir: ./exports    # relative to output_dir
+```
+
+---
+
+### `configs/logging/` — Logging verbosity
+
+| Config     | Level   | Description                                  |
+|------------|---------|----------------------------------------------|
+| `quiet`    | WARNING | Errors and warnings only                     |
+| `normal`   | INFO    | Standard pipeline progress (default)         |
+| `detailed` | DEBUG   | Per-step detail, useful for debugging        |
+| `trace`    | TRACE   | Full trace including raw MNE output          |
+
+Select on CLI: `python src/main.py logging=detailed`
+
+Log format can be `text` (human-readable) or `json` (machine-readable); configured inside each logging yaml.
+
+---
+
+### `configs/model_path/` — Saved model path
+
+Used only in `experiment` mode to locate a previously saved model.
+
+#### `default.yaml`
+
+```yaml
+path: null    # fill in the path to the saved model directory
+```
+
+#### `deep_learning/eegnet.yaml`
+
+```yaml
+path: ./outputs/2024-01-01/12-00-00/artifacts/model
 ```
 
 ---
