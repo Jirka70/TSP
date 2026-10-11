@@ -9,13 +9,13 @@ defaults:
   - split: moabb_within_session
   - augmentation: torcheeg
   - dataset_export: default
-  - model: deep_learning/eegnet
+  - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
-  - final_trainer: deep_learning/eegnet
+  - final_trainer: default
   - evaluation: default
   - visualization: matplotlib
   - save_artifacts: experiment
-  - model_path: deep_learning/eegnet
+  - model_path: default
 
 mode: experiment
 output_dir: ./outputs

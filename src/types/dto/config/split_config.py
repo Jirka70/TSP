@@ -7,6 +7,14 @@ from pydantic import BaseModel, Field, model_validator
 from src.types.dto.config.astageconfig import AStageConfig
 
 
+class SplitRatiosConfig(BaseModel):
+    """Train/validation/test split fractions (must sum to 1.0)."""
+
+    train: float = Field(ge=0.0, le=1.0)
+    validation: float = Field(gt=0.0, le=1.0)
+    test: float = Field(ge=0.0, le=1.0)
+
+
 class SplitBasicConfig(AStageConfig):
     """
     Configuration for the basic percentage-based splitting strategy.
@@ -14,9 +22,7 @@ class SplitBasicConfig(AStageConfig):
     Attributes:
         backend: Literal identifier for the 'basic' splitter.
         enabled: Whether this splitting strategy is enabled.
-        train_ratio: Fraction of data used for training (0.0 - 1.0).
-        validation_ratio: Fraction of data used for validation (0.0 - 1.0).
-        test_ratio: Fraction of data used for testing (0.0 - 1.0).
+        ratios: Train/validation/test split fractions.
         shuffle: Whether to shuffle data before splitting.
         random_seed: Seed for the random number generator to ensure reproducibility.
         exclude_validation_data_before_split: Whether to extract validation data before the main split (based on subjects or samples).
@@ -25,9 +31,7 @@ class SplitBasicConfig(AStageConfig):
     backend: Literal["basic"]
     enabled: bool
 
-    train_ratio: float = Field(ge=0.0, le=1.0)
-    validation_ratio: float = Field(gt=0.0, le=1.0)
-    test_ratio: float = Field(ge=0.0, le=1.0)
+    ratios: SplitRatiosConfig
 
     shuffle: bool
     random_seed: int = Field(ge=0)
@@ -37,7 +41,7 @@ class SplitBasicConfig(AStageConfig):
     def validate_ratios_sum(self) -> "SplitBasicConfig":
         """Ensures that the sum of split ratios is approximately 1.0."""
         if self.enabled:
-            total = self.train_ratio + self.validation_ratio + self.test_ratio
+            total = self.ratios.train + self.ratios.validation + self.ratios.test
             epsilon = 0.01
             if abs(1.0 - total) > epsilon:
                 raise ValueError(f"The sum of train, validation, and test ratios must be 1.0 (current sum: {total})")

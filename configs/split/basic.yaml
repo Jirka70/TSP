@@ -1,16 +1,17 @@
-backend: basic               # Used by program logic, changing this may break the pipeline if not handled properly
+backend: basic                 # Used by program logic, changing this may break the pipeline if not handled properly
 
 # --- Basic Splitting Configuration ---
 
 # This backend partitions the dataset into training, validation, and testing sets
 # based on fixed percentages. It is the simplest splitting strategy.
 
-enabled: true                # Whether to enable basic splitting strategy.
+enabled: true                  # Whether to enable basic splitting strategy.
 exclude_validation_data_before_split: true # Whether to set aside validation data before applying the main split.
 
-train_ratio: 0.7             # Fraction of the dataset to be used for training (0.0 - 1.0)
-validation_ratio: 0.1        # Fraction of the dataset to be used for validation (0.0 - 1.0)
-test_ratio: 0.2              # Fraction of the dataset to be used for testing (0.0 - 1.0)
+ratios:
+  train: 0.7                   # Fraction of the dataset to be used for training (0.0 - 1.0)
+  validation: 0.1              # Fraction of the dataset to be used for validation (0.0 - 1.0)
+  test: 0.2                    # Fraction of the dataset to be used for testing (0.0 - 1.0)
 
-shuffle: true                # Whether to shuffle the data before splitting
-random_seed: 42              # Random seed to ensure reproducibility of the split
+shuffle: true                  # Whether to shuffle the data before splitting
+random_seed: 42                # Random seed to ensure reproducibility of the split

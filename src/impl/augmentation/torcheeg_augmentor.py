@@ -126,29 +126,29 @@ class TorchEEGAugmentor(IAugmentor):
         transform_list = []
 
         # Add Random Noise
-        if config.gaussian_noise_std > 0.0:
-            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise_std}", VerbosityLevel.TRACE)
-            transform_list.append(transforms.RandomNoise(p=1.0, std=config.gaussian_noise_std))
+        if config.gaussian_noise.std > 0.0:
+            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise.std}", VerbosityLevel.TRACE)
+            transform_list.append(transforms.RandomNoise(p=1.0, std=config.gaussian_noise.std))
 
         # Add Random Masking (zeroing out segments)
-        if config.mask_prob > 0.0:
-            log.info(f"Mask probability enabled with value: {config.mask_prob}", VerbosityLevel.TRACE)
-            transform_list.append(transforms.RandomMask(p=config.mask_prob, ratio=config.mask_ratio))
+        if config.mask.prob > 0.0:
+            log.info(f"Mask probability enabled with value: {config.mask.prob}", VerbosityLevel.TRACE)
+            transform_list.append(transforms.RandomMask(p=config.mask.prob, ratio=config.mask.ratio))
 
         # Add Random Shift (cyclic shift in time)
-        if config.shift_prob > 0.0:
-            log.info(f"Shift propability enabled with value: {config.shift_prob}", VerbosityLevel.TRACE)
-            transform_list.append(transforms.RandomShift(p=config.shift_prob))
+        if config.shift.prob > 0.0:
+            log.info(f"Shift propability enabled with value: {config.shift.prob}", VerbosityLevel.TRACE)
+            transform_list.append(transforms.RandomShift(p=config.shift.prob))
 
         # Add Random Sign Flip
-        if config.sign_flip_prob > 0.0:
-            log.info(f"Sign flip probability enabled with value: {config.sign_flip_prob}", VerbosityLevel.TRACE)
-            transform_list.append(transforms.RandomSignFlip(p=config.sign_flip_prob))
+        if config.sign_flip.prob > 0.0:
+            log.info(f"Sign flip probability enabled with value: {config.sign_flip.prob}", VerbosityLevel.TRACE)
+            transform_list.append(transforms.RandomSignFlip(p=config.sign_flip.prob))
 
         # Add Custom Amplitude Scaling
-        if config.scale_prob > 0.0:
-            log.info(f"Amplitude scale probability enabled with value: {config.scale_prob}", VerbosityLevel.TRACE)
-            transform_list.append(RandomAmplitudeScale(p=config.scale_prob, min_scale=config.scale_min, max_scale=config.scale_max))
+        if config.scale.prob > 0.0:
+            log.info(f"Amplitude scale probability enabled with value: {config.scale.prob}", VerbosityLevel.TRACE)
+            transform_list.append(RandomAmplitudeScale(p=config.scale.prob, min_scale=config.scale.min, max_scale=config.scale.max))
 
         return transforms.Compose(transform_list) if transform_list else None
 

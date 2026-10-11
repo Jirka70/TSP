@@ -1,36 +1,24 @@
 # TorchEEG-based raw signal augmentation configuration.
 # This stage applies transformations to the continuous raw signal before epoching.
 
-# Whether to enable raw augmentation.
-enabled: true
 
-# Backend identifier used to select the raw augmentation implementation.
+enabled: true                  # Whether to enable raw augmentation.
 backend: raw_torcheeg
 
-# Random seed for reproducibility of transformations.
-random_seed: 42
+random_seed: 42                # Random seed for reproducibility of transformations
+copies_per_sample: 1           # Number of augmented copies to create for each original recording
 
-# Number of augmented copies to create for each original recording.
-# Each copy is stored as a new session named 'iraw_augmented'.
-copies_per_sample: 1
+gaussian_noise:
+  std: 0.05                    # Standard deviation of Gaussian noise added to the raw signal
 
-# Standard deviation of Gaussian noise added to the raw signal.
-gaussian_noise_std: 0.05
+mask:
+  prob: 0.1                    # Probability of applying a random mask (zeroing out segments) to the signal
+  ratio: 0.1                   # Ratio of the signal to be masked when RandomMask is applied (e.g., 0.1 for 10%)
 
-# Probability of applying a random mask (zeroing out segments) to the signal.
-mask_prob: 0.1
+sign_flip:
+  prob: 0.5                    # Probability of inverting the sign (phase flip) of the signal
 
-# Ratio of the signal to be masked when RandomMask is applied (e.g., 0.1 for 10%).
-mask_ratio: 0.1
-
-# Probability of inverting the sign (phase flip) of the signal.
-sign_flip_prob: 0.5
-
-# Probability of scaling the amplitude of the signal.
-scale_prob: 0.5
-
-# Minimum factor for amplitude scaling (e.g., 0.8).
-scale_min: 0.8
-
-# Maximum factor for amplitude scaling (e.g., 1.2).
-scale_max: 1.2
+scale:
+  prob: 0.5                    # Probability of scaling the amplitude of the signal
+  min: 0.8                     # Minimum factor for amplitude scaling (e.g., 0.8)
+  max: 1.2                     # Maximum factor for amplitude scaling (e.g., 1.2)

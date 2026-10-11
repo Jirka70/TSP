@@ -1,22 +1,28 @@
-backend: torcheeg           # Used by program logic, changing this may break the pipeline if not handled properly
+backend: torcheeg              # Used by program logic, changing this may break the pipeline if not handled properly
 
 # --- TorchEEG Augmentation Configuration ---
 
 # This backend leverages the torcheeg library for more advanced EEG-specific transformations.
 # Transformations are applied individually to each epoch within a recording.
 
-enabled: true                # Whether to enable TorchEEG augmentation. If false, the stage is skipped.
-random_seed: 42              # Ensures reproducibility of the random transformations
-copies_per_sample: 1         # Number of augmented variants generated per original training sample
+enabled: true                  # Whether to enable TorchEEG augmentation. If false, the stage is skipped.
+random_seed: 42                # Ensures reproducibility of the random transformations
+copies_per_sample: 1           # Number of augmented variants generated per original training sample
 
-gaussian_noise_std: 0.01     # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
+gaussian_noise:
+  std: 0.01                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
 
-mask_prob: 0.3               # Probability (0.0 to 1.0) of applying a random mask (zeroing segments)
-mask_ratio: 0.1              # Ratio of the signal length to be masked when mask is applied
+mask:
+  prob: 0.3                    # Probability (0.0 to 1.0) of applying a random mask (zeroing segments)
+  ratio: 0.1                   # Ratio of the signal length to be masked when mask is applied
 
-shift_prob: 0.2              # Probability (0.0 to 1.0) of cyclically shifting the signal in time
-sign_flip_prob: 0.2          # Probability (0.0 to 1.0) of inverting the signal phase (multiplying by -1)
+shift:
+  prob: 0.2                    # Probability (0.0 to 1.0) of cyclically shifting the signal in time
 
-scale_prob: 0.3              # Probability (0.0 to 1.0) of scaling the signal amplitude
-scale_min: 0.9               # Minimum scaling factor (e.g., 0.9 for 10% attenuation)
-scale_max: 1.1               # Maximum scaling factor (e.g., 1.1 for 10% amplification)
+sign_flip:
+  prob: 0.2                    # Probability (0.0 to 1.0) of inverting the signal phase (multiplying by -1)
+
+scale:
+  prob: 0.3                    # Probability (0.0 to 1.0) of scaling the signal amplitude
+  min: 0.9                     # Minimum scaling factor (e.g., 0.9 for 10% attenuation)
+  max: 1.1                     # Maximum scaling factor (e.g., 1.1 for 10% amplification)
