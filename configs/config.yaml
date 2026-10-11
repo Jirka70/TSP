@@ -11,11 +11,11 @@ defaults:
   - dataset_export: default
   - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
-  - final_trainer: default
+  - final_trainer: machine_learning/sklearn
   - evaluation: default
   - visualization: matplotlib
   - save_artifacts: experiment
-  - model_path: default
+  - model_path: machine_learning/sklearn
 
 mode: experiment
 output_dir: ./outputs
