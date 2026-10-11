@@ -1,16 +1,17 @@
-backend: matplotlib          # Visualization backend using Matplotlib and Seaborn for static image reports
+backend: matplotlib            # Visualization backend using Matplotlib and Seaborn for static image reports
 
 # --- Matplotlib Visualization Configuration ---
 
 # This backend generates high-quality static plots (PNG) for different stages of the EEG pipeline.
 # It is ideal for documentation and final reports.
 
-visualize_raw: True          # Plot Power Spectral Density (PSD) of raw data
-visualize_raw_augmentation: True # Plot comparison of original and augmented raw signals
-visualize_epochs: True       # Plot Event-Related Potential (ERP) averages
-visualize_augmentation: True # Plot comparison of original and augmented epoched data
-visualize_evaluation: True   # Plot confusion matrix and aggregate metrics
+visualize:
+  raw: True                    # Plot Power Spectral Density (PSD) of raw data
+  raw_augmentation: True       # Plot comparison of original and augmented raw signals
+  epochs: True                 # Plot Event-Related Potential (ERP) averages
+  augmentation: True           # Plot comparison of original and augmented epoched data
+  evaluation: True             # Plot confusion matrix and aggregate metrics
 
-n_fft: 2048                  # Number of points for FFT (must be a power of 2 like 256, 1024, 2048)
-save_plots: True             # Whether to save generated plots to the output directory
-show_plots: False            # Whether to open a window to show plots (blocks execution)
+n_fft: 2048                    # Number of points for FFT (must be a power of 2 like 256, 1024, 2048)
+save_plots: True               # Whether to save generated plots to the output directory
+show_plots: False              # Whether to open a window to show plots (blocks execution)

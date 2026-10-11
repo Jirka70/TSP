@@ -1,8 +1,18 @@
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from src.types.dto.config.astageconfig import AStageConfig
+
+
+class VisualizeConfig(BaseModel):
+    """Switches controlling which pipeline stages produce plots."""
+
+    raw: bool
+    raw_augmentation: bool
+    epochs: bool
+    augmentation: bool
+    evaluation: bool
 
 
 class VisualizationConfig(AStageConfig):
@@ -10,12 +20,7 @@ class VisualizationConfig(AStageConfig):
 
     backend: Literal["matplotlib", "plotly"]
 
-    # Switches for different pipeline stages
-    visualize_raw: bool
-    visualize_raw_augmentation: bool
-    visualize_epochs: bool
-    visualize_augmentation: bool
-    visualize_evaluation: bool
+    visualize: VisualizeConfig
 
     # Global settings
     n_fft: int = Field(default=256, ge=1)

@@ -1,15 +1,17 @@
-backend: plotly              # Visualization backend using Plotly for interactive HTML reports
+backend: plotly                # Visualization backend using Plotly for interactive HTML reports
 
 # --- Plotly Visualization Configuration ---
 
 # This backend creates rich, interactive visualizations for different stages of the EEG pipeline.
 # It generates HTML files that allow zooming and detailed data inspection.
 
-visualize_raw: True          # Plot interactive PSD (Power Spectral Density)
-visualize_raw_augmentation: True # Plot interactive comparison of raw signals
-visualize_epochs: True       # Plot interactive ERP (Event-Related Potentials) averages
-visualize_augmentation: True # Plot interactive variety check for augmented data
-visualize_evaluation: True   # Plot interactive confusion matrix and metrics charts
+visualize:
+  raw: True                    # Plot interactive PSD (Power Spectral Density)
+  raw_augmentation: True       # Plot interactive comparison of raw signals
+  epochs: True                 # Plot interactive ERP (Event-Related Potentials) averages
+  augmentation: True           # Plot interactive variety check for augmented data
+  evaluation: True             # Plot interactive confusion matrix and metrics charts
 
-n_fft: 2048                  # Number of points for FFT (ideally a power of 2 like 256, 1024, 2048)
-save_plots: True             # Whether to save interactive plots as HTML files
+n_fft: 2048                    # Number of points for FFT (ideally a power of 2 like 256, 1024, 2048)
+save_plots: True               # Whether to save interactive plots as HTML files
+show_plots: False              # Whether to open a window to show plots

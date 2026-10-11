@@ -37,11 +37,13 @@ def _stage_config(backend):
 def _visualization_config(backend):
     return SimpleNamespace(
         backend=backend,
-        visualize_raw=False,
-        visualize_raw_augmentation=False,
-        visualize_epochs=False,
-        visualize_augmentation=False,
-        visualize_evaluation=False,
+        visualize=SimpleNamespace(
+            raw=False,
+            raw_augmentation=False,
+            epochs=False,
+            augmentation=False,
+            evaluation=False,
+        ),
         width=100,
         height=100,
         n_fft=256,
