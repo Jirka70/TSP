@@ -8,7 +8,7 @@ def create_eegnet_network(config, shape: tuple[int, int, int]):
                   final_conv_length="auto",
                   drop_prob=config.dropout,
                   kernel_length=config.kernel_length,
-                  F1=config.f1,
-                  D=config.d,
-                  F2=config.f2,
+                  F1=config.temporal_filters,
+                  D=config.depth_multiplier,
+                  F2=config.pointwise_filters,
                   batch_norm_momentum=0.2)

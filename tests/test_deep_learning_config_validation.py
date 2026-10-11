@@ -19,9 +19,9 @@ def _valid_eegnet_config() -> dict:
         "n_classes": 2,
         "dropout": 0.25,
         "kernel_length": 16,
-        "f1": 8,
-        "d": 2,
-        "f2": 16,
+        "temporal_filters": 8,
+        "depth_multiplier": 2,
+        "pointwise_filters": 16,
         "training": {
             "epochs": 2,
             "batch_size": 16,
@@ -50,9 +50,9 @@ def test_default_training_yaml_matches_training_config_schema() -> None:
 
 def test_eegnet_config_requires_matching_pointwise_filters() -> None:
     config = _valid_eegnet_config()
-    config["f2"] = 15
+    config["pointwise_filters"] = 15
 
-    with pytest.raises(ValidationError, match="f2"):
+    with pytest.raises(ValidationError, match="pointwise_filters"):
         EEGNetConfig.model_validate(config)
 
 

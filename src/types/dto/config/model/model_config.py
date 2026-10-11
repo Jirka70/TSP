@@ -28,17 +28,17 @@ class EEGNetConfig(AStageConfig):
 
     dropout: float = Field(ge=0, le=1)
     kernel_length: PositiveInt
-    f1: PositiveInt
-    d: PositiveInt
-    f2: PositiveInt
+    temporal_filters: PositiveInt
+    depth_multiplier: PositiveInt
+    pointwise_filters: PositiveInt
 
     training: TrainingConfig
 
     @model_validator(mode="after")
     def validate_eegnet_filters(self) -> "EEGNetConfig":
-        expected_f2 = self.f1 * self.d
-        if self.f2 != expected_f2:
-            raise ValueError(f"f2 ({self.f2}) must be equal to f1 * d ({expected_f2}) for EEGNet.")
+        expected = self.temporal_filters * self.depth_multiplier
+        if self.pointwise_filters != expected:
+            raise ValueError(f"pointwise_filters ({self.pointwise_filters}) must equal temporal_filters * depth_multiplier ({expected}) for EEGNet.")
         return self
 
 
