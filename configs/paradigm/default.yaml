@@ -17,6 +17,10 @@ window:
   tmax: 4.0                  # End time relative to event (seconds)
   baseline: [-0.5, 0.0]      # Period used for mean signal subtraction (pre-stimulus is standard)
 
+alignment:
+  enabled: false
+  latency: 0.0               # Marker-to-stimulus latency (s); events are shifted before epoching, so data moves too
+
 resampling:
   enabled: true
   sfreq: 128.0               # Resample to 128Hz to reduce computational load (Nyquist freq is 64Hz)

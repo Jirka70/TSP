@@ -47,6 +47,13 @@ class EpochResamplingConfig(BaseModel):
         return self
 
 
+class EventAlignmentConfig(BaseModel):
+    enabled: bool = False
+    # Marker-to-stimulus latency (s). Positive = stimulus appears after the marker, so events are moved later.
+    # Applied to event samples before epoching, so the epoch content shifts (not just the time axis).
+    latency: float = Field(default=0.0, ge=-1.0, le=1.0)
+
+
 class ParadigmConfig(AStageConfig):
     backend: Literal["default"] = "default"
 
@@ -54,6 +61,7 @@ class ParadigmConfig(AStageConfig):
 
     filter: BandpassFilterConfig = Field(default_factory=BandpassFilterConfig)
     window: EpochWindowConfig = Field(default_factory=EpochWindowConfig)
+    alignment: EventAlignmentConfig = Field(default_factory=EventAlignmentConfig)
     resampling: EpochResamplingConfig = Field(default_factory=EpochResamplingConfig)
 
     reject_by_annotation: bool = True

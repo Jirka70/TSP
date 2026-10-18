@@ -71,7 +71,8 @@ class ParadigmPreprocessor(IParadigm):
 
         for i, entry in enumerate(input_dto.data.data):
             log.info(f"Processing paradigm for entry index: {i}", VerbosityLevel.DETAILED)
-            raw: mne.io.Raw = entry.data
+            # Copy so the band-pass below does not mutate the upstream raw-preprocessing/augmentation output
+            raw: mne.io.Raw = entry.data.copy()
 
             log.info(f"Applying bandpass filter (fmin={config.filter.fmin}, fmax={config.filter.fmax})", VerbosityLevel.TRACE)
             raw.filter(
@@ -93,6 +94,12 @@ class ParadigmPreprocessor(IParadigm):
             if not event_id_filtered:
                 log.info(f"No events found for entry {i}. Skipping.", VerbosityLevel.TRACE)
                 continue
+
+            if config.alignment.enabled:
+                shift_samples: int = int(round(config.alignment.latency * raw.info["sfreq"]))
+                log.info(f"Shifting events by {config.alignment.latency}s ({shift_samples} samples) to compensate latency", VerbosityLevel.TRACE)
+                events = events.copy()
+                events[:, 0] += shift_samples
 
             log.info(f"Segmenting into epochs (tmin={config.window.tmin}, tmax={config.window.tmax})", VerbosityLevel.TRACE)
             epochs: mne.Epochs = mne.Epochs(
