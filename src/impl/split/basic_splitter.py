@@ -161,7 +161,7 @@ class BasicSplitter(ISplitter):
             )
             return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
 
-        log.info(f"Running BasicSplitter (train: {config.train_ratio}, val: {config.validation_ratio}, test: {config.test_ratio})", VerbosityLevel.QUIET)
+        log.info(f"Running BasicSplitter (train: {config.ratios.train}, val: {config.ratios.validation}, test: {config.ratios.test})", VerbosityLevel.QUIET)
 
         # Aggregate data from all input recordings
         x, y, metadata = self.extract_data(recordings, run_ctx)
@@ -181,8 +181,8 @@ class BasicSplitter(ISplitter):
         main_indices = indices
 
         # 1. Pre-split validation
-        if config.validation_ratio > 0 and config.exclude_validation_data_before_split:
-            num_val = int(n_samples * config.validation_ratio)
+        if config.ratios.validation > 0 and config.exclude_validation_data_before_split:
+            num_val = int(n_samples * config.ratios.validation)
             if num_val > 0:
                 val_indices = indices[:num_val]
                 main_indices = indices[num_val:]
@@ -191,12 +191,12 @@ class BasicSplitter(ISplitter):
 
         # Calculate boundaries for the main split (train/test) within main_indices
         n_main = len(main_indices)
-        total_tt = config.train_ratio + config.test_ratio
+        total_tt = config.ratios.train + config.ratios.test
         if total_tt == 0:
             log.error("No training data provided.")
             raise ValueError("Both train_ratio and test_ratio are zero.")
 
-        train_share = config.train_ratio / total_tt
+        train_share = config.ratios.train / total_tt
         num_train_all = int(n_main * train_share)
 
         train_idx_all = main_indices[:num_train_all]
@@ -205,8 +205,8 @@ class BasicSplitter(ISplitter):
         actual_train_idx = train_idx_all
 
         # 2. Post-split validation
-        if config.validation_ratio > 0 and not config.exclude_validation_data_before_split:
-            num_val = int(len(train_idx_all) * config.validation_ratio)
+        if config.ratios.validation > 0 and not config.exclude_validation_data_before_split:
+            num_val = int(len(train_idx_all) * config.ratios.validation)
             if num_val > 0:
                 val_idx_in_fold = train_idx_all[:num_val]
                 actual_train_idx = train_idx_all[num_val:]
@@ -225,7 +225,7 @@ class BasicSplitter(ISplitter):
             raise ValueError(msg)
 
         if validation_data_global is None or not validation_data_global.data:
-            msg = f"No global validation data produced (validation_ratio: {config.validation_ratio}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
+            msg = f"No global validation data produced (validation_ratio: {config.ratios.validation}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
             log.error(msg)
             raise ValueError(msg)
 

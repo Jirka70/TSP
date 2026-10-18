@@ -126,3 +126,4 @@ ansible/inventory.ini
 *.bak
 .claude/settings.local.json
 *.joblib
+experiment_results.txt/*

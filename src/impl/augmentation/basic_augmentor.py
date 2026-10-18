@@ -50,15 +50,15 @@ class BasicAugmentor(IAugmentor):
         log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         np.random.seed(config.random_seed)
         active_augs = []
-        if config.gaussian_noise_std > 0:
-            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise_std}", VerbosityLevel.TRACE)
-            active_augs.append(f"Gaussian Noise (std={config.gaussian_noise_std})")
-        if config.max_time_shift > 0:
-            log.info(f"Time shift enabled with max shift: {config.max_time_shift} samples", VerbosityLevel.TRACE)
-            active_augs.append(f"Time Shift (max={config.max_time_shift})")
-        if config.channel_dropout_prob > 0:
-            log.info(f"Channel dropout enabled with probability: {config.channel_dropout_prob}", VerbosityLevel.TRACE)
-            active_augs.append(f"Channel Dropout (prob={config.channel_dropout_prob})")
+        if config.gaussian_noise.std > 0:
+            log.info(f"Gaussian noise enabled with std: {config.gaussian_noise.std}", VerbosityLevel.TRACE)
+            active_augs.append(f"Gaussian Noise (std={config.gaussian_noise.std})")
+        if config.time_shift.max_samples > 0:
+            log.info(f"Time shift enabled with max shift: {config.time_shift.max_samples} samples", VerbosityLevel.TRACE)
+            active_augs.append(f"Time Shift (max={config.time_shift.max_samples})")
+        if config.channel_dropout.prob > 0:
+            log.info(f"Channel dropout enabled with probability: {config.channel_dropout.prob}", VerbosityLevel.TRACE)
+            active_augs.append(f"Channel Dropout (prob={config.channel_dropout.prob})")
 
         if active_augs:
             log.info(f"Active augmentations: {', '.join(active_augs)}", VerbosityLevel.NORMAL)
@@ -116,24 +116,24 @@ class BasicAugmentor(IAugmentor):
                 x_aug = np.copy(x)
 
                 # Add Gaussian noise
-                if config.gaussian_noise_std > 0.0:
-                    noise = np.random.normal(0, config.gaussian_noise_std, size=x_aug.shape)
+                if config.gaussian_noise.std > 0.0:
+                    noise = np.random.normal(0, config.gaussian_noise.std, size=x_aug.shape)
                     x_aug += noise
 
                 # Apply time shift
-                if config.max_time_shift > 0:
+                if config.time_shift.max_samples > 0:
                     shifts = np.random.randint(
-                        -config.max_time_shift,
-                        config.max_time_shift + 1,
+                        -config.time_shift.max_samples,
+                        config.time_shift.max_samples + 1,
                         size=x_aug.shape[0],
                     )
                     for idx, shift in enumerate(shifts):
                         x_aug[idx] = np.roll(x_aug[idx], shift, axis=-1)
 
                 # Apply channel dropout
-                if config.channel_dropout_prob > 0.0:
+                if config.channel_dropout.prob > 0.0:
                     mask_shape = (x_aug.shape[0], x_aug.shape[1], 1)
-                    dropout_mask = (np.random.rand(*mask_shape) > config.channel_dropout_prob).astype(np.float32)
+                    dropout_mask = (np.random.rand(*mask_shape) > config.channel_dropout.prob).astype(np.float32)
                     x_aug = x_aug * dropout_mask
 
                 augmented_x_list.append(x_aug)

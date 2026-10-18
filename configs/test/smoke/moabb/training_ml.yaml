@@ -7,7 +7,7 @@ defaults:
   - override /augmentation: none
   - override /split: basic
   - override /model: machine_learning/riemannian_lda
-  - override /final_trainer: default
+  - override /final_trainer: machine_learning/sklearn
   - override /save_artifacts: default
   - override /logging: trace
   - _self_
@@ -21,9 +21,10 @@ source:
   run_ids: null
 
 split:
-  train_ratio: 0.7
-  validation_ratio: 0.1
-  test_ratio: 0.2
+  ratios:
+    train: 0.7
+    validation: 0.1
+    test: 0.2
 
 model:
   fold_training: true

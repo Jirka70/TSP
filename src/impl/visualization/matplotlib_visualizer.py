@@ -70,7 +70,7 @@ class MatplotlibVisualizer(IVisualizer):
             data (RawPreprocessedDTO): Contains preprocessed raw EEG recordings.
             run_ctx (RunContext): Pipeline execution context.
         """
-        if not self._config.visualize_raw or not data.data:
+        if not self._config.visualize.raw or not data.data:
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_RAW")
@@ -141,7 +141,7 @@ class MatplotlibVisualizer(IVisualizer):
             run_ctx (RunContext): Pipeline execution context.
             copies_per_sample (int): Number of augmented copies per sample.
         """
-        if not self._config.visualize_raw_augmentation or not data.data:
+        if not self._config.visualize.raw_augmentation or not data.data:
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_RAW_AUGMENTED")
@@ -197,7 +197,7 @@ class MatplotlibVisualizer(IVisualizer):
             data (EpochPreprocessedDTO): Preprocessed epoched data.
             run_ctx (RunContext): Pipeline execution context.
         """
-        if not self._config.visualize_epochs or not data.data:
+        if not self._config.visualize.epochs or not data.data:
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_EPOCHS")
@@ -241,7 +241,7 @@ class MatplotlibVisualizer(IVisualizer):
             run_ctx (RunContext): Pipeline execution context.
             copies_per_sample (int): Number of augmented copies per sample.
         """
-        if not self._config.visualize_augmentation or not data.folds:
+        if not self._config.visualize.augmentation or not data.folds:
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_AUGMENTED")
@@ -289,7 +289,7 @@ class MatplotlibVisualizer(IVisualizer):
             run_ctx (RunContext): Pipeline execution context.
             model_name (str): Name of the model being evaluated.
         """
-        if not self._config.visualize_evaluation:
+        if not self._config.visualize.evaluation:
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_EVALUATION")

@@ -120,16 +120,16 @@ class TorchEEGRawAugmentor(IRawAugmentor):
         """
         transform_list = []
 
-        if config.gaussian_noise_std > 0.0:
-            transform_list.append(transforms.RandomNoise(p=1.0, std=config.gaussian_noise_std))
+        if config.gaussian_noise.std > 0.0:
+            transform_list.append(transforms.RandomNoise(p=1.0, std=config.gaussian_noise.std))
 
-        if config.mask_prob > 0.0:
-            transform_list.append(transforms.RandomMask(p=config.mask_prob, ratio=config.mask_ratio))
+        if config.mask.prob > 0.0:
+            transform_list.append(transforms.RandomMask(p=config.mask.prob, ratio=config.mask.ratio))
 
-        if config.sign_flip_prob > 0.0:
-            transform_list.append(transforms.RandomSignFlip(p=config.sign_flip_prob))
+        if config.sign_flip.prob > 0.0:
+            transform_list.append(transforms.RandomSignFlip(p=config.sign_flip.prob))
 
-        if config.scale_prob > 0.0:
-            transform_list.append(RandomAmplitudeScale(p=config.scale_prob, min_scale=config.scale_min, max_scale=config.scale_max))
+        if config.scale.prob > 0.0:
+            transform_list.append(RandomAmplitudeScale(p=config.scale.prob, min_scale=config.scale.min, max_scale=config.scale.max))
 
         return transforms.Compose(transform_list) if transform_list else None

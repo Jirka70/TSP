@@ -27,16 +27,16 @@ dropout: 0.25
 kernel_length: 16
 
 # Number of temporal filters in the first convolutional layer.
-# Neural network will learn [F1] temporal filters (alpha_rhythm, beta_rhythm, small movements, fast movements, ...)
-f1: 8
+# Neural network will learn [temporal_filters] temporal filters (alpha_rhythm, beta_rhythm, small movements, fast movements, ...)
+temporal_filters: 8
 
 # Depth multiplier used in the depthwise convolution block.
-# One temporal filter (F1) could have more spatial filters (combination of signals from more electrodes)
-# Spatial filter creates a new signal as a combination of more electrodes)
-d: 2
+# One temporal filter could have more spatial filters (combination of signals from more electrodes)
+# Spatial filter creates a new signal as a combination of more electrodes
+depth_multiplier: 2
 
 # Number of pointwise filters.
-# After F1 and D filter neural network has information about: which rhythms exist and where appears in the head
-# F2 filter combines these two filters (e g. beta_rhythm + right hemisphere = left hand movement)
-# F1 * D = F2
-f2: 16
+# After temporal and spatial filters the network knows: which rhythms exist and where they appear in the head
+# Pointwise filter combines these two (e.g. beta_rhythm + right hemisphere = left hand movement)
+# temporal_filters * depth_multiplier = pointwise_filters
+pointwise_filters: 16
