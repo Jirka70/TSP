@@ -2,26 +2,13 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 from src.types.dto.config.astageconfig import AStageConfig
 
-class AlignmentConfig(BaseModel):
-    enabled: bool
-    # Time shift usually stays within reasonable bounds of the epoch length
-    tmin_offset: float = Field(default=0.0, ge=-10.0, le=10.0)
-
-class ICAConfig(BaseModel):
-    enabled: bool
-    # Number of components must be positive and typically doesn't exceed channel count
-    n_components: int = Field(gt=0, le=100)
-    random_state: int
-    method: Literal["fastica", "infomax", "picard"]
-    # EOG threshold is a Z-score multiplier, must be positive
-    eog_threshold: float = Field(gt=0)
-
 class AutoRejectConfig(BaseModel):
     enabled: bool
     n_interpolate: list[int]
     consensus: list[float]
     # Cross-validation requires at least 2 folds
     cv: int = Field(ge=2)
+    random_state: int = 42
 
     @field_validator('n_interpolate')
     @classmethod
@@ -42,6 +29,9 @@ class AutoRejectConfig(BaseModel):
             raise ValueError("consensus values must be between 0.0 and 1.0")
         return v
 
+class CSDConfig(BaseModel):
+    enabled: bool = False
+
 class CSPConfig(BaseModel):
     enabled: bool
     n_components: int = Field(gt=0)
@@ -51,7 +41,6 @@ class CSPConfig(BaseModel):
 
 class EpochPreprocessingConfig(AStageConfig):
     backend: Literal["default"]
-    alignment: AlignmentConfig
-    ica: ICAConfig
     autoreject: AutoRejectConfig
+    csd: CSDConfig = Field(default_factory=CSDConfig)
     csp: CSPConfig

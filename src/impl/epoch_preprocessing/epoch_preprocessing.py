@@ -1,13 +1,11 @@
 import dataclasses
 import logging
-import warnings
 from typing import Any, List, Tuple
 
 import mne
 import numpy as np
 from autoreject import AutoReject
 from mne.decoding import CSP
-from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
@@ -31,9 +29,9 @@ class EpochPreprocessor(IEpochPreprocessing):
 
             This method processes a collection of MNE Epochs recordings by applying a
             configurable multi-stage pipeline:
-            1. Temporal Alignment: Shifts epoch time markers.
-            2. Independent Component Analysis (ICA): Isolates and removes EOG artifacts.
-            3. AutoReject: Automatically detects, repairs, or drops bad local data segments.
+            1. Channel Selection: Keeps only EEG channels (EOG artifacts are removed by raw-stage ICA).
+            2. AutoReject: Automatically detects, repairs, or drops bad local data segments.
+            3. Current Source Density (CSD): Spatial Laplacian re-referencing (if enabled).
             4. Common Spatial Patterns (CSP): Learns spatial filters and transforms
                the data into feature arrays (if enabled).
 
@@ -68,30 +66,11 @@ class EpochPreprocessor(IEpochPreprocessing):
                 log.info(f"Processing epoch recording index: {i}", VerbosityLevel.DETAILED)
                 epochs: mne.Epochs = entry.data.copy()
 
-                # --- 1. Temporal Alignment ---
-                if config.alignment.enabled:
-                    log.info(f"Applying time shift for index {i}: {config.alignment.tmin_offset}s", VerbosityLevel.TRACE)
-                    epochs.shift_time(config.alignment.tmin_offset, relative=True)
+                # --- 1. Keep only EEG channels for downstream modelling ---
+                # EOG channels were needed only for raw-stage ICA EOG detection; STIM must never reach the model.
+                epochs.pick("eeg", exclude=[])
 
-                # --- 2. ICA: Artifact Removal ---
-                if config.ica.enabled:
-                    log.info(f"Fitting ICA for index {i}", VerbosityLevel.TRACE)
-
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings("ignore", message=".*baseline-corrected.*")
-                        ica: ICA = ICA(
-                            n_components=config.ica.n_components,
-                            random_state=config.ica.random_state,
-                            method=config.ica.method
-                        )
-                        ica.fit(epochs)
-
-                        electrooculography_indices: List[int]
-                        electrooculography_indices, _ = ica.find_bads_eog(epochs, threshold=config.ica.eog_threshold)
-                        ica.exclude = electrooculography_indices
-                        ica.apply(epochs)
-
-                # --- 3. AutoReject: Local Artifact Repair ---
+                # --- 2. AutoReject: Local Artifact Repair ---
                 if config.autoreject.enabled:
                     log.info(f"Applying AutoReject for index {i}", VerbosityLevel.TRACE)
                     picks: np.ndarray = mne.pick_types(epochs.info, eeg=True, meg=False, eog=False, stim=False, exclude="bads")
@@ -103,11 +82,23 @@ class EpochPreprocessor(IEpochPreprocessing):
                             n_interpolate=config.autoreject.n_interpolate,
                             consensus=config.autoreject.consensus,
                             cv=config.autoreject.cv,
-                            random_state=config.ica.random_state,
+                            random_state=config.autoreject.random_state,
                             picks=picks,
                             verbose=False
                         )
                         epochs, _ = auto_reject.fit_transform(epochs, return_log=True)
+
+                # --- 3. CSD: Current Source Density (after AutoReject, changes channel type to "csd") ---
+                if config.csd.enabled:
+                    log.info(f"Computing Current Source Density (CSD) for index {i}", VerbosityLevel.TRACE)
+                    try:
+                        epochs = mne.preprocessing.compute_current_source_density(epochs)
+                    except (RuntimeError, ValueError) as e:
+                        log.warning(f"CSD skipped at index {i}: {e}")
+
+                non_eeg_types = set(epochs.get_channel_types()) - {"eeg", "csd"}
+                if non_eeg_types:
+                    raise ValueError(f"Non-EEG channel types reached model input: {non_eeg_types}")
 
                 # --- 4. CSP & Data Formatting ---
                 if config.csp.enabled:
