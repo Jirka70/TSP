@@ -39,6 +39,11 @@ class RawPreprocessor(IRawPreprocessing):
 
             raw_copy: mne.io.Raw = entry.data.copy()
 
+            # --- 0. Channel Selection (drops STIM and other non-neurophysiological channels) ---
+            channel_picks: List[str] = list(config.channel_selection.picks)
+            raw_copy.pick(channel_picks)
+            log.info(f"Kept channel types {channel_picks}: {len(raw_copy.ch_names)} channels", VerbosityLevel.TRACE)
+
             # --- 1. Resampling ---
             if getattr(config.resampling, "enabled", False):
                 log.info(f"Resampling signal to {config.resampling.sfreq} Hz", VerbosityLevel.TRACE)
@@ -71,32 +76,43 @@ class RawPreprocessor(IRawPreprocessing):
                 log.info(f"Applying Notch filter: {list(config.notch_filter.freqs)} Hz", VerbosityLevel.TRACE)
                 raw_copy.notch_filter(freqs=list(config.notch_filter.freqs), fir_design="firwin")
 
-            # --- 4. ICA (Artifact Rejection) ---
-            if getattr(config.ica, "enabled", False):
-                log.info(f"Running ICA decomposition (method: {config.ica.method})", VerbosityLevel.TRACE)
-                ica: mne.preprocessing.ICA = mne.preprocessing.ICA(
-                    n_components=config.ica.n_components,
-                    method=config.ica.method,
-                    random_state=42
-                )
-                ica.fit(raw_copy)
-                log.info(f"Applying ICA to remove artifact components", VerbosityLevel.TRACE)
-                ica.apply(raw_copy)
-
-            # --- 5. Spatial Transformation / Re-referencing ---
+            # --- 4. Spatial Transformation / Re-referencing ---
+            # Runs before ICA: removes the common-mode (reference) signal that would otherwise
+            # dominate PCA and leave ICA with a single component.
             if getattr(config.re_referencing, "enabled", False):
                 re_referencing_method: str = config.re_referencing.method.upper()
 
-                if re_referencing_method == "CSD":
-                    log.info("Computing Current Source Density (CSD)", VerbosityLevel.TRACE)
-                    try:
-                        raw_copy = mne.preprocessing.compute_current_source_density(raw_copy)
-                    except (RuntimeError, ValueError) as e:
-                        log.warning(f"CSD skipped at index {i}: {e}")
-
-                elif re_referencing_method == "AVERAGE":
+                if re_referencing_method == "AVERAGE":
                     log.info("Applying Common Average Reference (CAR)", VerbosityLevel.TRACE)
                     raw_copy.set_eeg_reference(ref_channels="average")
+
+            # --- 5. ICA (Artifact Rejection) ---
+            if getattr(config.ica, "enabled", False):
+                log.info(f"Running ICA decomposition (method: {config.ica.method})", VerbosityLevel.TRACE)
+                fit_params: Optional[dict] = None
+                if config.ica.method == "infomax":
+                    fit_params = dict(extended=True)
+                elif config.ica.method == "picard":
+                    fit_params = dict(ortho=False, extended=True)
+
+                ica: mne.preprocessing.ICA = mne.preprocessing.ICA(
+                    n_components=config.ica.n_components,
+                    method=config.ica.method,
+                    fit_params=fit_params,
+                    random_state=config.ica.random_state
+                )
+                ica.fit(raw_copy)
+
+                if not mne.pick_types(raw_copy.info, eog=True).size:
+                    log.warning(f"No EOG channels at index {i}; cannot detect artifact components. Skipping ICA apply.")
+                else:
+                    eog_indices, _ = ica.find_bads_eog(raw_copy, threshold=config.ica.eog_threshold)
+                    if eog_indices:
+                        log.info(f"Excluding EOG components {eog_indices} at index {i}", VerbosityLevel.TRACE)
+                        ica.exclude = eog_indices
+                        ica.apply(raw_copy)
+                    else:
+                        log.info(f"No EOG components found at index {i}; signal left unchanged", VerbosityLevel.TRACE)
 
             # --- 6. Automatic Annotation of Artifacts/Breaks ---
             if getattr(config.annotate_break, "enabled", False):

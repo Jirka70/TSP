@@ -4,6 +4,10 @@ backend: default              # Used by program logic, changing this may break t
 
 # Blocks can be enabled/disabled independently, based on the enabled true/false flag.
 
+channel_selection:
+  picks: [ "eeg", "eog" ]    # Channel types kept right after loading. Never add "stim": it contains the class labels
+  # (label leakage). EOG is kept only for ICA EOG detection and dropped before modelling.
+
 resampling:
   enabled: false
   sfreq: 250                 # Recommended: 250-500Hz for general analysis; 1000Hz+ for ERP/HF oscillations
@@ -25,13 +29,18 @@ bad_channels_interpolation:
 
 re_referencing:
   enabled: true
-  method: "CSD"              # Current Source Density (Laplacian) - excellent for spatial focalization
-                             # Use "AVERAGE" for a robust general-purpose reference
+  method: "AVERAGE"          # Common Average Reference (CAR) - robust general-purpose reference
+                             # Applied before ICA; keep enabled when ICA is on (mastoid reference otherwise
+                             # puts ~85-97 % of variance into one PCA component on BNCI2014_001)
+  # CSD (Laplacian) is configured in epoch_preprocessing.csd (runs after AutoReject)
 
 ica:
-  enabled: false             # ICA on raw data is often used for long-duration artifact rejection
-  n_components: 0.95         # Use decimal (0.95) to retain components explaining 95% of variance
-  method: "infomax"          # Extended Infomax is highly regarded for its stability
+  enabled: true              # The only EOG ICA in the pipeline. Runs on broadband (>= 1 Hz) data, before the
+                             # paradigm 8-35 Hz band-pass, so blink/saccade energy (1-4 Hz) is still available
+  n_components: 15           # Fixed count; 0.95 variance gives only ~8 components on 22-ch data (too few for EOG z-score)
+  method: fastica            # FastICA is efficient; 'infomax' is a common alternative for high-density EEG
+  random_state: 42           # Ensures reproducibility of the ICA decomposition
+  eog_threshold: 3.0         # Z-score threshold across components; must be < sqrt(n_components - 1) to ever trigger
 
 annotate_break:
   enabled: true
