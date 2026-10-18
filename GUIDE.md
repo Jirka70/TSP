@@ -152,8 +152,9 @@ Each block can be toggled independently with `enabled: true/false`.
 | `low_pass_filter`            | disabled | `h_freq: 40.0` Hz                       |
 | `notch_filter`               | enabled  | `freqs: [50]` (60 for North America)    |
 | `bad_channels_interpolation` | enabled  | —                                       |
-| `re_referencing`             | enabled  | `method: CSD` or `AVERAGE`              |
-| `ica`                        | disabled | `n_components: 0.95`, `method: infomax` |
+| `channel_selection`          | always   | `picks: [eeg, eog]` (never `stim`)      |
+| `re_referencing`             | enabled  | `method: AVERAGE`, runs before ICA (CSD is in epoch stage) |
+| `ica`                        | enabled  | `n_components: 15`, `method: fastica`, `eog_threshold: 3.0` (< √(n−1)) |
 | `annotate_break`             | enabled  | `min_break_duration: 2.5` s             |
 
 ---
@@ -174,6 +175,10 @@ window:
   tmax: 4.0               # epoch end relative to event (s)
   baseline: [ -0.5, 0.0 ]   # baseline correction window
 
+alignment:
+  enabled: false
+  latency: 0.0            # marker-to-stimulus latency (s); shifts events before epoching
+
 resampling:
   enabled: true
   sfreq: 128.0            # target sample rate after epoching
@@ -185,9 +190,8 @@ resampling:
 
 | Block        | Default  | Key params                               |
 |--------------|----------|------------------------------------------|
-| `alignment`  | enabled  | `tmin_offset: -0.2` s                    |
-| `ica`        | enabled  | `n_components: 15`, `eog_threshold: 3.0` |
 | `autoreject` | enabled  | `n_interpolate: [1,4,8]`, `cv: 5`        |
+| `csd`        | enabled  | runs after AutoReject                    |
 | `csp`        | disabled | `n_components: 4`, `log: true`           |
 
 ---
