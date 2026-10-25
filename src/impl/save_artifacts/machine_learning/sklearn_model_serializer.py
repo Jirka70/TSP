@@ -33,9 +33,9 @@ class SklearnModelSerializer(IModelSerializer):
             "csp_lda",
             "riemannian_lda",
             "riemannian_svm",
-            "rimannian_lr",
-            "riamannian_rf",
-            "riamannian_mdm"
+            "riemannian_lr",
+            "riemannian_rf",
+            "riemannian_mdm"
         ]
         return model_name in supported_methods
 
