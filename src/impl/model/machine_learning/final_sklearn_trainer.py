@@ -1,4 +1,5 @@
-from typing import List, Any, Tuple
+import hashlib
+from typing import List, Any, Tuple, Dict
 
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -19,7 +20,17 @@ from src.types.interfaces.model.final_trainer import IFinalTrainer
 
 
 class FinalSklearnTrainer(IFinalTrainer):
-    """Train a Scikit-learn model on all available folds for final export."""
+    """
+    Train a Scikit-learn model on all available folds for final export.
+
+    The training set is the union of all fold training partitions, deduplicated and with every
+    sample of the global validation set removed, because the final model is evaluated on it.
+
+    Note:
+        `input_dto.training_data` is intentionally NOT used. It holds the data before splitting,
+        including the global validation partition, so training on it would leak validation data
+        into the final model.
+    """
 
     def run(self, input_dto: FinalTrainingInputDTO, run_ctx: RunContext) -> StepResult[FinalTrainingResultDTO]:
         """
@@ -39,7 +50,7 @@ class FinalSklearnTrainer(IFinalTrainer):
         log.info(f"Final training: {method_id} (Run: {run_ctx.run_id})", VerbosityLevel.QUIET)
 
         # Accumulate all training samples from the provided folds
-        x_all, y_all = self._collect_all_data(input_dto)
+        x_all, y_all = self._collect_all_data(input_dto, log)
 
         pipeline : Pipeline = ModelFactory.create(method_id, params)
         model : GenericSklearnModel = GenericSklearnModel(pipeline, method_id)
@@ -65,16 +76,23 @@ class FinalSklearnTrainer(IFinalTrainer):
 
         return StepResult(FinalTrainingResultDTO(trained_model=trained_model))
 
-    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> Tuple[np.ndarray, np.ndarray]:
+    def _collect_all_data(self, input_dto: FinalTrainingInputDTO, log: PipelineLogger) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Collect and concatenate training samples and labels across all available folds.
-        Ensures no duplicate samples are returned.
+        Collect training samples and labels across all folds for the final model.
+
+        Samples present in more than one fold are kept only once (first occurrence). Samples that
+        are also part of the global validation set are excluded, because the final model is
+        evaluated on that set. Augmented copies are distinct samples and are kept.
 
         Args:
-            input_dto (FinalTrainingInputDTO): Input container with fold data.
+            input_dto (FinalTrainingInputDTO): Input container with fold and validation data.
+            log (PipelineLogger): Logger of the final training step.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Unique concatenated feature matrix (X) and labels (y).
+            Tuple[np.ndarray, np.ndarray]: Concatenated feature matrix (X) and labels (y).
+
+        Raises:
+            ValueError: If the same sample occurs with different labels.
         """
         x_list: List[np.ndarray] = []
         y_list: List[np.ndarray] = []
@@ -91,11 +109,51 @@ class FinalSklearnTrainer(IFinalTrainer):
         x_concat = np.concatenate(x_list, axis=0)
         y_concat = np.concatenate(y_list, axis=0)
 
-        _, unique_indices = np.unique(x_concat, axis=0, return_index=True)
+        validation_keys: set[bytes] = set()
+        if input_dto.validation_data and input_dto.validation_data.data:
+            x_val, _ = self._extract_data_and_labels(input_dto.validation_data)
+            validation_keys = {self._sample_key(sample) for sample in x_val}
 
-        unique_indices.sort()
+        seen_labels: Dict[bytes, Any] = {}
+        keep_indices: List[int] = []
+        duplicate_count = 0
+        validation_overlap_count = 0
 
-        return x_concat[unique_indices], y_concat[unique_indices]
+        for idx, sample in enumerate(x_concat):
+            key = self._sample_key(sample)
+
+            if key in seen_labels:
+                if seen_labels[key] != y_concat[idx]:
+                    raise ValueError(f"Sample at index {idx} occurs in the training folds with conflicting labels ({seen_labels[key]} vs {y_concat[idx]}).")
+                duplicate_count += 1
+                continue
+            seen_labels[key] = y_concat[idx]
+
+            if key in validation_keys:
+                validation_overlap_count += 1
+                continue
+
+            keep_indices.append(idx)
+
+        log.info(f"Removed {duplicate_count} duplicate samples shared between folds.", VerbosityLevel.DETAILED)
+        if validation_overlap_count > 0:
+            log.warning(f"Excluded {validation_overlap_count} training samples that are also part of the global validation set.")
+
+        return x_concat[keep_indices], y_concat[keep_indices]
+
+    @staticmethod
+    def _sample_key(sample: np.ndarray) -> bytes:
+        """
+        Build an exact-match identity key of a single sample.
+
+        Args:
+            sample (np.ndarray): A single epoch or feature vector.
+
+        Returns:
+            bytes: Digest of the sample's shape and float64 values.
+        """
+        data = np.ascontiguousarray(sample, dtype=np.float64)
+        return hashlib.sha1(str(data.shape).encode() + data.tobytes()).digest()
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
