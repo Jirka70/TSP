@@ -241,7 +241,7 @@ class MatplotlibVisualizer(IVisualizer):
             run_ctx (RunContext): Pipeline execution context.
             copies_per_sample (int): Number of augmented copies per sample.
         """
-        if not self._config.visualize.augmentation or not data.folds:
+        if not self._config.visualize.augmentation or not data.folds:  # folds=None skips in training pipeline mode
             return
 
         log = run_ctx.logger.for_step("MATPLOTLIB_VISUALISATION_AUGMENTED")

@@ -9,19 +9,27 @@ import pandas as pd
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
+from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 from src.types.dto.split.split_input_dto import SplitInputDTO
 from src.types.interfaces.splitter import ISplitter
 from src.types.dto.config.logging.verbosity_level import VerbosityLevel
 
 
-class BasicSplitter(ISplitter):
+class GeneralSplitter(ISplitter):
     """
     Splitter that performs a simple percentage-based split (train/validation/test).
 
-    This implementation aggregates all input recordings into a single pool and then
-    partitions them according to the configured ratios. It returns a DatasetSplitDTO
-    containing a single fold (Fold 0).
+    Split order:
+        1. Separate **test** data (held-out for final evaluation).
+        2. From the remainder, separate **validation** data (used during DL
+           per-epoch training). Skipped when ``validation_ratio == 0.0``.
+        3. The remaining data becomes **train**.
+
+    Returns a :class:`DatasetSplitDTO` with ``folds=None`` and the three
+    partitions set accordingly. ``test`` and ``validation`` may be ``None``
+    when their configured ratio is 0.0.
+
+    This splitter is intended exclusively for the **training pipeline**.
     """
 
     def extract_data(self, recordings: list, run_ctx: RunContext) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
@@ -146,6 +154,16 @@ class BasicSplitter(ISplitter):
     def run(self, input_dto: SplitInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
         Executes the percentage-based splitting logic.
+
+        Split strategy:
+            1. Shuffle the full index pool (optional).
+            2. Carve out **test** indices from the end of the pool.
+            3. From the remainder, carve out **validation** indices from the end
+               (skipped when ``validation_ratio == 0.0``).
+            4. The remaining indices become **train**.
+
+        ``folds`` in the returned :class:`DatasetSplitDTO` is always ``None``
+        because the training pipeline does not use cross-validation folds.
         """
         log = run_ctx.logger.for_step("BASIC_SPLITTER")
         config = input_dto.config
@@ -154,14 +172,12 @@ class BasicSplitter(ISplitter):
 
         if not config.enabled:
             log.info("BasicSplitter is disabled. Passing entire dataset as training data.")
-            single_fold = FoldDTO(
-                fold_idx=0,
-                train_data=input_dto.data,
-                test_data=None,
-            )
-            return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=None))
+            return StepResult(DatasetSplitDTO(folds=None, train=input_dto.data, test=None, validation=None))
 
-        log.info(f"Running BasicSplitter (train: {config.ratios.train}, val: {config.ratios.validation}, test: {config.ratios.test})", VerbosityLevel.QUIET)
+        log.info(
+            f"Running BasicSplitter (train: {config.ratios.train}, val: {config.ratios.validation}, test: {config.ratios.test})",
+            VerbosityLevel.QUIET,
+        )
 
         # Aggregate data from all input recordings
         x, y, metadata = self.extract_data(recordings, run_ctx)
@@ -177,63 +193,37 @@ class BasicSplitter(ISplitter):
             np.random.seed(config.random_seed)
             np.random.shuffle(indices)
 
-        validation_data_global = None
-        main_indices = indices
+        # --- Step 1: Carve out test data ---
+        num_test = int(n_samples * config.ratios.test) if config.ratios.test > 0 else 0
+        test_indices = indices[-num_test:] if num_test > 0 else np.array([], dtype=int)
+        remaining_indices = indices[:-num_test] if num_test > 0 else indices
 
-        # 1. Pre-split validation
-        if config.ratios.validation > 0 and config.exclude_validation_data_before_split:
-            num_val = int(n_samples * config.ratios.validation)
-            if num_val > 0:
-                val_indices = indices[:num_val]
-                main_indices = indices[num_val:]
-                validation_data_global = self.create_dto(val_indices, x, y, metadata, dataset_name)
-                log.info(f"Pre-split: extracted {num_val} samples for global validation.", VerbosityLevel.NORMAL)
+        # --- Step 2: Carve out validation data from the remainder ---
+        num_val = int(len(remaining_indices) * config.ratios.validation) if config.ratios.validation > 0 else 0
+        val_indices = remaining_indices[-num_val:] if num_val > 0 else np.array([], dtype=int)
+        train_indices = remaining_indices[:-num_val] if num_val > 0 else remaining_indices
 
-        # Calculate boundaries for the main split (train/test) within main_indices
-        n_main = len(main_indices)
-        total_tt = config.ratios.train + config.ratios.test
-        if total_tt == 0:
-            log.error("No training data provided.")
-            raise ValueError("Both train_ratio and test_ratio are zero.")
-
-        train_share = config.ratios.train / total_tt
-        num_train_all = int(n_main * train_share)
-
-        train_idx_all = main_indices[:num_train_all]
-        test_idx = main_indices[num_train_all:]
-
-        actual_train_idx = train_idx_all
-
-        # 2. Post-split validation
-        if config.ratios.validation > 0 and not config.exclude_validation_data_before_split:
-            num_val = int(len(train_idx_all) * config.ratios.validation)
-            if num_val > 0:
-                val_idx_in_fold = train_idx_all[:num_val]
-                actual_train_idx = train_idx_all[num_val:]
-                validation_data_global = self.create_dto(val_idx_in_fold, x, y, metadata, dataset_name)
-                log.info(f"Post-split: extracted {num_val} samples from training set for validation.", VerbosityLevel.NORMAL)
-
-        # Create DTOs
-        train_dto = self.create_dto(actual_train_idx, x, y, metadata, dataset_name)
-        test_dto = self.create_dto(test_idx, x, y, metadata, dataset_name)
-
-        log.info(f"Split completed: {len(actual_train_idx)} train, {len(test_idx)} test samples.", VerbosityLevel.QUIET)
-        # --- Final Sanity Checks ---
-        if not train_dto or not test_dto or len(train_dto.data) == 0 or len(test_dto.data) == 0:
-            msg = f"Splitting process failed to generate any folds. Check your dataset and splitter configuration."
+        # --- Step 3: Sanity checks ---
+        if len(train_indices) == 0:
+            msg = "Splitting produced zero training samples. Check your ratios and dataset size."
             log.error(msg)
             raise ValueError(msg)
 
-        if validation_data_global is None or not validation_data_global.data:
-            msg = f"No global validation data produced (validation_ratio: {config.ratios.validation}). The pipeline requires validation data for evaluation. Please ensure validation_ratio > 0 and that you have enough data/subjects."
-            log.error(msg)
-            raise ValueError(msg)
+        # --- Step 4: Build DTOs ---
+        train_dto = self.create_dto(train_indices, x, y, metadata, dataset_name)
+        test_dto = self.create_dto(test_indices, x, y, metadata, dataset_name)
+        validation_dto = self.create_dto(val_indices, x, y, metadata, dataset_name)
 
-        # Package results into a single fold
-        single_fold = FoldDTO(
-            fold_idx=0,
-            train_data=train_dto,
-            test_data=test_dto,
+        log.info(
+            f"Split completed: {len(train_indices)} train, {len(test_indices)} test, {len(val_indices)} validation samples.",
+            VerbosityLevel.QUIET,
         )
 
-        return StepResult(DatasetSplitDTO(folds=[single_fold], validation_data=validation_data_global))
+        return StepResult(
+            DatasetSplitDTO(
+                folds=None,
+                train=train_dto,
+                test=test_dto,
+                validation=validation_dto,
+            )
+        )

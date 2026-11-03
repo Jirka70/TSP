@@ -11,34 +11,39 @@ class SplitRatiosConfig(BaseModel):
     """Train/validation/test split fractions (must sum to 1.0)."""
 
     train: float = Field(ge=0.0, le=1.0)
-    validation: float = Field(gt=0.0, le=1.0)
+    validation: float = Field(ge=0.0, le=1.0)
     test: float = Field(ge=0.0, le=1.0)
 
 
-class SplitBasicConfig(AStageConfig):
+class SplitGeneralConfig(AStageConfig):
     """
     Configuration for the basic percentage-based splitting strategy.
+
+    Split order:
+        1. Separate ``test`` data (held-out for final evaluation).
+        2. From the remainder, separate ``validation`` data if ``validation > 0.0``
+           (used for DL per-epoch training). Skipped when ``validation == 0.0``.
+        3. Remaining data becomes ``train``.
 
     Attributes:
         backend: Literal identifier for the 'basic' splitter.
         enabled: Whether this splitting strategy is enabled.
-        ratios: Train/validation/test split fractions.
+        ratios: Train/validation/test split fractions. ``validation`` may be 0.0
+            (e.g. for ML models that do not require a validation partition).
         shuffle: Whether to shuffle data before splitting.
         random_seed: Seed for the random number generator to ensure reproducibility.
-        exclude_validation_data_before_split: Whether to extract validation data before the main split (based on subjects or samples).
     """
 
-    backend: Literal["basic"]
+    backend: Literal["general"]
     enabled: bool
 
     ratios: SplitRatiosConfig
 
     shuffle: bool
     random_seed: int = Field(ge=0)
-    exclude_validation_data_before_split: bool
 
     @model_validator(mode="after")
-    def validate_ratios_sum(self) -> "SplitBasicConfig":
+    def validate_ratios_sum(self) -> "SplitGeneralConfig":
         """Ensures that the sum of split ratios is approximately 1.0."""
         if self.enabled:
             total = self.ratios.train + self.ratios.validation + self.ratios.test
@@ -195,7 +200,7 @@ class SplitMoabbCrossSessionConfig(MoabbSplitConfig):
 
 
 SplitConfig = Union[
-    SplitBasicConfig,
+    SplitGeneralConfig,
     SplitMoabbWithinSessionConfig,
     SplitMoabbWithinSubjectConfig,
     SplitMoabbCrossSubjectConfig,

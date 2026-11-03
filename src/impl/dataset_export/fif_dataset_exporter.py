@@ -18,6 +18,14 @@ log = logging.getLogger(__name__)
 class FifDatasetExporter(IDatasetExporter):
     """
     Exports the augmented dataset to MNE .fif files.
+
+    Supports two modes driven by the contents of :class:`DatasetSplitDTO`:
+
+    - **Training pipeline** (``folds=None``): exports ``train``, ``validation``,
+      and ``test`` partitions to separate sub-directories.
+    - **Evaluation pipeline** (``folds`` is set): exports each fold's
+      ``train_data`` and ``test_data`` to ``fold_train`` / ``fold_test``
+      sub-directories.
     """
 
     def run(
@@ -32,19 +40,24 @@ class FifDatasetExporter(IDatasetExporter):
 
         log.info(f"Exporting augmented dataset to {export_dir}")
 
-        # 1. Export Validation Data
-        if data.validation_data:
-            self._export_epoch_dto(data.validation_data, export_dir / "validation", "validation")
+        if data.folds is None:
+            # --- Training pipeline mode: export train / validation / test directly ---
+            if data.train:
+                self._export_epoch_dto(data.train, export_dir / "train", "train")
+            if data.validation:
+                self._export_epoch_dto(data.validation, export_dir / "validation", "validation")
+            if data.test:
+                self._export_epoch_dto(data.test, export_dir / "test", "test")
+        else:
+            # --- Evaluation pipeline mode: export per-fold data ---
+            for fold in data.folds:
+                fold_name = f"fold_{fold.fold_idx}"
+                if fold.train_data:
+                    self._export_epoch_dto(fold.train_data, export_dir / "fold_train", f"{fold_name}_train")
+                if fold.test_data:
+                    self._export_epoch_dto(fold.test_data, export_dir / "fold_test", f"{fold_name}_test")
 
-        # 2. Export Folds
-        for fold in data.folds:
-            fold_name = f"fold_{fold.fold_idx}"
-            if fold.train_data:
-                self._export_epoch_dto(fold.train_data, export_dir / "fold_train", f"{fold_name}_train")
-            if fold.test_data:
-                self._export_epoch_dto(fold.test_data, export_dir / "fold_test", f"{fold_name}_test")
-
-        # 3. Create Metadata
+        # Create Metadata JSON
         self._create_metadata_json(config, data, export_dir)
 
         return StepResult(None)
@@ -84,19 +97,32 @@ class FifDatasetExporter(IDatasetExporter):
             epochs.save(target_dir / filename, overwrite=True, verbose=False)
 
     def _create_metadata_json(self, config: DatasetExportConfig, data: DatasetSplitDTO, export_dir: Path):
-        metadata = {
-            "backend": config.backend,
-            "num_folds": len(data.folds),
-            "has_validation": data.validation_data is not None,
-            "folds": []
-        }
-
-        for fold in data.folds:
-            metadata["folds"].append({
-                "fold_idx": fold.fold_idx,
-                "train_samples": sum(rec.data.shape[0] for rec in fold.train_data.data) if fold.train_data else 0,
-                "test_samples": sum(rec.data.shape[0] for rec in fold.test_data.data) if fold.test_data else 0
-            })
+        if data.folds is None:
+            # Training pipeline mode
+            metadata = {
+                "backend": config.backend,
+                "mode": "training",
+                "has_train": data.train is not None,
+                "has_validation": data.validation is not None,
+                "has_test": data.test is not None,
+                "train_samples": sum(rec.data.shape[0] for rec in data.train.data) if data.train else 0,
+                "validation_samples": sum(rec.data.shape[0] for rec in data.validation.data) if data.validation else 0,
+                "test_samples": sum(rec.data.shape[0] for rec in data.test.data) if data.test else 0,
+            }
+        else:
+            # Evaluation pipeline mode
+            metadata = {
+                "backend": config.backend,
+                "mode": "evaluation",
+                "num_folds": len(data.folds),
+                "folds": [],
+            }
+            for fold in data.folds:
+                metadata["folds"].append({
+                    "fold_idx": fold.fold_idx,
+                    "train_samples": sum(rec.data.shape[0] for rec in fold.train_data.data) if fold.train_data else 0,
+                    "test_samples": sum(rec.data.shape[0] for rec in fold.test_data.data) if fold.test_data else 0,
+                })
 
         with open(export_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=4)

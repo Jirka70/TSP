@@ -57,11 +57,9 @@ def my_app(cfg):
         split = sf.create_split_stage()
         augmentation = sf.create_augmentation_stage()
         dataset_exporter = sf.create_dataset_exporter_stage()
-        model_trainer = sf.create_model_trainer_stage()
-        metrics_aggregator = sf.create_metrics_aggregator_stage()
         final_trainer = sf.create_final_trainer_stage()
 
-        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, dataset_exporter, model_trainer, metrics_aggregator, final_trainer, evaluator, visualizer, saver, model_serializer)
+        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, dataset_exporter, final_trainer, evaluator, visualizer, saver, model_serializer)
 
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         model_loader = sf.create_model_loader()

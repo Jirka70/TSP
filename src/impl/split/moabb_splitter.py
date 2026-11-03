@@ -247,4 +247,4 @@ class MoabbSplitter(ISplitter):
             log.error(msg)
             raise ValueError(msg)
 
-        return StepResult(DatasetSplitDTO(folds=folds, validation_data=None))
+        return StepResult(DatasetSplitDTO(folds=folds))
