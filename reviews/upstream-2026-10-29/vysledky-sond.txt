@@ -1,0 +1,19 @@
+{"case": "filesystem_missing_session_run", "observed": {"input_samples": 10, "reconstructed_recordings": {"BasicSplitter": 0, "MoabbSplitter": 0}}}
+{"case": "instant_events_removed", "observed": "None"}
+{"case": "tsv_time_unit_fixed_to_ms", "observed": {"input_onset": 2, "loaded_onset": [0.002], "loaded_duration": [0.001]}}
+{"case": "explicit_event_mapping_ignored", "observed": {"requested": {"left_hand": 10, "right_hand": 20}, "actual": {"left_hand": 1, "right_hand": 2}, "with_cue": {"left_hand": 2, "right_hand": 3}}}
+{"case": "stale_signal_metadata_and_export", "observed": {"actual_sfreq": 128.0, "recording_metadata_sfreq": 200, "split_metadata_keys": ["sfreq", "labels"], "exported_sfreq": 200.0, "exported_channels": ["EEG 000", "EEG 001", "EEG 002", "EEG 003"], "original_channels": ["C3", "C4", "F3", "F4"]}}
+{"case": "alignment_changes_only_axis", "observed": {"samples_identical": true, "tmin_before": 0.0, "tmin_after": -0.2}}
+{"case": "preload_false", "error": "RuntimeError", "message": "Since bad epochs have not been dropped, the length of the Epochs is not known. Load the Epochs with preload=True, or call Epochs.drop_bad(). To find the number of events in the Epochs, use len(Epochs.events)."}
+{"case": "csp_loses_labels_and_time_axis", "observed": {"output_shape": [12, 2], "labels_present": false, "splitter_error": "No labels found for recording 1. BasicSplitter requires labels for partitioning."}}
+{"case": "augmentation_direct_mne_loses_labels", "observed": {"input_events": [1, 2], "output_samples": 4, "output_metadata": {"sfreq": 200, "channel_names": ["C3", "C4", "F3", "F4"]}}}
+{"case": "noise_scale_for_volt_inputs", "observed": {"signal_std": 9.974435855720618e-06, "added_noise_std": 0.009953022257116619, "noise_to_signal": 997.8531519061584}}
+Using TorchEEGRawAugmentor. Be aware that this may cause data leakage - consider using Cross subject splitter for save split. Also this may significantly increase the number of recordings and thus memory usage.
+{"case": "raw_aug_nonzero_first_sample_timing", "observed": [{"session": "s", "first_samp": "200", "relative_events": [200, 400]}, {"session": "s_0raw_augmented", "first_samp": 0, "relative_events": [400, 600]}]}
+{"case": "postsplit_ratio_semantics", "observed": {"requested": [630, 90, 180], "actual": [630, 70, 200]}}
+{"case": "moabb_global_validation_overlap", "observed": {"validation_count": 23, "train_overlap_by_fold": [6, 6, 10], "test_overlap_by_fold": [9, 9, 5]}}
+{"case": "epoch_ica_without_eog", "error": "RuntimeError", "message": "No EOG channel(s) found"}
+{"case": "csd_skipped_without_montage", "observed": {"requested": "CSD", "output_channel_types": ["eeg", "eeg", "eeg", "eeg"], "samples_identical": true}}
+/Users/jirka/TSP/.venv/lib/python3.12/site-packages/sklearn/decomposition/_fastica.py:132: ConvergenceWarning: FastICA did not converge. Consider increasing tolerance or the maximum number of iterations.
+  warnings.warn(
+{"case": "raw_ica_excludes_no_components", "observed": {"input_std": 1.0023358489263291e-05, "max_difference": 1.9312351197398048e-19, "unchanged_at_1e_12": true}}
