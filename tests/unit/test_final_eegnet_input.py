@@ -9,36 +9,29 @@ from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import Fin
 from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.config.model.training_config import TrainingConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
-from src.types.dto.load.recording import RecordingDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.split.dataset_split_dto import FoldDTO
-
-
-def _dataset(value, count=2):
-    return EpochPreprocessedDTO(data=[RecordingDTO(
-        data=np.full((count, 2, 32), value, dtype=np.float32),
-        dataset_name="synthetic",
-        subject_id=1,
-        session_id="0",
-        run_id="0",
-        metadata={"labels": np.arange(count) % 2},
-    )])
+from tests.unit.deep_learning_fixtures import create_dataset
 
 
 @pytest.fixture
 def training_input():
     config = EEGNetConfig.model_construct(
         model_name="eegnet",
+        n_classes=2,
         training=TrainingConfig(
-            epochs=1, batch_size=2, learning_rate=0.001,
-            optimizer="adam", random_state=None,
+            epochs=1,
+            batch_size=2,
+            learning_rate=0.001,
+            optimizer="adam",
+            random_state=None,
         ),
     )
     return FinalTrainingInputDTO(
         config=config,
-        training_data=_dataset(99, count=8),
-        folds=[FoldDTO(fold_idx=0, train_data=_dataset(1), test_data=_dataset(3))],
-        validation_data=_dataset(2),
+        training_data=create_dataset(99, count=8),
+        folds=[FoldDTO(fold_idx=0, train_data=create_dataset(1), test_data=create_dataset(3))],
+        validation_data=create_dataset(2),
     )
 
 
@@ -55,7 +48,7 @@ def test_run_rejects_wrong_fold_count_before_creating_model(training_input, coun
 
 
 @pytest.mark.parametrize("name", ["train", "val", "test"])
-@pytest.mark.parametrize("missing", [None, EpochPreprocessedDTO(data=[]), _dataset(0, count=0)])
+@pytest.mark.parametrize("missing", [None, EpochPreprocessedDTO(data=[]), create_dataset(0, count=0)])
 def test_rejects_missing_or_empty_sets(training_input, name, missing):
     fold = training_input.folds[0]
     if name == "val":

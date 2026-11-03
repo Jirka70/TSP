@@ -2,6 +2,34 @@
 
 Datum zápisu: 2026-11-03. Stav: návrh a úkoly, částečná implementace interního převodu popsaná níže.
 
+## Implementovaná vstupní validace (2026-11-03)
+
+Navazující zadání implementuje `validate_dl_input()` hned po interním adaptéru v `FinalEEGNetTrainer.run()`,
+před seedem, konstrukcí modelu a učením. Kontroly jsou rozdělené do malých pojmenovaných funkcí.
+Pydantic schémata ověřují každou nahrávku a její metadata, další funkce kontrolují společnou specifikaci,
+třídy, konzistenci původu, oddělení sad podle protokolu, časové překryvy a deklarované fitování preprocessingu.
+Trainer používá vrácená ověřená pole; vypisuje počty tříd a upozornění.
+
+Po upřesnění čitelnosti zůstávají jednoduché cykly a podmínky přímo ve validátoru.
+Odstraněné jsou helpery, které pouze obalovaly jednoduché průchody sadami; samostatné kontroly
+si vlastní funkce zachovávají. Limit znamená dvě vnořené řídicí struktury (`for → if`, `for → for`),
+bez započítání základního odsazení těla funkce. Upřesnění je závazně zapsané v `AGENTS.md`.
+Stejná úprava je provedená v celé dosud nepushnuté validaci a v upravené části traineru:
+obecné `require_condition()` nahradily přímé podmínky a výjimky, jednoduché průchody jsou viditelné
+na místě. NumPy operace a samostatné metodické kontroly si pojmenované helpery zachovávají.
+Po této úpravě znovu prošlo všech 96 testů a Ruff s limitem 120 znaků.
+
+Přesný kontrakt a meze popisuje [vstupní validace DL](dl-vstupni-validace.md).
+Metadata používají plné názvy `signal_specification` a `epoch_origins`.
+Současný splitter a augmentace tento kontrakt ještě nepřenášejí; neúplné vstupy nyní hlavní DL odmítá.
+Chybějící metadata se neodhadují a nezávislost sad se nepovažuje za ověřenou bez jejich původu.
+Nová validace nemění foldové trénování, ostatní modely ani stávající finální evaluaci na val.
+Oddělené testovací vyhodnocení zůstává otevřeným úkolem.
+
+Ověření: `.venv/bin/python -m pytest -q` — 96 testů prošlo; navíc Ruff kontrola upravených Python souborů
+a kontrola nejvýše dvou úrovní řídicího odsazení v produkčních funkcích. Testy ověřují i chyby metadat,
+překryvy a skutečný MNE vstup, nikoli kvalitu modelu na reálných EEG datech.
+
 ## Implementovaný dílčí krok (2026-11-03)
 
 Na následné výslovné zadání uživatele je dočasný převod umístěný přímo v `FinalEEGNetTrainer._to_dl_input` a volaný na začátku `run()`. Pipeline a její veřejný `FinalTrainingInputDTO` se nemění. Toto zadání nahrazuje původní návrh umístit přebalovací adaptér mimo trainer.
@@ -112,8 +140,8 @@ Ukládat nejprve do dočasného umístění, ověřit úplnost balíčku a načt
 
 ## Doporučené pořadí implementace
 
-- [ ] Definovat cílové DTO, popis signálu a původ úseků; vymezit hranici DL bez změny kontraktu ostatních modelů.
-- [ ] Implementovat vstupní kontroly a malé syntetické train/val/test fixture. To je první samostatně dokončitelný celek bez závislosti na změně splitteru.
+- [x] Definovat interní DTO, popis signálu a původ úseků; vymezit hranici DL bez změny kontraktu ostatních modelů.
+- [x] Implementovat vstupní kontroly a malé syntetické train/val/test fixture. Kontrakt metadat a meze jsou popsané výše.
 - [ ] Napojit jeden trainer na train/val, vybrat a obnovit nejlepší stav, přidat oddělenou testovací evaluaci.
 - [ ] Domluvit se splitterem sémantiku a vytvoření tří sad. Případný převod realizovat mimo DL s explicitními pravidly, nikoli jako odhad uvnitř traineru.
 - [ ] Upravit DL větev pipeline: odstranit závislost na foldech a automatické finální trénování na nerozdělených datech. Zachovat ostatní cesty projektu.
