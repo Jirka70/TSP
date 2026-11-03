@@ -151,15 +151,11 @@ class MoabbSplitConfig(AStageConfig):
     """
     Base configuration for MOABB-based splitting strategies.
 
-    Attributes:
-        enabled: Whether this splitting strategy is enabled.
-        exclude_validation_data_before_split: Whether to extract validation data before MOABB splitting (based on subjects).
-        validation_ratio: Fraction of data (subjects or samples) to use for validation.
+    MOABB splitters always produce only train/test folds — no global validation
+    data is extracted. Each fold's test set serves as the held-out evaluation
+    partition (used by FoldEvaluator in the evaluation pipeline, or for fold-level
+    metrics in the training pipeline).
     """
-
-    enabled: bool
-    exclude_validation_data_before_split: bool = False
-    validation_ratio: float = Field(default=0.0, gt=0.0, le=1.0)
 
 
 class SplitMoabbWithinSessionConfig(MoabbSplitConfig):

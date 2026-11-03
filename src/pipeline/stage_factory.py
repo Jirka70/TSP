@@ -11,6 +11,7 @@ from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
+from src.impl.evaluator.fold_evaluator import FoldEvaluator
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
 from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
@@ -102,6 +103,7 @@ class StageFactory:
         },
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
+            "fold": FoldEvaluator,
         },
         StageType.SAVER: {
             "default": ArtifactSaver,

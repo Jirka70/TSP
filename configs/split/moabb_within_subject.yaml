@@ -4,14 +4,11 @@ backend: moabb_within_subject # Used by program logic, changing this may break t
 
 # This backend performs cross-validation within each subject, across all their sessions.
 # It evaluates how stable the features are for a single subject over time.
-
-enabled: true                # Whether the within-subject splitting strategy is enabled.
-exclude_validation_data_before_split: true # Whether to set aside validation data before the MOABB split
-validation_ratio: 0.2        # Fraction of data to use for global validation (0.0 to 1.0)
+# Each fold produces train_data and test_data only — no global validation data.
 
 evaluator:
   _target_: moabb.evaluations.WithinSubjectSplitter # MOABB target splitter class
-  cv_class: sklearn.model_selection.StratifiedKFold # Scikit-learn cross-validation class
+  cv_class: sklearn.model_selection.StratifiedKFold  # Scikit-learn cross-validation class
   n_folds: 5                 # Number of folds to create for cross-validation
   shuffle: true              # Whether to shuffle the subject data before splitting
   random_state: 42           # Random seed for reproducible splits

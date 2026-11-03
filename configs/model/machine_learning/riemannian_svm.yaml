@@ -5,7 +5,7 @@ backend: "sklearn"           # Scikit-learn backend using Riemannian geometry-ba
 # Support Vector Machine (SVM) classifier operating on the Riemannian tangent space.
 
 model_name: "riemannian_svm" # Unique identifier for the Riemannian SVM pipeline
-fold_training: false         # Toggle between single-shot training and cross-validation fold training
+fold_training: true         # Toggle between single-shot training and cross-validation fold training
 
 parameters:
   estimator: "oas"           # Ensures stable covariance matrix estimation

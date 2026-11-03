@@ -22,7 +22,7 @@ class FoldDTO:
 
 
 @dataclass(frozen=True)
-class DatasetSplitDTO: # TODO: necheceme toto DTO prejmenovat na AugmentedDataDTO / AugmentedDatasetSplitDTO
+class DatasetSplitDTO:  # TODO: necheceme toto DTO prejmenovat na AugmentedDataDTO / AugmentedDatasetSplitDTO
     """
     Main output of the splitting stage, containing all generated folds.
 

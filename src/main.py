@@ -8,6 +8,7 @@ from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
 from src.pipeline.run_context_factory import RunContextFactory
 from src.pipeline.stage_factory import StageFactory
+from src.pipeline.evaluation.evaluation_pipeline import EvaluationPipeline
 from src.pipeline.training.training_pipeline import TrainingPipeline
 from src.types.dto.config.experiment_config import Mode
 from src.validation.config_validator import ExperimentConfigValidator
@@ -75,6 +76,26 @@ def my_app(cfg):
             visualizer=visualizer,
             artifact_saver=saver,
             model_serializer=model_serializer,
+        )
+    elif ex_conf.mode == Mode.EVALUATION.value:
+        raw_augmentation = sf.create_raw_augmentation_stage()
+        split = sf.create_split_stage()
+        augmentation = sf.create_augmentation_stage()
+        dataset_exporter = sf.create_dataset_exporter_stage()
+        model_trainer = sf.create_model_trainer_stage()
+
+        pipeline = EvaluationPipeline(
+            data_loader=dl,
+            raw_preprocessing=raw_preprocessing,
+            raw_augmentation=raw_augmentation,
+            paradigm=paradigm,
+            epoch_preprocessing=epoch_preprocessing,
+            splitting=split,
+            augmentation=augmentation,
+            dataset_exporter=dataset_exporter,
+            model_trainer=model_trainer,
+            evaluator=evaluator,
+            visualizer=visualizer,
         )
     else:
         raise ValueError(f"Mode {ex_conf.mode} is not supported")
