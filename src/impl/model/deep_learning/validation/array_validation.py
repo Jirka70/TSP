@@ -27,10 +27,6 @@ def are_arrays_equal(first: numpy.ndarray, second: numpy.ndarray) -> bool:
     return bool(numpy.array_equal(first, second))
 
 
-def are_numbers_close_to_each_other(first: float, second: float) -> bool:
-    return bool(numpy.isclose(first, second, rtol=1e-9, atol=1e-9))
-
-
 def convert_to_array(values: object) -> numpy.ndarray:
     return numpy.asarray(values)
 

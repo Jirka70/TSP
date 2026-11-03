@@ -1,6 +1,54 @@
 # Kontrakt a plán produkčního DL kroku
 
-Datum zápisu: 2026-11-03. Stav: návrh a úkoly, částečná implementace interního převodu popsaná níže.
+Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
+
+## Numerická validace vstupu (2026-11-03)
+
+EEGNet při převodu vstupu do tensoru ověřuje konečnost po převodu na `float32`, kladné rozměry
+a shodu počtu kanálů a vzorků s modelem. Při zapnuté normalizaci ověřuje i konečnost průměrů,
+směrodatných odchylek a normalizovaného signálu. Neplatné hodnoty vyvolají konkrétní výjimku.
+Ověření: testy normalizace a vstupního kontraktu — 47 testů prošlo; Ruff s limitem 120 znaků.
+
+
+## Aktuální zjednodušení validace na pokyn uživatele (2026-11-03)
+
+Zůstává přímý vstup `FinalTrainingInputDTO` a validace train/val před vytvořením modelu.
+Uživatel následně požádal odstranit všechny popsané kontroly závislé na specifikaci signálu a původu.
+Byly odstraněny požadavky na `signal_specification` a `epoch_origins`, příslušná schémata i modul
+`dataset_separation.py`. Neověřují se již metadata kanálů, jednotek, frekvence, časového okna,
+kódování tříd, preprocessingu, původu pokusů, překryvů ani augmentace.
+
+Zůstávají kontroly přítomnosti dat, rozměrů, konečnosti, celočíselných štítků, délky štítků každé nahrávky,
+shody počtu kanálů a vzorků, počtu tříd v train proti konfiguraci a neznámých tříd ve val.
+Počty tříd se reportují a chybějící známé třídy ve val vyvolají upozornění. Očekávané identity tříd se
+neodhadují z metadat; bez explicitní deklarace se porovnává pouze jejich počet a konzistence train/val.
+`ValidatedDeepLearningInput` nyní obsahuje `training`, `validation`, `class_counts` a `warnings`.
+
+Kontroly původu nebyly přenesené do jiného kroku. Správné rozdělení dat zůstává úkolem jejich přípravy
+a splitteru; validátor netvrdí, že nezávislost sad ověřil. Podrobnosti jsou v `docs/dl-vstupni-validace.md`.
+Ověření: `.venv/bin/python -m pytest -q --tb=short` — 74 testů prošlo; Ruff s limitem 120 znaků.
+Následující zápisy zachycují předchozí stav; případné požadavky na původ a specifikaci v nich nejsou aktuální.
+
+## Předchozí hranice traineru po merge splitteru (2026-11-03)
+
+Uživatel upřesnil, že hlavní DL trainer test nepotřebuje znát. `FinalTrainingInputDTO` obsahuje
+konfiguraci, `training_data` a `validation_data`. `FinalEEGNetTrainer.run()` volá přímo
+`validate_dl_input(input_dto)` před seedem a konstrukcí modelu. Dočasný `DLInputDTO`, metoda
+`_to_dl_input()` a pomocné funkce adaptéru byly odstraněny. Trainer již nikde nečte foldy;
+metadata zdroje uvádějí `training_data` a neobsahují počet foldů.
+
+`ValidatedDeepLearningInput` obsahuje pouze ověřené `training`, `validation`, společný popis signálu,
+počty tříd a upozornění. Kontroly rozměrů, hodnot, tříd, původu, oddělení a fitu preprocessingu
+zůstávají pro train/val zachované. Test se do traineru ani validátoru nepředává; mergnutá pipeline
+ho posílá přímo do `StandardEvaluator` po trénování. Kontrola původu testu vůči ostatním sadám
+musí být mimo trainer a tímto krokem nebyla doplněna.
+
+Chybějící `signal_specification` a `epoch_origins` v reálném výstupu splitteru/augmentace zůstávají
+samostatným integračním úkolem. Testy hranice traineru pracují se syntetickými daty s těmito metadaty.
+Souvisejících 50 testů prošlo. Následně byly na pokyn uživatele opravené dvě zastaralé hodnoty
+`basic` na `general` v testech továrny; `.venv/bin/python -m pytest -q --tb=short` — všech 90 testů prošlo.
+
+Následující implementační zápisy zachycují dřívější stav a jsou nahrazené aktuální hranicí výše.
 
 ## Implementovaná vstupní validace (2026-11-03)
 
@@ -42,7 +90,7 @@ Na následné výslovné zadání uživatele je dočasný převod umístěný p�
 
 ## Uživatelský požadavek
 
-DL má přijímat tři explicitní sady **train, val a test**. Nemá přijímat foldy ani si uvnitř rozdělovat data. Val jsou data, na kterých se model validuje po jednotlivých trénovacích epochách. Uživatel chce začít pracovat na DL, ale současný splitter dodává jiný kontrakt: foldy.
+Celý postup používá tři explicitní sady **train, val a test**. Po upřesnění výše trainer přijímá pouze train/val; test patří závěrečnému evaluatoru. Trainer nemá přijímat foldy ani si uvnitř rozdělovat data. Val jsou data, na kterých se model validuje po jednotlivých trénovacích epochách. Uživatel chce začít pracovat na DL, ale současný splitter dodává jiný kontrakt: foldy.
 
 Cílem je metodicky správné učení, důvěryhodné vyhodnocení a model, který lze uložit, načíst a použít se stejným významem vstupů i výstupů. Předchozí diskuse se soustředila zejména na chyby před DL, které ovlivňují jeho vstupy a výsledky.
 
@@ -50,7 +98,7 @@ Požadavek train/val/test a význam val jsou výslovné rozhodnutí uživatele. 
 
 ## Současný nesoulad v kódu
 
-Při zápisu kontextu platí:
+Při původním zápisu kontextu platilo (historický stav před merge a úpravou vstupu):
 
 - `src/types/dto/model/training_input_dto.py`: `TrainingInputDTO` obsahuje `folds` a je sdílený mezi EEGNet a sklearn modely.
 - `src/types/dto/model/final_training_input_dto.py`: `FinalTrainingInputDTO` také obsahuje foldy vedle `training_data` a volitelných `validation_data`.
@@ -64,12 +112,21 @@ Před implementací znovu ověř tyto body v aktuálním kódu. Změna DL nesmí
 ## Navržené rozhraní
 
 ```text
-DLInput
-  train: Dataset
-  val: Dataset
-  test: Dataset
-  input_spec: popis signálu a tříd
+FinalTrainingInputDTO
+  training_data: EpochPreprocessedDTO
+  validation_data: EpochPreprocessedDTO
   config: konfigurace modelu a trénování
+
+ValidatedDeepLearningInput
+  training: LearningDataset
+  validation: LearningDataset
+  signal_specification: popis signálu a tříd
+  class_counts: počty příkladů tříd
+  warnings: upozornění
+
+Závěrečný evaluator
+  trained_model: vybraný model
+  test_data: EpochPreprocessedDTO
 
 Dataset
   X: numerické pole [N, C, T]
@@ -81,7 +138,7 @@ Dataset
 
 Popis vstupu musí určovat názvy a pořadí kanálů, vzorkovací frekvenci, jednotky či typ reprezentace, časové okno vůči události, význam tříd a identitu/verzi předzpracování. Původ úseků má umožnit dohledat člověka, měření, původní pokus a vazbu augmentované kopie na originál. Konkrétní datové typy a místo uložení těchto informací je potřeba navrhnout.
 
-Celý DL krok může přijmout tři sady. Samotná trénovací funkce má dostat jen train a val; test dostane až závěrečný evaluator. Tím se omezuje možnost použít test omylem během výběru modelu.
+Hlavní DL trainer včetně svého vstupního validátoru přijímá jen train a val; test dostane až závěrečný evaluator. Tím se omezuje možnost použít test omylem během výběru modelu.
 
 ## Rozdělení odpovědností
 

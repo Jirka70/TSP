@@ -6,6 +6,13 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from torch.optim import Optimizer
 
+from src.impl.model.deep_learning.validation.array_validation import (
+    convert_to_array,
+    copy_as_training_precision,
+    has_only_finite_numbers,
+    has_only_positive_dimensions,
+    is_array_with_dimensions,
+)
 from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
@@ -18,10 +25,9 @@ class EEGNetModel(IModel):
     IModel wrapper around a PyTorch EEGNet network.
     """
 
-    def __init__(self, network: nn.Module,
-                 model_name: str,
-                 config: EEGNetConfig,
-                 input_shape: tuple[int, int, int]) -> None:
+    def __init__(
+        self, network: nn.Module, model_name: str, config: EEGNetConfig, input_shape: tuple[int, int, int]
+    ) -> None:
         self._network = network
         self._model_name = model_name
         self._config = config
@@ -196,11 +202,9 @@ class EEGNetModel(IModel):
             "best_validation_accuracy": self.best_validation_accuracy,
         }
 
-    def restore_runtime_state(self,
-                              classes: list | np.ndarray | None,
-                              best_epoch: int | None,
-                              best_validation_accuracy: float | None
-                              ) -> None:
+    def restore_runtime_state(
+        self, classes: list | np.ndarray | None, best_epoch: int | None, best_validation_accuracy: float | None
+    ) -> None:
         self.best_epoch = best_epoch
         self.best_validation_accuracy = best_validation_accuracy
 
@@ -215,10 +219,7 @@ class EEGNetModel(IModel):
             raise ValueError("Classes must not be empty")
 
         self._classes = restored_classes
-        self._class_to_index = {
-            class_label: index
-            for index, class_label in enumerate(self._classes)
-        }
+        self._class_to_index = {class_label: index for index, class_label in enumerate(self._classes)}
 
     def get_network_state_dict(self) -> dict:
         return copy.deepcopy(self._network.state_dict())
@@ -227,10 +228,10 @@ class EEGNetModel(IModel):
         self._network.load_state_dict(state_dict)
 
     def _create_loader(
-            self,
-            x: np.ndarray,
-            y: np.ndarray,
-            shuffle: bool,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        shuffle: bool,
     ) -> DataLoader:
         x_tensor = self._to_x_tensor(x)
         y_tensor = torch.tensor(y, dtype=torch.long)
@@ -243,25 +244,34 @@ class EEGNetModel(IModel):
             shuffle=shuffle,
         )
 
-    def _normalize_input(self, x: np.ndarray) -> np.ndarray:
-        mean = x.mean(axis=2, keepdims=True)
-        std = x.std(axis=2, keepdims=True)
-
-        return (x - mean) / (std + 1e-6)
+    def _normalize_input(self, signal: np.ndarray) -> np.ndarray:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            channel_means = signal.mean(axis=2, keepdims=True)
+            channel_standard_deviations = signal.std(axis=2, keepdims=True)
+            normalized_signal = (signal - channel_means) / (channel_standard_deviations + 1e-6)
+        if not has_only_finite_numbers(channel_means):
+            raise ValueError("EEGNet input contains NaN or infinity after per-epoch channel normalization (mean).")
+        if not has_only_finite_numbers(channel_standard_deviations):
+            raise ValueError("EEGNet input contains NaN or infinity after per-epoch channel normalization (deviation).")
+        if not has_only_finite_numbers(normalized_signal):
+            raise ValueError("EEGNet input contains NaN or infinity after per-epoch channel normalization.")
+        return normalized_signal
 
     def _to_x_tensor(self, x: np.ndarray) -> torch.Tensor:
-        x_array = np.asarray(x, dtype=np.float32)
+        signal = copy_as_training_precision(convert_to_array(x))
+        if not is_array_with_dimensions(signal, 3):
+            raise ValueError(f"EEGNet expects shape [epochs, channels, samples], got {signal.shape}.")
+        if not has_only_positive_dimensions(signal):
+            raise ValueError("EEGNet input dimensions must be positive.")
+        if signal.shape[1:] != self.input_shape[1:]:
+            raise ValueError("EEGNet input channel or time sample count differs from the model input shape.")
+        if not has_only_finite_numbers(signal):
+            raise ValueError("EEGNet input contains NaN or infinity after float32 conversion.")
 
-        if x_array.ndim != 3:
-            raise ValueError(
-                f"EEGNet expects data shape "
-                f"(n_epochs, n_channels, n_times), got {x_array.shape}"
-            )
+        if self._config.input_normalization == PER_EPOCH_CHANNEL_NORMALIZATION:
+            signal = self._normalize_input(signal)
 
-        if (self._config.input_normalization == PER_EPOCH_CHANNEL_NORMALIZATION):
-            x_array = self._normalize_input(x_array)
-
-        return torch.tensor(x_array, dtype=torch.float32)
+        return torch.tensor(signal, dtype=torch.float32)
 
     def _create_optimizer(self) -> Optimizer:
         optimizer_name = self._config.training.optimizer.lower()
@@ -289,10 +299,7 @@ class EEGNetModel(IModel):
                 f"but training data has {len(self._classes)} classes: {self._classes}"
             )
 
-        self._class_to_index = {
-            class_label: index
-            for index, class_label in enumerate(self._classes)
-        }
+        self._class_to_index = {class_label: index for index, class_label in enumerate(self._classes)}
 
     def _encode_labels(self, y: np.ndarray) -> np.ndarray:
         if self._class_to_index is None:
@@ -300,9 +307,7 @@ class EEGNetModel(IModel):
 
         unknown_labels = set(np.unique(y)) - set(self._class_to_index.keys())
         if unknown_labels:
-            raise ValueError(
-                f"Labels {sorted(unknown_labels)} were not seen in training labels."
-            )
+            raise ValueError(f"Labels {sorted(unknown_labels)} were not seen in training labels.")
 
         return np.array(
             [self._class_to_index[label] for label in y],
