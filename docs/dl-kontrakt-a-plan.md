@@ -18,6 +18,13 @@ Chyba s kontextem epochy/batche zastaví běh; neplatné batchy se nepřeskakuj�
 Ověření: `.venv/bin/python -m pytest -q --tb=short` — 107 testů prošlo v pracovním stromu včetně opravy
 testů továrny. Testy numeriky používají malou skutečnou PyTorch síť a vkládají chyby loss, gradientů a výstupů.
 
+## Oprava testů po merge splitteru (2026-11-03)
+
+Testovací konfigurace a očekávané mapování splitteru používají `general` místo odstraněného backendu `basic`.
+Ověření: `tests/unit/test_stage_factory.py` — 30 testů prošlo, celá sada — 107 testů prošlo.
+Tato oprava nemění logiku splitteru ani foldové evaluace. Nová a upravená numerická validace i model
+prošly kontrolou nejvýše dvou vnořených řídicích struktur a Ruff kontrolou s limitem 120 znaků.
+
 
 ## Aktuální zjednodušení validace na pokyn uživatele (2026-11-03)
 
