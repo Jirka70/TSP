@@ -87,7 +87,7 @@ class ExperimentPipeline(IPipeline):
 
         trained_model: TrainedModelDTO = TrainedModelDTO(model=loaded_model_obj, model_name=model_path.stem)
 
-        dummy_split: DatasetSplitDTO = DatasetSplitDTO(folds=[], validation_data=epoch_preprocessing_result.data)
+        dummy_split: DatasetSplitDTO = DatasetSplitDTO(test=epoch_preprocessing_result.data)
 
         evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split)
         evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)

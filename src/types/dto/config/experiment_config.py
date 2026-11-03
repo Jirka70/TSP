@@ -10,7 +10,7 @@ from src.types.dto.config.augmentation_config import (
 )
 from src.types.dto.config.dataset_export_config import DatasetExportConfig
 from src.types.dto.config.epoch_preprocessing_config import EpochPreprocessingConfig
-from src.types.dto.config.evaluation_config import EvaluationConfig, SklearnEvaluationConfig
+from src.types.dto.config.evaluation_config import EvaluationConfig, FoldEvaluationConfig, SklearnEvaluationConfig
 from src.types.dto.config.logging.logging_config import LoggingConfig
 from src.types.dto.config.model.final_trainer_config import FinalTrainerConfig
 from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregatorConfig
@@ -33,6 +33,7 @@ from src.types.dto.config.visualization_config import VisualizationConfig
 class Mode(str, Enum):
     TRAINING = "training"
     EXPERIMENT = "experiment"
+    EVALUATION = "evaluation"
 
 
 @dataclass
@@ -46,7 +47,7 @@ class ExperimentConfig(BaseModel):
     model_path: ModelPathConfig
 
     model: EEGNetConfig | SklearnModelConfig = Field(discriminator="backend")
-    evaluation: EvaluationConfig | SklearnEvaluationConfig = Field(discriminator="backend")
+    evaluation: EvaluationConfig | SklearnEvaluationConfig | FoldEvaluationConfig = Field(discriminator="backend")
     raw_preprocessing: RawPreprocessingConfig = Field(discriminator="backend")
     raw_augmentation: RawAugmentationConfigNone | RawAugmentationConfigTorchEEG = Field(discriminator="backend")
     paradigm: ParadigmConfig = Field(discriminator="backend")
@@ -94,5 +95,6 @@ class ExperimentConfig(BaseModel):
         elif self.mode == Mode.EXPERIMENT:
             if self.save_artifacts.backend != "experiment":
                 raise ValueError(f"Experiment mode doesn't support '{self.save_artifacts.backend}' saver")
+        # Mode.EVALUATION does not use artifact_saver (no artifact saving step)
 
         return self

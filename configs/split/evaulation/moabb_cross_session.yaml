@@ -1,0 +1,13 @@
+backend: moabb_cross_session # Used by program logic, changing this may break the pipeline if not handled properly
+
+# --- MOABB Cross-Session Configuration ---
+
+# This backend performs leave-one-session-out cross-validation.
+# It evaluates how well a model trained on some sessions generalizes to an unseen session.
+# Each fold produces train_data and test_data only — no global validation data.
+
+evaluator:
+  _target_: moabb.evaluations.CrossSessionSplitter   # MOABB target splitter class
+  cv_class: sklearn.model_selection.LeaveOneGroupOut # Scikit-learn cross-validation class
+  shuffle: false             # NOTE: LeaveOneGroupOut does NOT support shuffle=True.
+  random_state: null         # Random seed — must be null when shuffle=False

@@ -4,12 +4,9 @@ backend: moabb_cross_subject # Used by program logic, changing this may break th
 
 # This backend performs leave-one-subject-out cross-validation.
 # It evaluates the model's ability to generalize to completely new, unseen subjects.
-
-enabled: true                # Whether the cross-subject splitting strategy is enabled.
-exclude_validation_data_before_split: false # Whether to set aside validation data before the MOABB split
-validation_ratio: 0.1        # Fraction of data to use for global validation (0.0 to 1.0)
+# Each fold produces train_data and test_data only — no global validation data.
 
 evaluator:
-  _target_: moabb.evaluations.CrossSubjectSplitter # MOABB target splitter class
+  _target_: moabb.evaluations.CrossSubjectSplitter  # MOABB target splitter class
   cv_class: sklearn.model_selection.LeaveOneGroupOut # Scikit-learn cross-validation class
   random_state: 42           # Random seed for reproducible splits

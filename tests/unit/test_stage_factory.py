@@ -23,7 +23,7 @@ from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmento
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
 from src.impl.save_artifacts.deep_learning.eegnet.eegnet_model_serializer import EEGNetModelSerializer
 from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
-from src.impl.split.basic_splitter import BasicSplitter
+from src.impl.split.general_splitter import GeneralSplitter
 from src.impl.split.moabb_splitter import MoabbSplitter
 from src.impl.visualization.matplotlib_visualizer import MatplotlibVisualizer
 from src.impl.visualization.plotly_visualizer import PlotlyVisualizer
@@ -91,7 +91,7 @@ def _factory_config(
         (StageType.RAW_AUGMENTATION, "raw_torcheeg", TorchEEGRawAugmentor),
         (StageType.PARADIGM, "default", ParadigmPreprocessor),
         (StageType.EPOCH_PREPROCESSING, "default", EpochPreprocessor),
-        (StageType.SPLIT, "basic", BasicSplitter),
+        (StageType.SPLIT, "basic", GeneralSplitter),
         (StageType.SPLIT, "moabb_within_session", MoabbSplitter),
         (StageType.SPLIT, "moabb_within_subject", MoabbSplitter),
         (StageType.SPLIT, "moabb_cross_subject", MoabbSplitter),
@@ -126,7 +126,7 @@ def test_stage_factory_creates_expected_default_training_implementations():
     assert isinstance(factory.create_raw_augmentation_stage(), DummyRawAugmentor)
     assert isinstance(factory.create_paradigm_stage(), ParadigmPreprocessor)
     assert isinstance(factory.create_epoch_preprocessing_stage(), EpochPreprocessor)
-    assert isinstance(factory.create_split_stage(), BasicSplitter)
+    assert isinstance(factory.create_split_stage(), GeneralSplitter)
     assert isinstance(factory.create_augmentation_stage(), DummyAugmentor)
     assert isinstance(factory.create_model_trainer_stage(), GenericSklearnTrainer)
     assert isinstance(factory.create_metrics_aggregator_stage(), MetricsAggregator)

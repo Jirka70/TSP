@@ -15,15 +15,20 @@ from src.types.interfaces.augmentor import IAugmentor
 class BasicAugmentor(IAugmentor):
     """
     Basic augmentation pipeline for EEG data.
-    Ensures training data within dataset splits is augmented with basic transformations.
+
+    Supports two modes driven by the contents of :class:`DatasetSplitDTO`:
+
+    - **Training pipeline** (``folds=None``): augments ``train`` data only;
+      ``test`` and ``validation`` are passed through unchanged.
+    - **Evaluation pipeline** (``folds`` is set): augments the ``train_data``
+      inside each fold; fold ``test_data`` is passed through unchanged.
     """
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
         Executes basic preprocessing augmentation steps on epoched neural data.
 
-        This method processes a collection of dataset splits by applying a
-        configurable multi-stage augmentation pipeline to the training data:
+        Augmentation transformations applied to training data:
         1. Gaussian Noise: Adds random normal noise.
         2. Time Shift: Shifts epochs randomly along the time axis.
         3. Channel Dropout: Randomly sets channel values to zero.
@@ -46,9 +51,9 @@ class BasicAugmentor(IAugmentor):
             log.info("Basic Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
             return StepResult(dataset_splits)
 
-        log.info(f"Running BasicAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
         log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         np.random.seed(config.random_seed)
+
         active_augs = []
         if config.gaussian_noise.std > 0:
             log.info(f"Gaussian noise enabled with std: {config.gaussian_noise.std}", VerbosityLevel.TRACE)
@@ -65,22 +70,33 @@ class BasicAugmentor(IAugmentor):
         else:
             log.warning("Basic Augmentation is enabled but no specific transformations are configured. Only copies will be created.")
 
-        augmented_folds = []
+        # --- Training pipeline mode: folds=None, augment train directly ---
+        if dataset_splits.folds is None:
+            if dataset_splits.train is None:
+                log.warning("BasicAugmentor (training mode): no train data available, passing through unchanged.")
+                return StepResult(dataset_splits)
 
-        # 2. Loop over all folds
+            log.info(f"Running BasicAugmentor (training mode): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+            augmented_train = self._augment_single_fold(train_data_dto=dataset_splits.train, config=config, log=log)
+            log.info("Basic augmentation (training mode) completed.", VerbosityLevel.QUIET)
+            return StepResult(DatasetSplitDTO(
+                folds=None,
+                train=augmented_train,
+                test=dataset_splits.test,
+                validation=dataset_splits.validation,
+            ))
+
+        # --- Evaluation pipeline mode: augment each fold's train_data ---
+        log.info(f"Running BasicAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+        augmented_folds = []
         for fold in dataset_splits.folds:
             log.info(f"Augmenting Fold {fold.fold_idx} / {len(dataset_splits.folds)}", VerbosityLevel.DETAILED)
-
-            # Augment ONLY the training data
             augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, config=config, log=log)
-
-            # Reconstruct the Fold with augmented training data and untouched test data
             new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
-        # 3. Return wrapped in DatasetSplitDTO
         log.info(f"Basic augmentation completed. Total folds processed: {len(augmented_folds)}", VerbosityLevel.QUIET)
-        return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
+        return StepResult(DatasetSplitDTO(folds=augmented_folds))
 
     def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, config: AugmentationConfigBasic, log: PipelineLogger) -> EpochPreprocessedDTO:
         """Core logic for augmenting a single EpochPreprocessedDTO with basic transformations."""

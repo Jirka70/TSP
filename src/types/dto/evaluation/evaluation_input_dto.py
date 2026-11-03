@@ -9,5 +9,5 @@ from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 @dataclass(frozen=True)
 class EvaluationInputDTO:
     config: EvaluationConfig
-    trained_models: list[TrainedModelDTO]
-    dataset_split: DatasetSplitDTO | None = None
+    trained_model: TrainedModelDTO
+    test_data: EpochPreprocessedDTO | None = None

@@ -11,6 +11,7 @@ from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
+from src.impl.evaluator.fold_evaluator import FoldEvaluator
 from src.impl.evaluator.standard_evaluator import StandardEvaluator
 from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
 from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
@@ -25,7 +26,7 @@ from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
-from src.impl.split.basic_splitter import BasicSplitter
+from src.impl.split.general_splitter import GeneralSplitter
 from src.impl.split.moabb_splitter import MoabbSplitter
 from src.impl.visualization.matplotlib_visualizer import MatplotlibVisualizer
 from src.impl.visualization.plotly_visualizer import PlotlyVisualizer
@@ -69,9 +70,7 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"external": MOABBDataLoader,
-                                "filesystem": FilesystemDatasetLoader,
-                                "synthetic": SyntheticDataLoader },
+        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader, "synthetic": SyntheticDataLoader},
         StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
@@ -80,7 +79,7 @@ class StageFactory:
         StageType.PARADIGM: {"default": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"default": EpochPreprocessor},
         StageType.SPLIT: {
-            "basic": BasicSplitter,
+            "general": GeneralSplitter,
             "moabb_within_session": MoabbSplitter,
             "moabb_within_subject": MoabbSplitter,
             "moabb_cross_subject": MoabbSplitter,
@@ -96,12 +95,10 @@ class StageFactory:
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
-        StageType.FINAL_TRAINER: {
-            "sklearn": FinalSklearnTrainer,
-            "eegnet": FinalEEGNetTrainer
-        },
+        StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer, "eegnet": FinalEEGNetTrainer},
         StageType.EVALUATOR: {
             "default": StandardEvaluator,
+            "fold": FoldEvaluator,
         },
         StageType.SAVER: {
             "default": ArtifactSaver,
@@ -115,10 +112,7 @@ class StageFactory:
             "matplotlib": MatplotlibVisualizer,
             "plotly": PlotlyVisualizer,
         },
-        StageType.MODEL_PATH: {
-            "default": ModelLoader,
-            "eegnet": EEGNetModelLoader
-        },
+        StageType.MODEL_PATH: {"default": ModelLoader, "eegnet": EEGNetModelLoader},
         StageType.DATASET_EXPORT: {
             "fif": FifDatasetExporter,
             "none": None,

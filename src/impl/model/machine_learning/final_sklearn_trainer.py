@@ -41,17 +41,17 @@ class FinalSklearnTrainer(IFinalTrainer):
         # Accumulate all training samples from the provided folds
         x_all, y_all = self._collect_all_data(input_dto)
 
-        pipeline : Pipeline = ModelFactory.create(method_id, params)
-        model : GenericSklearnModel = GenericSklearnModel(pipeline, method_id)
+        pipeline: Pipeline = ModelFactory.create(method_id, params)
+        model: GenericSklearnModel = GenericSklearnModel(pipeline, method_id)
         model.fit(x_all, y_all)
 
-        train_acc : float = float(accuracy_score(y_all, model.predict(x_all)))
+        train_acc: float = float(accuracy_score(y_all, model.predict(x_all)))
         history = TrainingHistory(
             train_loss=[1.0 - train_acc],
             train_metrics={"accuracy": [train_acc]},
         )
 
-        trained_model : TrainedModelDTO = TrainedModelDTO(
+        trained_model: TrainedModelDTO = TrainedModelDTO(
             model=model,
             model_name=method_id,
             history=history,
@@ -78,12 +78,16 @@ class FinalSklearnTrainer(IFinalTrainer):
         """
         x_list: List[np.ndarray] = []
         y_list: List[np.ndarray] = []
-
-        for fold in input_dto.folds:
-            if fold.train_data:
-                x, y = self._extract_data_and_labels(fold.train_data)
-                x_list.append(x)
-                y_list.append(y)
+        # TODO: EDIT HOT FIX
+        # for fold in input_dto.folds:
+        #     if fold.train_data:
+        #         x, y = self._extract_data_and_labels(fold.train_data)
+        #         x_list.append(x)
+        #         y_list.append(y)
+        x, y = self._extract_data_and_labels(input_dto.training_data)
+        x_list.append(x)
+        y_list.append(y)
+        # TODO: END
 
         if not x_list:
             return np.array([]), np.array([])
@@ -111,7 +115,7 @@ class FinalSklearnTrainer(IFinalTrainer):
         y_list: List[np.ndarray] = []
 
         for recording in data_dto.data:
-            epochs : Any = recording.data
+            epochs: Any = recording.data
 
             if hasattr(epochs, "get_data"):
                 x_list.append(epochs.get_data(copy=False))

@@ -1,0 +1,14 @@
+backend: moabb_within_session # Used by program logic, changing this may break the pipeline if not handled properly
+
+# --- MOABB Within-Session Configuration ---
+
+# This backend performs cross-validation within each individual session.
+# It evaluates the performance on a single session using stratified K-fold.
+# Each fold produces train_data and test_data only — no global validation data.
+
+evaluator:
+  _target_: moabb.evaluations.WithinSessionSplitter # MOABB target splitter class
+  cv_class: sklearn.model_selection.StratifiedKFold  # Scikit-learn cross-validation class
+  n_folds: 5                 # Number of folds to create for cross-validation
+  shuffle: true              # Whether to shuffle the session recordings before splitting
+  random_state: 42           # Random seed for reproducible splits

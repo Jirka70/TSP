@@ -51,16 +51,18 @@ class RandomAmplitudeScale:
 class TorchEEGAugmentor(IAugmentor):
     """
     Data augmentation pipeline using the torcheeg library.
-    Ensures training data within dataset splits is augmented with TorchEEG transformations.
+
+    Supports two modes driven by the contents of :class:`DatasetSplitDTO`:
+
+    - **Training pipeline** (``folds=None``): augments ``train`` data only;
+      ``test`` and ``validation`` are passed through unchanged.
+    - **Evaluation pipeline** (``folds`` is set): augments the ``train_data``
+      inside each fold; fold ``test_data`` is passed through unchanged.
     """
 
     def run(self, input_dto: AugmentationInputDTO, run_ctx: RunContext) -> StepResult[DatasetSplitDTO]:
         """
         Executes TorchEEG augmentation steps on epoched neural data.
-
-        This method processes dataset splits by applying a configurable
-        pipeline of TorchEEG transformations to the training data.
-        It generates multiple augmented copies for each original training sample.
 
         Args:
             input_dto (AugmentationInputDTO): Input object containing the
@@ -80,8 +82,6 @@ class TorchEEGAugmentor(IAugmentor):
             log.info("TorchEEG Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
             return StepResult(dataset_splits)
 
-        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
-
         # 2. Initialize random seeds for all relevant libraries to ensure reproducibility
         log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         torch.manual_seed(config.random_seed)
@@ -96,22 +96,43 @@ class TorchEEGAugmentor(IAugmentor):
             log.warning("TorchEEG augmentation is enabled, but no transforms were configured. Augmentation stopped and returned original data.")
             return StepResult(dataset_splits)
 
-        augmented_folds = []
+        # --- Training pipeline mode: folds=None, augment train directly ---
+        if dataset_splits.folds is None:
+            if dataset_splits.train is None:
+                log.warning("TorchEEGAugmentor (training mode): no train data available, passing through unchanged.")
+                return StepResult(dataset_splits)
 
-        # 4. Loop over all folds (e.g., from cross-validation)
+            log.info(f"Running TorchEEGAugmentor (training mode): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+            augmented_train = self._augment_single_fold(
+                train_data_dto=dataset_splits.train,
+                torcheeg_transform=torcheeg_transform,
+                copies_per_sample=config.copies_per_sample,
+                log=log,
+            )
+            log.info("TorchEEG augmentation (training mode) completed.", VerbosityLevel.QUIET)
+            return StepResult(DatasetSplitDTO(
+                folds=None,
+                train=augmented_train,
+                test=dataset_splits.test,
+                validation=dataset_splits.validation,
+            ))
+
+        # --- Evaluation pipeline mode: augment each fold's train_data ---
+        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+        augmented_folds = []
         for fold in dataset_splits.folds:
             log.info(f"Augmenting Fold {fold.fold_idx}.", VerbosityLevel.DETAILED)
-
-            # Augment ONLY the training data; leave validation and test sets untouched
-            augmented_train_data = self._augment_single_fold(train_data_dto=fold.train_data, torcheeg_transform=torcheeg_transform, copies_per_sample=config.copies_per_sample, log=log)
-
-            # Reconstruct the fold with the newly augmented training data
+            augmented_train_data = self._augment_single_fold(
+                train_data_dto=fold.train_data,
+                torcheeg_transform=torcheeg_transform,
+                copies_per_sample=config.copies_per_sample,
+                log=log,
+            )
             new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
             augmented_folds.append(new_fold)
 
-        # 5. Wrap results in StepResult and return
         log.info(f"TorchEEG augmentation completed. Total folds processed: {len(augmented_folds)}", VerbosityLevel.QUIET)
-        return StepResult(DatasetSplitDTO(folds=augmented_folds, validation_data=dataset_splits.validation_data))
+        return StepResult(DatasetSplitDTO(folds=augmented_folds))
 
     def _build_transforms(self, config: AugmentationConfigTorchEEG, log: PipelineLogger) -> transforms.Compose | None:
         """
@@ -154,10 +175,10 @@ class TorchEEGAugmentor(IAugmentor):
 
     def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, torcheeg_transform: transforms.Compose, copies_per_sample: int, log: PipelineLogger) -> EpochPreprocessedDTO:
         """
-        Core logic for augmenting all recordings within a single fold.
+        Core logic for augmenting all recordings within a single training partition.
 
         Args:
-            train_data_dto: The training data for the fold.
+            train_data_dto: The training data to augment.
             torcheeg_transform: The compiled TorchEEG transformation pipeline.
             copies_per_sample: Number of augmented copies to create for each original sample.
 

@@ -41,34 +41,28 @@ class StandardEvaluator(IEvaluator):
         log = run_ctx.logger.for_step("STANDART_EVALUATION")
 
         # --- 1. Initialization ---
-        if not input_dto.trained_models:
+        if not input_dto.trained_model:
             log.info("EvaluationInputDTO does not include any model. Skipping evaluation.", VerbosityLevel.NORMAL)
-            return StepResult(EvaluationResultDTO(
-                metrics={},
-                predictions=[],
-                targets=[],
-                probabilities=None,
-                confusion_matrix=None
-            ))
+            return StepResult(EvaluationResultDTO(metrics={}, predictions=[], targets=[], probabilities=None, confusion_matrix=None))
 
         # We evaluate only the primary/first model
-        model_dto = input_dto.trained_models[0]
+        model_dto = input_dto.trained_model
 
-        # Strictly use global validation data
-        validation_data = input_dto.dataset_split.validation_data if input_dto.dataset_split else None
+        # Use test data (training pipeline) as the evaluation partition
+        eval_data = input_dto.test_data if input_dto.test_data else None
 
-        if not validation_data or not validation_data.data:
-            log.error("No global validation data found. Evaluation strictly requires 'validation_data' partition.")
-            raise ValueError("No global validation data found. Evaluation strictly requires 'validation_data' partition.")
+        if not eval_data or not eval_data.data:
+            log.error("No test data found. StandardEvaluator requires a 'test' partition in DatasetSplitDTO.")
+            raise ValueError("No test data found. StandardEvaluator requires a 'test' partition in DatasetSplitDTO.")
 
-        log.info(f"Starting evaluation for model '{model_dto.model_name}' on global validation data", VerbosityLevel.QUIET)
+        log.info(f"Starting evaluation for model '{model_dto.model_name}' on test data", VerbosityLevel.QUIET)
 
         # --- 2. Data Extraction ---
-        x_val, y_true = self.extract_data(validation_data)
+        x_val, y_true = self.extract_data(eval_data)
 
         # --- 3. Model Evaluation ---
         log.info(f"Evaluating model...", VerbosityLevel.DETAILED)
-        
+
         # Predict labels
         y_pred = model_dto.model.predict(x_val)
 
@@ -92,17 +86,10 @@ class StandardEvaluator(IEvaluator):
 
         overall_cm = confusion_matrix(y_true, y_pred).tolist()
 
-        result = EvaluationResultDTO(
-            metrics=model_metrics,
-            predictions=y_pred.tolist(),
-            targets=y_true.tolist(),
-            probabilities=probabilities.tolist() if probabilities is not None else None,
-            confusion_matrix=overall_cm
-        )
+        result = EvaluationResultDTO(metrics=model_metrics, predictions=y_pred.tolist(), targets=y_true.tolist(), probabilities=probabilities.tolist() if probabilities is not None else None, confusion_matrix=overall_cm)
 
         log.info("Evaluation completed successfully", VerbosityLevel.QUIET)
         return StepResult(result)
-
 
     def extract_data(self, preprocessed_data: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """
