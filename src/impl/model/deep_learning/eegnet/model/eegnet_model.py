@@ -13,6 +13,13 @@ from src.impl.model.deep_learning.validation.array_validation import (
     has_only_positive_dimensions,
     is_array_with_dimensions,
 )
+from src.impl.model.deep_learning.validation.numerical_validation import (
+    validate_class_probabilities,
+    validate_class_scores,
+    validate_finite_gradients,
+    validate_finite_loss,
+    validate_finite_parameters,
+)
 from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
@@ -122,12 +129,16 @@ class EEGNetModel(IModel):
         total_samples = 0
 
         with torch.no_grad():
-            for batch_x, batch_y in evaluation_loader:
+            for batch_number, (batch_x, batch_y) in enumerate(evaluation_loader, start=1):
                 batch_x = batch_x.to(self._device)
                 batch_y = batch_y.to(self._device)
 
+                completed_epochs = len(self.history.train_loss) if self.history is not None else 0
+                context = f"Evaluation after epoch {completed_epochs}, batch {batch_number}"
                 logits = self._network(batch_x)
+                validate_class_scores(logits, len(batch_y), self._config.n_classes, context)
                 loss = self._loss_fn(logits, batch_y)
+                validate_finite_loss(loss, context)
 
                 total_loss += loss.item()
                 predictions = torch.argmax(logits, dim=1)
@@ -144,16 +155,22 @@ class EEGNetModel(IModel):
         total_correct = 0
         total_samples = 0
 
-        for batch_x, batch_y in train_loader:
+        for batch_number, (batch_x, batch_y) in enumerate(train_loader, start=1):
             batch_x = batch_x.to(self._device)
             batch_y = batch_y.to(self._device)
 
+            epoch_number = len(self.history.train_loss) + 1 if self.history is not None else 1
+            context = f"Training epoch {epoch_number}, batch {batch_number}"
             logits = self._network(batch_x)
+            validate_class_scores(logits, len(batch_y), self._config.n_classes, context)
             loss = self._loss_fn(logits, batch_y)
+            validate_finite_loss(loss, context)
 
             self._optimizer.zero_grad()
             loss.backward()
+            validate_finite_gradients(self._network, context)
             self._optimizer.step()
+            validate_finite_parameters(self._network, context)
 
             total_loss += loss.item()
             predictions = torch.argmax(logits, dim=1)
@@ -166,7 +183,10 @@ class EEGNetModel(IModel):
     def predict(self, x: np.ndarray) -> np.ndarray:
         probabilities = self.predict_class_probability(x)
         predicted_indices = np.argmax(probabilities, axis=1)
-        return self._decode_labels(predicted_indices)
+        predicted_labels = self._decode_labels(predicted_indices)
+        if predicted_labels.shape != (len(x),):
+            raise ValueError("Predicted labels must have shape [number of input epochs].")
+        return predicted_labels
 
     def predict_class_probability(self, x: np.ndarray) -> np.ndarray:
         self._network.eval()
@@ -181,11 +201,14 @@ class EEGNetModel(IModel):
         probabilities_batches = []
 
         with torch.no_grad():
-            for (batch_x,) in data_loader:
+            for batch_number, (batch_x,) in enumerate(data_loader, start=1):
                 batch_x = batch_x.to(self._device)
 
+                context = f"Prediction batch {batch_number}"
                 logits = self._network(batch_x)
+                validate_class_scores(logits, len(batch_x), self._config.n_classes, context)
                 probabilities = torch.softmax(logits, dim=1)
+                validate_class_probabilities(probabilities, len(batch_x), self._config.n_classes, context)
 
                 probabilities_batches.append(probabilities.cpu().numpy())
 

@@ -44,3 +44,21 @@ Kompatibilitu konkrétní architektury s tvarem vstupu následně ověřuje kons
 `.venv/bin/python -m pytest -q --tb=short` — 74 testů prošlo.
 Testy zahrnují běžná pole se štítky bez zvláštních metadat, MNE epochy, chybná data a předání do traineru.
 Ruff ověřuje upravené Python soubory s limitem 120 znaků.
+
+## Kontroly během učení a při predikci
+
+`numerical_validation.py` obsahuje kontroly tensorů, které se neprovádějí ve vstupním validátoru:
+
+- Skóre tříd musí mít tvar `[počet příkladů v batchi, počet tříd]` a konečné hodnoty.
+- Loss musí být skalární a konečná, při učení před `backward()` i při validaci.
+- Gradienty se kontrolují po `backward()` a před `optimizer.step()`; chybějící gradient se toleruje.
+- Parametry sítě se ověřují také po aktualizaci optimizerem, aby neplatné váhy nevytvořily úspěšný výsledek.
+- Pravděpodobnosti musejí mít správný tvar, být konečné, v rozsahu `[0, 1]` a mít součty řádků přibližně jedna.
+- Predikované štítky mají tvar `[počet vstupních epoch]`.
+
+Neplatné numerické hodnoty vyvolají `FloatingPointError`. Chyba obsahuje fázi, epochu/batch a u gradientů
+jméno parametru. Vadná loss ani vadný gradient nevedou k aktualizaci vah. Neplatná epocha se nezapisuje
+jako dokončená do historie. Žádné tiché nahrazování NaN nebo automatické přeskakování batchů.
+
+Ověření po doplnění kontrol: celá sada — 107 testů prošlo. Nové testy používají malou skutečnou PyTorch síť,
+vkládají neplatnou loss, gradienty, skóre i pravděpodobnosti a ověřují hranici před aktualizací optimizerem.

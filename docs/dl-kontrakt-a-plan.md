@@ -9,6 +9,15 @@ a shodu počtu kanálů a vzorků s modelem. Při zapnuté normalizaci ověřuje
 směrodatných odchylek a normalizovaného signálu. Neplatné hodnoty vyvolají konkrétní výjimku.
 Ověření: testy normalizace a vstupního kontraktu — 47 testů prošlo; Ruff s limitem 120 znaků.
 
+## Numerické kontroly učení a predikce (2026-11-03)
+
+EEGNet ověřuje tvar a konečnost skóre tříd, skalární konečnou loss před zpětným průchodem,
+konečnost gradientů před aktualizací a konečnost parametrů po aktualizaci. Stejné kontroly skóre a loss
+platí při validaci. Predikce ověřuje tvar, konečnost, rozsah a součty pravděpodobností i tvar štítků.
+Chyba s kontextem epochy/batche zastaví běh; neplatné batchy se nepřeskakují ani neopravují.
+Ověření: `.venv/bin/python -m pytest -q --tb=short` — 107 testů prošlo v pracovním stromu včetně opravy
+testů továrny. Testy numeriky používají malou skutečnou PyTorch síť a vkládají chyby loss, gradientů a výstupů.
+
 
 ## Aktuální zjednodušení validace na pokyn uživatele (2026-11-03)
 
