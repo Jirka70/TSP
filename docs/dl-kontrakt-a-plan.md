@@ -1,6 +1,16 @@
 # Kontrakt a plán produkčního DL kroku
 
-Datum zápisu: 2026-11-03. Stav: návrh a úkoly, bez implementace.
+Datum zápisu: 2026-11-03. Stav: návrh a úkoly, částečná implementace interního převodu popsaná níže.
+
+## Implementovaný dílčí krok (2026-11-03)
+
+Na následné výslovné zadání uživatele je dočasný převod umístěný přímo v `FinalEEGNetTrainer._to_dl_input` a volaný na začátku `run()`. Pipeline a její veřejný `FinalTrainingInputDTO` se nemění. Toto zadání nahrazuje původní návrh umístit přebalovací adaptér mimo trainer.
+
+- Přidán interní `DLInputDTO` s konfigurací EEGNetu a sadami `train`, `val`, `test` typu `EpochPreprocessedDTO`. Jde o první obal sad, nikoli dokončený kontrakt polí, schématu a původu úseků.
+- Převod vyžaduje právě jeden fold a tři neprázdné sady včetně epoch. Přebaluje `fold.train_data`, společnou `validation_data` a `fold.test_data`; více foldů odmítá, nic neslučuje ani nově nedělí. Je určený pro BasicSplitter; samotný počet foldů nedokazuje původ ani nezávislost sad.
+- Hlavní EEGNet trainer používá train a val z interního DTO. Původní nerozdělené `FinalTrainingInputDTO.training_data` ignoruje. Ostatní modely ani foldové trénování se nemění.
+- Test je zatím pouze součástí interního vstupu. Oddělená závěrečná testovací evaluace, úplný vstupní validátor a kontroly překryvu nejsou tímto krokem implementovány. Stávající evaluace pipeline se nemění.
+- Ověření: `.venv/bin/python -m pytest tests/unit/test_final_eegnet_input.py tests/unit/test_stage_factory.py -q` — 42 testů prošlo. Ověřeno odmítnutí nesprávného počtu foldů a chybějících/prázdných sad i předání fold train a společné val do trénovací smyčky místo původních dat. Trénovací smyčka je v tomto ověření nahrazena mockem; nejde o trénink na skutečných EEG datech.
 
 ## Uživatelský požadavek
 
@@ -17,7 +27,7 @@ Při zápisu kontextu platí:
 - `src/types/dto/model/training_input_dto.py`: `TrainingInputDTO` obsahuje `folds` a je sdílený mezi EEGNet a sklearn modely.
 - `src/types/dto/model/final_training_input_dto.py`: `FinalTrainingInputDTO` také obsahuje foldy vedle `training_data` a volitelných `validation_data`.
 - `src/impl/model/deep_learning/eegnet/trainer/eegnet_model_trainer.py`: `train_fold` předává `fold.test_data` do trénovací smyčky jako validační data.
-- `src/pipeline/training/training_pipeline.py`: nejprve trénuje foldy, potom předává final traineru původní `epoch_preprocessing_result.data`, tedy data před splitem a před epochovou augmentací. Tato cesta neodpovídá cíli trénovat výhradně na explicitní train sadě.
+- `src/pipeline/training/training_pipeline.py`: nejprve trénuje foldy, potom předává final traineru původní `epoch_preprocessing_result.data`, tedy data před splitem a před epochovou augmentací. Po dílčím kroku výše hlavní EEGNet trainer tuto položku ignoruje a používá train z jediného foldu; pipeline ji nadále předává kvůli stávajícímu rozhraní.
 - `src/impl/model/util/extract/extract_learning_data.py`: spojuje nahrávky do polí `x` a `y`; kontroluje celkové délky a tři rozměry `x`. To nenahrazuje úplnou kontrolu vstupního kontraktu.
 - `src/types/dto/model/learning_dataset.py`: současný `LearningDataset` obsahuje pouze `x` a `y`.
 
