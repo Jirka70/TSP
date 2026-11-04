@@ -124,7 +124,8 @@ class EEGNetModel(IModel):
     def _run_evaluation_loader(self, evaluation_loader: DataLoader) -> tuple[float, float]:
         self._network.eval()
 
-        total_loss = 0.0
+        weighted_loss_sum = 0.0
+        total_batch_weight = 0.0
         total_correct = 0
         total_samples = 0
 
@@ -140,18 +141,21 @@ class EEGNetModel(IModel):
                 loss = self._loss_fn(logits, batch_y)
                 validate_finite_loss(loss, context)
 
-                total_loss += loss.item()
+                batch_weight = batch_y.size(0) / self._config.training.batch_size
+                weighted_loss_sum += loss.item() * batch_weight
+                total_batch_weight += batch_weight
                 predictions = torch.argmax(logits, dim=1)
 
                 total_correct += (predictions == batch_y).sum().item()
                 total_samples += batch_y.size(0)
 
-        return total_loss / len(evaluation_loader), total_correct / total_samples
+        return weighted_loss_sum / total_batch_weight, total_correct / total_samples
 
     def _run_training_loader(self, train_loader: DataLoader) -> tuple[float, float]:
         self._network.train()
 
-        total_loss = 0.0
+        weighted_loss_sum = 0.0
+        total_batch_weight = 0.0
         total_correct = 0
         total_samples = 0
 
@@ -172,13 +176,15 @@ class EEGNetModel(IModel):
             self._optimizer.step()
             validate_finite_parameters(self._network, context)
 
-            total_loss += loss.item()
+            batch_weight = batch_y.size(0) / self._config.training.batch_size
+            weighted_loss_sum += loss.item() * batch_weight
+            total_batch_weight += batch_weight
             predictions = torch.argmax(logits, dim=1)
 
             total_correct += (predictions == batch_y).sum().item()
             total_samples += batch_y.size(0)
 
-        return total_loss / len(train_loader), total_correct / total_samples
+        return weighted_loss_sum / total_batch_weight, total_correct / total_samples
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         probabilities = self.predict_class_probability(x)

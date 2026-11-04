@@ -2,6 +2,16 @@
 
 Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
 
+## Vážená agregace loss (2026-11-03)
+
+Trénovací i evaluační smyčka váží průměrnou loss každého batche poměrem skutečného počtu příkladů
+k nastavené velikosti batche. Plný batch má váhu 1, menší poslední batch odpovídající zlomek.
+Výsledná loss je součet vážených loss dělený součtem vah. Jde o průměr přes příklady při současné
+nevážené CrossEntropyLoss; `backward()` dál používá původní průměrnou loss jednotlivého batche.
+Výpočet accuracy ani výběr epochy podle validační accuracy se nemění.
+Ověření: celá sada — 120 testů prošlo. Regresní testy porovnávají výsledek s přímým průměrem přes příklady
+pro train/validate/evaluate, plné i menší batche a ověřují zachování gradientu posledního batche.
+
 ## Numerická validace vstupu (2026-11-03)
 
 EEGNet při převodu vstupu do tensoru ověřuje konečnost po převodu na `float32`, kladné rozměry
