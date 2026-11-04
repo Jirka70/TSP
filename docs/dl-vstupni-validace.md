@@ -62,3 +62,11 @@ jako dokončená do historie. Žádné tiché nahrazování NaN nebo automatick�
 
 Ověření po doplnění kontrol: celá sada — 107 testů prošlo. Nové testy používají malou skutečnou PyTorch síť,
 vkládají neplatnou loss, gradienty, skóre i pravděpodobnosti a ověřují hranici před aktualizací optimizerem.
+
+## Ověření exportu na val
+
+`FinalEEGNetTrainer` v `TrainedModelDTO.verification_data` předává celou ověřenou val sadu.
+Serializer porovná přesné štítky a pravděpodobnosti v toleranci před uložením a po načtení existujícím loaderem.
+Při neshodě vyhodí chybu. Val data zůstávají jen v paměti, checkpoint je neobsahuje.
+Pipeline ani loader se nemění; ArtifactSaver předá svůj RunContext serializeru.
+Ověření celé sady po této změně: 129 testů prošlo.

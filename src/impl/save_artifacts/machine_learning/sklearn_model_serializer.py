@@ -3,6 +3,8 @@ from typing import List
 
 import joblib
 
+from src.pipeline.context.run_context import RunContext
+
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 from src.types.interfaces.model.model_serializer import IModelSerializer
@@ -39,7 +41,9 @@ class SklearnModelSerializer(IModelSerializer):
         ]
         return model_name in supported_methods
 
-    def save(self, trained_model: TrainedModelDTO, output_path: Path) -> SavedArtifactsDTO:
+    def save(
+        self, trained_model: TrainedModelDTO, output_path: Path, run_ctx: RunContext | None = None,
+    ) -> SavedArtifactsDTO:
         """
         Serializes the trained Scikit-learn model's state to a binary file.
 

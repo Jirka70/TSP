@@ -82,6 +82,7 @@ class FinalEEGNetTrainer(IFinalTrainer):
                 "n_validation_samples": validation_data.sample_count,
                 "training_data_source": "training_data",
             },
+            verification_data=validation_data,
         )
         log.info("Finished training EEGNET model", VerbosityLevel.QUIET)
         return StepResult(

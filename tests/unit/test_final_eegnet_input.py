@@ -29,7 +29,7 @@ def training_input():
     return FinalTrainingInputDTO(
         config=config,
         training_data=create_dataset(1),
-        validation_data=create_dataset(2),
+        validation_data=create_dataset(2, count=11),
     )
 
 
@@ -70,5 +70,10 @@ def test_run_uses_direct_training_and_validation_data_without_folds_or_test(trai
     )
     assert set(train.call_args.kwargs) == {"model", "train_data", "validation_data", "epochs", "log"}
     assert result.data.trained_model.metadata["training_data_source"] == "training_data"
+    assert result.data.trained_model.verification_data.sample_count == 11
+    numpy.testing.assert_array_equal(
+        result.data.trained_model.verification_data.x,
+        training_input.validation_data.data[0].data,
+    )
     assert "n_folds" not in result.data.trained_model.metadata
     assert factory.create.call_args.kwargs["input_shape"] == (2, 2, 32)

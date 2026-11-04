@@ -2,6 +2,33 @@
 
 Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
 
+## Jednoduché ověření serializace na val (2026-11-04)
+
+Na zadání uživatele `FinalEEGNetTrainer` předává celou ověřenou val sadu v novém volitelném poli
+`TrainedModelDTO.verification_data`. Nepoužívá se výřez prvních osmi epoch ani syntetická dávka.
+`EEGNetModelSerializer.save()` spočítá referenční štítky a pravděpodobnosti, zavolá původní ukládání
+v `_save_checkpoint()`, z vráceného `SavedArtifactsDTO` získá adresář artefaktů a načte model přes
+stávající `EEGNetModelLoader.load(artifact_directory, run_ctx)`.
+
+Načtený model zpracuje stejnou val sadu. Štítky se porovnávají přesně, pravděpodobnosti se stejným tvarem
+a tolerancí `rtol=1e-5`, `atol=1e-6`, bez povolení NaN. Neshoda vyvolá výjimku a serializer nevrátí úspěšný výsledek.
+Checkpoint již může být na disku; tento jednoduchý postup nezavádí atomické ukládání ani nový proces.
+Kontrolní data se do checkpointu nezapisují a nenahrazují finální testovací evaluaci.
+
+Pipeline ani loader se nemění. `ArtifactSaver` pouze předá existující `RunContext` serializeru přes nový
+volitelný parametr společného `save()`; EEGNet ho k ověření vyžaduje, sklearn jej může ignorovat.
+Standardní umístění checkpointu zůstává `adresář_artefaktů/models/eegnet.pt`.
+
+Vstupní politiku serializace nyní drží samostatné Pydantic schéma `ValidatedEEGNetSerializationInput`
+v `serialization_input_schema.py`. Vyžaduje skutečný EEGNetModel, LearningDataset s alespoň jedním příkladem
+a RunContext. Serializer schéma vytvoří na začátku `save()` a používá jeho ověřené hodnoty.
+Duplicitní kontrola typu modelu byla odstraněna i z privátního ukládání; chyby vstupu jsou Pydantic ValidationError.
+Po této úpravě prošlo všech 130 testů a Ruff s limitem 120 znaků.
+
+Ověření: `.venv/bin/python -m pytest -q --tb=short` — 129 testů prošlo. Test skutečného EEGNetu používá
+reálný serializer i loader; další testy ověřují odmítnutí změněných výsledků, chybějících dat a kontextu,
+předání celé val sady, předání kontextu z ArtifactSaveru a zachování sklearn ukládání. Ruff prošel.
+
 ## Vážená agregace loss (2026-11-03)
 
 Trénovací i evaluační smyčka váží průměrnou loss každého batche poměrem skutečného počtu příkladů
@@ -230,6 +257,7 @@ Ukládat nejprve do dočasného umístění, ověřit úplnost balíčku a načt
 - [ ] Upravit DL větev pipeline: odstranit závislost na foldech a automatické finální trénování na nerozdělených datech. Zachovat ostatní cesty projektu.
 - [ ] Vyřešit správné předání train augmentace a konzistenci preprocessingu, kanálů, jednotek, časových oken a štítků.
 - [ ] Dokončit výstupní kontrakt, export, loader a ověření po načtení.
+- [x] Ověřit shodu predikcí před uložením a po načtení EEGNetu na celé val sadě uvnitř serializeru.
 - [ ] Provést integrační ověření na skutečných datech a vyhodnotit vhodnost k nasazení podle předem určených kritérií.
 
 ## Co musí prokázat ověření
