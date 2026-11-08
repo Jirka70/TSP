@@ -160,7 +160,7 @@ class EvaluationPipeline(IPipeline):
         self._log.info("Evaluating fold-trained models on their respective fold test data.")
         fold_evaluation_input = EvaluationInputDTO(
             config=config.evaluation,
-            trained_models=model_training_result.data.trained_models,
+            trained_models=model_training_result.data.trained_models, #TODO DTO looks different than expected - change this or DTO
             dataset_split=augmentation_result.data,
         )
         self._evaluator.run(fold_evaluation_input, run_ctx)

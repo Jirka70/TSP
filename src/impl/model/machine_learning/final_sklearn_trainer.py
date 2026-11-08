@@ -19,14 +19,14 @@ from src.types.interfaces.model.final_trainer import IFinalTrainer
 
 
 class FinalSklearnTrainer(IFinalTrainer):
-    """Train a Scikit-learn model on all available folds for final export."""
+    """Train a Scikit-learn model on the full training split for final export."""
 
     def run(self, input_dto: FinalTrainingInputDTO, run_ctx: RunContext) -> StepResult[FinalTrainingResultDTO]:
         """
         Fit the configured model on all available training data and wrap the result.
 
         Args:
-            input_dto (FinalTrainingInputDTO): Input data container containing folds and configuration.
+            input_dto (FinalTrainingInputDTO): Input data container containing training data and configuration.
             run_ctx (RunContext): Context information for the current execution run.
 
         Returns:
@@ -38,8 +38,7 @@ class FinalSklearnTrainer(IFinalTrainer):
 
         log.info(f"Final training: {method_id} (Run: {run_ctx.run_id})", VerbosityLevel.QUIET)
 
-        # Accumulate all training samples from the provided folds
-        x_all, y_all = self._collect_all_data(input_dto)
+        x_all, y_all = self._collect_training_data(input_dto)
 
         pipeline: Pipeline = ModelFactory.create(method_id, params)
         model: GenericSklearnModel = GenericSklearnModel(pipeline, method_id)
@@ -65,41 +64,23 @@ class FinalSklearnTrainer(IFinalTrainer):
 
         return StepResult(FinalTrainingResultDTO(trained_model=trained_model))
 
-    def _collect_all_data(self, input_dto: FinalTrainingInputDTO) -> Tuple[np.ndarray, np.ndarray]:
+    def _collect_training_data(self, input_dto: FinalTrainingInputDTO) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Collect and concatenate training samples and labels across all available folds.
-        Ensures no duplicate samples are returned.
+        Extract the feature matrix and labels from the final training data.
 
         Args:
-            input_dto (FinalTrainingInputDTO): Input container with fold data.
+            input_dto (FinalTrainingInputDTO): Input container with the training split.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Unique concatenated feature matrix (X) and labels (y).
+            Tuple[np.ndarray, np.ndarray]: Feature matrix (X) and labels (y).
+
+        Raises:
+            ValueError: If no training data is provided.
         """
-        x_list: List[np.ndarray] = []
-        y_list: List[np.ndarray] = []
-        # TODO: EDIT HOT FIX
-        # for fold in input_dto.folds:
-        #     if fold.train_data:
-        #         x, y = self._extract_data_and_labels(fold.train_data)
-        #         x_list.append(x)
-        #         y_list.append(y)
-        x, y = self._extract_data_and_labels(input_dto.training_data)
-        x_list.append(x)
-        y_list.append(y)
-        # TODO: END
+        if input_dto.training_data is None or not input_dto.training_data.data:
+            raise ValueError("Final sklearn training requires non-empty training_data.")
 
-        if not x_list:
-            return np.array([]), np.array([])
-
-        x_concat = np.concatenate(x_list, axis=0)
-        y_concat = np.concatenate(y_list, axis=0)
-
-        _, unique_indices = np.unique(x_concat, axis=0, return_index=True)
-
-        unique_indices.sort()
-
-        return x_concat[unique_indices], y_concat[unique_indices]
+        return self._extract_data_and_labels(input_dto.training_data)
 
     def _extract_data_and_labels(self, data_dto: EpochPreprocessedDTO) -> tuple[np.ndarray, np.ndarray]:
         """

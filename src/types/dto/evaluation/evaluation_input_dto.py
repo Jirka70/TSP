@@ -7,7 +7,7 @@ from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 
 
 @dataclass(frozen=True)
-class EvaluationInputDTO:
+class EvaluationInputDTO: #TODO DTO looks different than expected
     config: EvaluationConfig
     trained_model: TrainedModelDTO
     test_data: EpochPreprocessedDTO | None = None

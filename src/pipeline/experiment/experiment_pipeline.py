@@ -89,7 +89,7 @@ class ExperimentPipeline(IPipeline):
 
         dummy_split: DatasetSplitDTO = DatasetSplitDTO(test=epoch_preprocessing_result.data)
 
-        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split)
+        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split) #TODO DTO looks different than expected - change this or DTO
         evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
         self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, trained_model.model_name)

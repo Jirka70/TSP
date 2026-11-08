@@ -6,7 +6,7 @@ defaults:
   - raw_augmentation: none
   - paradigm: default
   - epoch_preprocessing: default
-  - split: training/general
+  - split: training/general #TODO: evaulation is a typo
   - augmentation: torcheeg
   - dataset_export: default
   - model: machine_learning/riemannian_svm
@@ -14,9 +14,9 @@ defaults:
   - final_trainer: machine_learning/sklearn
   - evaluation: default
   - visualization: matplotlib
-  - save_artifacts: default
+  - save_artifacts: experiment
   - model_path: machine_learning/sklearn
 
 # possible modes: training, evaluation, experiment
-mode: training
+mode: experiment
 output_dir: ./outputs
