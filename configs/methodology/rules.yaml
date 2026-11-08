@@ -1,0 +1,300 @@
+# =====================================================================
+# Methodology rules catalog
+# =====================================================================
+# Rules describing methodological errors that must NOT happen in an experiment.
+# Evaluated by src/validation/methodology/MethodologyValidator after the schema
+# validation and before the pipeline is built.
+#
+# NOTE: This file is NOT a Hydra config group; it is loaded directly and is not
+# meant to be overridden per experiment. Strictness is chosen per experiment via
+# `protocol.rigor` (exploratory | standard | publication).
+#
+# Rule fields:
+#   id            unique id (prefix = category: LEAK, SEL, GRP, PROT, STAT, ONL, ADAPT, MET, REP, EVAL)
+#   title         short name of the violation
+#   description   what is wrong when the rule fires (used as finding text for `when` rules)
+#   section       section of the methodology document ("Metodika experimentu")
+#   scenario      demonstration scenario A-F (optional)
+#   phase         static (config, before run) | runtime (data, during run - not wired yet)
+#   certainty     proven (violation demonstrably present) | suspected (likely, cannot be fully proven)
+#   modes         pipeline modes the rule applies to; omitted = all modes
+#   when          declarative condition over the config (static rules only), OR
+#   check         name of a registered Python check (src/validation/methodology/checks)
+#   params        parameters for the Python check
+#   severity      action per rigor level: off | info | warn | error (error = experiment is blocked)
+#                 omitted levels default to:
+#                   proven:    exploratory=warn, standard=error, publication=error
+#                   suspected: exploratory=info, standard=warn,  publication=error
+#   impact        possible impact on the reported results
+#   remediation   how to fix it
+#
+# Condition DSL (`when`):
+#   {path: a.b.c, <op>: value}   ops: eq, ne, in, not_in, exists, gt, ge, lt, le, contains
+#   all: [...], any: [...], not: {...}
+#   Paths point into the validated ExperimentConfig; integer segments index lists.
+#   A missing path never satisfies an operator (except `exists: false`).
+# =====================================================================
+
+version: "1.0"
+
+rules:
+
+  # -------------------------------------------------------------------
+  # 4. Data leakage
+  # -------------------------------------------------------------------
+  - id: LEAK-001
+    title: Supervised transformation (CSP) fitted before the split
+    description: "epoch_preprocessing.csp is fitted with labels on all epochs before the split stage, so test labels shape the spatial filters."
+    section: "4. Data leakage"
+    scenario: A
+    certainty: proven
+    when:
+      path: epoch_preprocessing.csp.enabled
+      eq: true
+    impact: Optimistically biased performance; the test set influenced the learned features.
+    remediation: Disable epoch_preprocessing.csp and use a model whose pipeline contains CSP (e.g. model=machine_learning/csp_lda), which is fitted inside each training fold.
+
+  - id: LEAK-002
+    title: Raw augmentation before the split
+    description: "raw_augmentation runs before the split stage; augmented copies derived from one recording can end up in both train and test."
+    section: "4. Data leakage"
+    scenario: C
+    certainty: proven
+    modes: [training, evaluation]
+    when:
+      all:
+        - {path: raw_augmentation.enabled, eq: true}
+        - {path: raw_augmentation.backend, ne: none}
+    impact: Near-duplicate samples in train and test inflate the score.
+    remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
+
+  - id: LEAK-003
+    title: Data-driven epoch cleaning fitted on all data
+    description: "epoch_preprocessing ICA / AutoReject is fitted on all epochs (including test) before the split stage."
+    section: "4. Data leakage"
+    scenario: A
+    certainty: suspected
+    when:
+      any:
+        - {path: epoch_preprocessing.ica.enabled, eq: true}
+        - {path: epoch_preprocessing.autoreject.enabled, eq: true}
+    impact: Unsupervised statistics of the test data leak into training; usually small, but not an independent estimate.
+    remediation: Disable epoch-level ICA / AutoReject, or justify it as a fixed, label-free cleaning step in the experiment record.
+
+  - id: LEAK-004
+    title: ICA fitted on the whole raw recording
+    description: "raw_preprocessing.ica is fitted on whole recordings before the split stage."
+    section: "4. Data leakage"
+    certainty: suspected
+    when:
+      path: raw_preprocessing.ica.enabled
+      eq: true
+    impact: Unsupervised statistics of the test segments leak into training.
+    remediation: Document ICA as a label-free cleaning step, or fit it on training recordings only.
+
+  # -------------------------------------------------------------------
+  # 3. Roles of training / validation / test
+  # -------------------------------------------------------------------
+  - id: SEL-001
+    title: Model selection on the test fold
+    description: "In evaluation mode the EEGNet fold trainer uses each fold's test data as validation data and keeps the epoch with the best test accuracy."
+    section: "3. Training, validation and test roles"
+    scenario: B
+    certainty: proven
+    modes: [evaluation]
+    when:
+      path: model.backend
+      eq: eegnet
+    impact: Reported fold scores are selected on the test fold and are optimistically biased.
+    remediation: Use an inner validation split (or nested CV) for early stopping / best-epoch selection.
+
+  - id: EVAL-001
+    title: No independent test set
+    description: "Training mode with split.ratios.test = 0; the final model has no independent performance estimate."
+    section: "3. Training, validation and test roles"
+    certainty: proven
+    modes: [training]
+    when:
+      all:
+        - {path: split.backend, eq: general}
+        - {path: split.ratios.test, le: 0.0}
+    severity: {exploratory: info, standard: warn, publication: error}
+    impact: No generalization estimate can be reported for this run.
+    remediation: Reserve a test partition, or evaluate the model with mode=evaluation.
+
+  # -------------------------------------------------------------------
+  # 2. + 5. Evaluation protocol and EEG sample provenance
+  # -------------------------------------------------------------------
+  - id: PROT-001
+    title: Split strategy does not match the declared protocol
+    section: "2. Evaluation protocol"
+    scenario: D
+    certainty: proven
+    modes: [training, evaluation]
+    check: split_matches_protocol
+    params:
+      compatible_splits:
+        within_session: [moabb_within_session, general]
+        within_subject: [moabb_within_subject, moabb_within_session, general]
+        cross_session: [moabb_cross_session]
+        cross_subject: [moabb_cross_subject]
+        cross_dataset: []
+    impact: The result answers a different research question than the declared one (e.g. random epoch split reported as cross-subject).
+    remediation: Choose the split matching protocol.generalization (e.g. split=evaulation/moabb_cross_subject for cross_subject).
+
+  - id: PROT-002
+    title: Not enough groups for the declared protocol
+    section: "2. Evaluation protocol"
+    scenario: D
+    certainty: proven
+    modes: [training, evaluation]
+    check: enough_groups_for_protocol
+    params:
+      min_sessions: 2
+      min_subjects: 2
+    impact: The declared generalization cannot be evaluated at all with the selected data.
+    remediation: Select more sessions / subjects in `source`, or change protocol.generalization.
+
+  - id: GRP-001
+    title: Random epoch split pools sessions and subjects
+    description: "split=general shuffles epochs of all selected sessions and subjects together; this is not a pure within-session estimate."
+    section: "5. EEG sample provenance"
+    scenario: C
+    certainty: suspected
+    modes: [training, evaluation]
+    when:
+      all:
+        - {path: split.backend, eq: general}
+        - {path: split.shuffle, eq: true}
+        - {path: protocol.generalization, eq: within_session}
+    impact: Session effects are shared between train and test; results are not comparable with session-wise evaluation.
+    remediation: Use split=evaulation/moabb_within_session, or restrict `source` to a single session.
+
+  # -------------------------------------------------------------------
+  # 7. Evaluation at the appropriate level
+  # -------------------------------------------------------------------
+  - id: STAT-001
+    title: Too few independent subjects for cross-subject statistics
+    section: "7. Evaluation at the appropriate level"
+    certainty: suspected
+    modes: [training, evaluation]
+    check: few_subjects_for_cross_subject
+    params:
+      min_subjects: 5
+    impact: Windows of few subjects are not independent replications; uncertainty of the result cannot be estimated.
+    remediation: Use more subjects and report per-subject results with their spread.
+
+  - id: MET-001
+    title: Accuracy without class-balance-aware metric
+    description: "evaluation.metrics contains neither balanced_accuracy nor f1_macro."
+    section: "7. Evaluation at the appropriate level"
+    certainty: suspected
+    when:
+      not:
+        any:
+          - {path: evaluation.metrics, contains: balanced_accuracy}
+          - {path: evaluation.metrics, contains: f1_macro}
+    impact: With imbalanced classes accuracy alone overstates the quality.
+    remediation: Add balanced_accuracy and/or f1_macro to evaluation.metrics.
+
+  # -------------------------------------------------------------------
+  # 8. Offline vs. simulated online vs. online
+  # -------------------------------------------------------------------
+  - id: ONL-001
+    title: Non-causal filter in a declared online scenario
+    section: "8. Offline, simulated online and online use"
+    scenario: E
+    certainty: proven
+    check: non_causal_filter_online
+    severity: {exploratory: warn, standard: warn, publication: error}
+    impact: Filtering uses future samples that are not available during real-time prediction.
+    remediation: Use causal filtering for online claims, or declare protocol.usage=offline.
+
+  - id: ONL-002
+    title: Whole-recording statistics in a declared online scenario
+    description: "ICA / AutoReject is fitted on whole recordings or all epochs, which is not available during real-time prediction."
+    section: "8. Offline, simulated online and online use"
+    scenario: E
+    certainty: suspected
+    when:
+      all:
+        - {path: protocol.usage, ne: offline}
+        - any:
+            - {path: raw_preprocessing.ica.enabled, eq: true}
+            - {path: epoch_preprocessing.ica.enabled, eq: true}
+            - {path: epoch_preprocessing.autoreject.enabled, eq: true}
+    impact: The online claim relies on information from the future of the session.
+    remediation: Fit cleaning on calibration data only, or declare protocol.usage=offline.
+
+  - id: ONL-003
+    title: Real online usage claimed for an offline pipeline
+    description: "protocol.usage=online, but the pipeline only processes recorded data; at most a simulated online scenario can be evaluated."
+    section: "8. Offline, simulated online and online use"
+    certainty: proven
+    when:
+      path: protocol.usage
+      eq: online
+    impact: Results would be presented as real-time performance without evidence.
+    remediation: Declare protocol.usage=simulated_online.
+
+  - id: ADAPT-001
+    title: Declared adaptation is not implemented
+    description: "protocol.adaptation is not 'none', but no pipeline stage performs adaptation or defines which target data it may use."
+    section: "8. Offline, simulated online and online use"
+    certainty: suspected
+    when:
+      path: protocol.adaptation
+      ne: none
+    impact: It is unclear which target data were used; the protocol cannot be verified.
+    remediation: Declare protocol.adaptation=none, or document the calibration data explicitly.
+
+  # -------------------------------------------------------------------
+  # 9. Reproducibility
+  # -------------------------------------------------------------------
+  - id: REP-001
+    title: Shuffled split without a fixed seed
+    section: "9. Reproducibility"
+    certainty: proven
+    modes: [training, evaluation]
+    check: split_reproducibility
+    impact: The train/test partition cannot be recreated.
+    remediation: Set split.evaluator.random_state.
+
+  - id: REP-002
+    title: Non-deterministic deep learning training
+    description: "model.training.deterministic is false; repeated runs can give different results."
+    section: "9. Reproducibility"
+    certainty: suspected
+    modes: [training, evaluation]
+    when:
+      all:
+        - {path: model.backend, eq: eegnet}
+        - {path: model.training.deterministic, eq: false}
+    impact: Results cannot be reproduced exactly.
+    remediation: Set model.training.deterministic=true.
+
+  # -------------------------------------------------------------------
+  # Runtime rules (planned, NOT active yet)
+  # Require provenance (subject/session/run/trial/interval) on every epoch and
+  # a runtime guard after the split stage; see checks/runtime_checks.py.
+  # -------------------------------------------------------------------
+  # - id: PROT-101
+  #   title: Same subject in train and test (cross-subject)
+  #   scenario: D
+  #   phase: runtime
+  #   certainty: proven
+  #   check: subjects_disjoint
+  #
+  # - id: GRP-101
+  #   title: Windows of the same trial in train and test
+  #   scenario: C
+  #   phase: runtime
+  #   certainty: proven
+  #   check: trials_disjoint
+  #
+  # - id: SEL-101
+  #   title: Test set used before the final evaluation
+  #   scenario: B
+  #   phase: runtime
+  #   certainty: suspected
+  #   check: test_set_access_count

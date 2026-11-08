@@ -1,0 +1,10 @@
+# --- Experiment protocol: cross-session ---
+# Question: does the model generalize to a NEW SESSION of an already seen subject?
+# Correct split: train on one session, test on another (split=evaulation/moabb_cross_session).
+# Requires at least two sessions per subject (e.g. BNCI2014_001 / BCI Competition IV-2a).
+
+task: "4-class motor imagery"
+generalization: cross_session
+usage: offline
+adaptation: none
+rigor: standard

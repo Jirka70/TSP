@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - protocol: within_session
   - logging: trace
   - source: external
   - raw_preprocessing: default

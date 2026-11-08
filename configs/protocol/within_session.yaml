@@ -1,0 +1,9 @@
+# --- Experiment protocol: within-session ---
+# Question: does the model generalize to NEW TRIALS of an already seen session?
+# Correct split: whole trials are split within each session (e.g. split=evaulation/moabb_within_session).
+
+task: "motor imagery classification"   # Research question / task definition
+generalization: within_session          # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: offline                          # offline | simulated_online | online
+adaptation: none                        # none | labeled_calibration | unlabeled_target
+rigor: standard                         # exploratory | standard | publication (strictness of methodology validation)

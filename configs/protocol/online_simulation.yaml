@@ -1,0 +1,9 @@
+# --- Experiment protocol: simulated online, cross-session ---
+# Question: would the model work in real-time prediction on a new session?
+# Only causal processing is allowed (no future samples, no whole-session statistics).
+
+task: "motor imagery classification"
+generalization: cross_session
+usage: simulated_online
+adaptation: none
+rigor: standard

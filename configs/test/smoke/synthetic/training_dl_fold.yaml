@@ -4,7 +4,7 @@ defaults:
   - /config
   - override /raw_augmentation: none
   - override /augmentation: none
-  - override /split: basic
+  - override /split: training/general
   - override /model: deep_learning/eegnet
   - override /final_trainer: deep_learning/eegnet
   - override /save_artifacts: default

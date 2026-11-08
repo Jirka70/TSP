@@ -1,0 +1,9 @@
+# --- Experiment protocol: within-subject ---
+# Question: does the model generalize to NEW TRIALS of an already seen subject (sessions pooled)?
+# Correct split: split=evaulation/moabb_within_subject.
+
+task: "motor imagery classification"
+generalization: within_subject
+usage: offline
+adaptation: none
+rigor: standard

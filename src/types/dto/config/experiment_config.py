@@ -17,6 +17,7 @@ from src.types.dto.config.model.metrics_aggregator_config import MetricsAggregat
 from src.types.dto.config.model.model_config import EEGNetConfig, SklearnModelConfig
 from src.types.dto.config.model.model_path_config import ModelPathConfig
 from src.types.dto.config.paradigm_config import ParadigmConfig
+from src.types.dto.config.protocol_config import ProtocolConfig
 from src.types.dto.config.raw_augmentation_config import (
     RawAugmentationConfigNone,
     RawAugmentationConfigTorchEEG,
@@ -40,6 +41,7 @@ class Mode(str, Enum):
 class ExperimentConfig(BaseModel):
     mode: Mode
     output_dir: str
+    protocol: ProtocolConfig
     logging: LoggingConfig
     save_artifacts: SaveArtifactsConfig
     metrics_aggregator: MetricsAggregatorConfig

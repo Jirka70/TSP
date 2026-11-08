@@ -4,7 +4,7 @@ defaults:
   - /config
   - override /raw_augmentation: none
   - override /augmentation: none
-  - override /split: basic
+  - override /split: training/general
   - override /model: machine_learning/riemannian_lda
   - override /final_trainer: machine_learning/sklearn
   - override /save_artifacts: default

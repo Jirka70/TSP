@@ -1,0 +1,29 @@
+# @package _global_
+# Methodology demonstration scenario F (BCI Competition IV-2a, cross-session).
+# Correct cross-session experiment; expected: no methodology violation.
+
+defaults:
+  - /config
+  - override /protocol: cross_session
+  - override /split: evaulation/moabb_cross_session
+  - override /evaluation: fold
+  - override /raw_augmentation: none
+  - override /augmentation: none
+  - _self_
+
+mode: evaluation
+output_dir: ./outputs/methodology
+
+source:
+  name: BNCI2014_001
+  subject_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  session_ids: null
+
+evaluation:
+  metrics: [accuracy, balanced_accuracy, f1_macro]
+
+epoch_preprocessing:
+  ica:
+    enabled: false
+  autoreject:
+    enabled: false

@@ -22,6 +22,7 @@ class ValidationMessage:
     message: str
     location: str | None = None
     severity: ValidationMessageSeverity = ValidationMessageSeverity.INFO
+    rule_id: str | None = None
 
     def __init__(self, log: dict[str, Any]):
         """Initialize the ValidationMessage object.
@@ -31,12 +32,40 @@ class ValidationMessage:
         """
         self.code = log["type"]
         self.message = log["msg"]
-        self.loc = ".".join(log["loc"])
+        self.loc = ".".join(str(part) for part in log["loc"])
+        self.location = self.loc
         self.severity = ValidationMessageSeverity.ERR
+
+    @classmethod
+    def from_rule(
+        cls,
+        rule_id: str,
+        message: str,
+        severity: ValidationMessageSeverity,
+        location: str | None = None,
+    ) -> "ValidationMessage":
+        """Creates a message for a violated methodology rule.
+
+        Args:
+            rule_id: Id of the violated rule (also used as ``code``).
+            message: Human-readable description of the violation.
+            severity: Severity resolved from the rule action and rigor level.
+            location: Config path the violation relates to.
+        """
+        msg = cls.__new__(cls)
+        msg.code = rule_id
+        msg.rule_id = rule_id
+        msg.message = message
+        msg.loc = location or ""
+        msg.location = location
+        msg.severity = severity
+        return msg
 
     def __str__(self):
         """String representation of the ValidationMessage object."""
-        return f"{self.loc}: {self.message}"
+        prefix = f"[{self.rule_id}] " if self.rule_id else ""
+        location = f"{self.loc}: " if self.loc else ""
+        return f"{prefix}{location}{self.message}"
 
 
 @dataclass(frozen=True)

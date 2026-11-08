@@ -1,0 +1,9 @@
+# --- Experiment protocol: cross-subject ---
+# Question: does the model generalize to a completely UNSEEN SUBJECT?
+# Correct split: whole subjects are held out (split=evaulation/moabb_cross_subject).
+
+task: "motor imagery classification"
+generalization: cross_subject
+usage: offline
+adaptation: none
+rigor: standard
