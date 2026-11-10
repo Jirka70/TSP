@@ -6,8 +6,8 @@ from sklearn.metrics import get_scorer_names
 from src.types.dto.config.astageconfig import AStageConfig
 
 
-class EvaluationConfig(AStageConfig):
-    backend: Literal["default"]
+class TrainingEvaluationConfig(AStageConfig):
+    backend: Literal["training"]
     metrics: list[str]
 
     @field_validator("metrics")
@@ -21,8 +21,8 @@ class EvaluationConfig(AStageConfig):
         return v
 
 
-class SklearnEvaluationConfig(AStageConfig):
-    backend: Literal["sklearn"]
+class ExperimentEvaluationConfig(AStageConfig):
+    backend: Literal["experiment"]
     metrics: list[str]
 
     @field_validator("metrics")
@@ -36,8 +36,8 @@ class SklearnEvaluationConfig(AStageConfig):
         return v
 
 
-class FoldEvaluationConfig(AStageConfig):
-    backend: Literal["fold"]
+class CrossValidationEvaluationConfig(AStageConfig):
+    backend: Literal["cross_validation"]
     metrics: list[str]
 
     @field_validator("metrics")

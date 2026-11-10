@@ -8,7 +8,7 @@ from src.pipeline.pipeline import IPipeline
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.evaluation.evaluation_input_dto import ExperimentEvaluationInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.paradigm.paradigm_input_dto import ParadigmInputDTO
 from src.types.dto.paradigm.paradigm_result_dto import ParadigmResultDTO
@@ -20,7 +20,7 @@ from src.types.dto.split.dataset_split_dto import DatasetSplitDTO
 from src.types.interfaces.artifact_saver import IArtifactSaver
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
-from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.evaluator import IExperimentEvaluator
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_preprocessing import IRawPreprocessing
 from src.types.interfaces.visualizer import IVisualizer
@@ -31,10 +31,10 @@ from src.types.dto.evaluation.evaluation_result_dto import EvaluationResultDTO
 
 class ExperimentPipeline(IPipeline):
     """
-    Orchestrator pipeline executing the end-to-end BCI evaluation workflow.
+    Orchestrator pipeline executing the end-to-end BCI cross_validation workflow.
 
     Coordinates data loading, multi-stage preprocessing, model restoration,
-    downstream classification evaluation, and experimental artifact persistence.
+    downstream classification cross_validation, and experimental artifact persistence.
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class ExperimentPipeline(IPipeline):
         paradigm: IParadigm,
         epoch_preprocessing: IEpochPreprocessing,
         model_loader: IModelLoader,
-        evaluator: IEvaluator,
+        evaluator: IExperimentEvaluator,
         visualizer: IVisualizer,
         artifact_saver: IArtifactSaver,
         model_serializer: IModelSerializer,
@@ -63,7 +63,7 @@ class ExperimentPipeline(IPipeline):
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         """
-        Execute the configured evaluation experiment pipeline sequentially.
+        Execute the configured cross_validation experiment pipeline sequentially.
 
         Args:
             config (ExperimentConfig): The master configuration object for the experiment run.
@@ -87,9 +87,13 @@ class ExperimentPipeline(IPipeline):
 
         trained_model: TrainedModelDTO = TrainedModelDTO(model=loaded_model_obj, model_name=model_path.stem)
 
-        dummy_split: DatasetSplitDTO = DatasetSplitDTO(test=epoch_preprocessing_result.data)
+        # dummy_split: DatasetSplitDTO = DatasetSplitDTO(test=epoch_preprocessing_result.data)
 
-        evaluation_input: EvaluationInputDTO = EvaluationInputDTO(config=config.evaluation, trained_models=[trained_model], dataset_split=dummy_split) #TODO DTO looks different than expected - change this or DTO
+        evaluation_input: ExperimentEvaluationInputDTO = ExperimentEvaluationInputDTO(
+            config=config.evaluation,
+            trained_model=trained_model,
+            data=epoch_preprocessing_result.data,
+        )
         evaluation_result: StepResult[EvaluationResultDTO] = self._evaluator.run(evaluation_input, run_ctx)
 
         self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, trained_model.model_name)

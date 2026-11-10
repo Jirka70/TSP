@@ -1,7 +1,7 @@
-backend: default
-# Default evaluation configuration.
+backend: training
+# Default cross_validation configuration for training pipeline.
 
-# Metrics to compute after training experiment.
+# Metrics to compute after training pipeline.
 metrics:
   - accuracy
   - f1_macro

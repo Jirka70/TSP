@@ -4,11 +4,11 @@ import hydra
 
 from src.pipeline_logging.setup_logging import setup_bootstrap_logging, setup_pipeline_logging
 from src.pipeline.context.run_context import RunContext
+from src.pipeline.evaluation.evaluation_pipeline import EvaluationPipeline
 from src.pipeline.experiment.experiment_pipeline import ExperimentPipeline
 from src.pipeline.pipeline import IPipeline
 from src.pipeline.run_context_factory import RunContextFactory
 from src.pipeline.stage_factory import StageFactory
-from src.pipeline.evaluation.evaluation_pipeline import EvaluationPipeline
 from src.pipeline.training.training_pipeline import TrainingPipeline
 from src.types.dto.config.experiment_config import Mode
 from src.validation.config_validator import ExperimentConfigValidator
@@ -42,7 +42,6 @@ def my_app(cfg):
     raw_preprocessing = sf.create_raw_preprocessing_stage()
     paradigm = sf.create_paradigm_stage()
     epoch_preprocessing = sf.create_epoch_preprocessing_stage()
-    evaluator = sf.create_evaluator_stage()
     visualizer = sf.create_visualizer()
     saver = sf.create_saver()
     model_serializer = sf.create_model_serializer()
@@ -58,11 +57,27 @@ def my_app(cfg):
         augmentation = sf.create_augmentation_stage()
         dataset_exporter = sf.create_dataset_exporter_stage()
         final_trainer = sf.create_final_trainer_stage()
+        evaluator = sf.create_single_model_evaluator_stage()
 
-        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, dataset_exporter, final_trainer, evaluator, visualizer, saver, model_serializer)
+        pipeline = TrainingPipeline(
+            dl,
+            raw_preprocessing,
+            raw_augmentation,
+            paradigm,
+            epoch_preprocessing,
+            split,
+            augmentation,
+            dataset_exporter,
+            final_trainer,
+            evaluator,
+            visualizer,
+            saver,
+            model_serializer,
+        )
 
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         model_loader = sf.create_model_loader()
+        evaluator = sf.create_inference_evaluator_stage()
 
         pipeline = ExperimentPipeline(
             data_loader=dl,
@@ -81,6 +96,7 @@ def my_app(cfg):
         augmentation = sf.create_augmentation_stage()
         dataset_exporter = sf.create_dataset_exporter_stage()
         model_trainer = sf.create_model_trainer_stage()
+        evaluator = sf.create_fold_evaluator_stage()
 
         pipeline = EvaluationPipeline(
             data_loader=dl,

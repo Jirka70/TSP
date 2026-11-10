@@ -9,7 +9,7 @@ from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputD
 from src.types.dto.config.experiment_config import ExperimentConfig
 from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.evaluation.evaluation_input_dto import TrainingEvaluationInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.final_training_result_dto import FinalTrainingResultDTO
@@ -26,7 +26,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.dataset_exporter import IDatasetExporter
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
-from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.evaluator import ITrainingEvaluator
 from src.types.interfaces.model.final_trainer import IFinalTrainer
 from src.types.interfaces.model.model_serializer import IModelSerializer
 from src.types.interfaces.paradigm import IParadigm
@@ -65,7 +65,7 @@ class TrainingPipeline(IPipeline):
         augmentation: IAugmentor,
         dataset_exporter: IDatasetExporter,
         final_trainer: IFinalTrainer,
-        evaluator: IEvaluator,
+        evaluator: ITrainingEvaluator,
         visualizer: IVisualizer,
         artifact_saver: IArtifactSaver,
         model_serializer: IModelSerializer,
@@ -150,7 +150,7 @@ class TrainingPipeline(IPipeline):
 
         # --- 10. Final Model Evaluation (on held-out test data, if available) ---
         if augmented_split.test is not None:
-            evaluation_input = EvaluationInputDTO(
+            evaluation_input = TrainingEvaluationInputDTO(
                 config=config.evaluation,
                 trained_model=final_training_result.data.trained_model,
                 test_data=augmented_split.test,
@@ -158,7 +158,7 @@ class TrainingPipeline(IPipeline):
             evaluation_result = self._evaluator.run(evaluation_input, run_ctx)
             self._visualizer.visualize_evaluation(evaluation_result.data, run_ctx, final_training_result.data.trained_model.model_name)
         else:
-            self._log.warning("No test data available (test_ratio=0.0). Skipping final model evaluation.")
+            self._log.warning("No test data available (test_ratio=0.0). Skipping final model cross_validation.")
             evaluation_result = None
 
         # --- 11. Artifact Saving ---

@@ -10,7 +10,7 @@ from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from src.impl.evaluator.standard_evaluator import StandardEvaluator
+from src.impl.evaluator.training_evaluator import TrainingEvaluator
 from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
@@ -104,7 +104,7 @@ def _factory_config(
         (StageType.METRICS_AGGREGATOR, "default", MetricsAggregator),
         (StageType.FINAL_TRAINER, "sklearn", FinalSklearnTrainer),
         (StageType.FINAL_TRAINER, "eegnet", FinalEEGNetTrainer),
-        (StageType.EVALUATOR, "default", StandardEvaluator),
+        (StageType.EVALUATOR, "default", TrainingEvaluator),
         (StageType.SAVER, "default", ArtifactSaver),
         (StageType.MODEL_SERIALIZER, "sklearn", SklearnModelSerializer),
         (StageType.MODEL_SERIALIZER, "eegnet", EEGNetModelSerializer),
@@ -131,7 +131,7 @@ def test_stage_factory_creates_expected_default_training_implementations():
     assert isinstance(factory.create_model_trainer_stage(), GenericSklearnTrainer)
     assert isinstance(factory.create_metrics_aggregator_stage(), MetricsAggregator)
     assert isinstance(factory.create_final_trainer_stage(), FinalSklearnTrainer)
-    assert isinstance(factory.create_evaluator_stage(), StandardEvaluator)
+    assert isinstance(factory.create_evaluator_stage(), TrainingEvaluator)
     assert isinstance(factory.create_saver(), ArtifactSaver)
     assert isinstance(factory.create_model_serializer(), SklearnModelSerializer)
     assert isinstance(factory.create_visualizer(), MatplotlibVisualizer)

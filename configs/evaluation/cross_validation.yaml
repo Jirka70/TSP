@@ -1,0 +1,10 @@
+backend: cross_validation
+# Default cross_validation configuration for cross-validation pipeline.
+# Used by CrossValidationEvaluator — evaluates each trained model on its fold's test_data.
+
+# Metrics to compute per fold (then aggregated as mean across folds).
+metrics:
+  - accuracy
+  - f1_macro
+  - precision_macro
+  - recall_macro
