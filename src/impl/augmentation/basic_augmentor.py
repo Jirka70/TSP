@@ -12,6 +12,37 @@ from src.types.dto.split.dataset_split_dto import DatasetSplitDTO, FoldDTO
 from src.types.interfaces.augmentor import IAugmentor
 
 
+def _apply_linear_time_shift(epoch: np.ndarray, shift: int) -> np.ndarray:
+    """
+    Shifts an epoch along the time axis linearly without circular wrap-around.
+
+    Instead of ``np.roll`` (which creates an artificial boundary step when the
+    end of the epoch wraps to the beginning), missing samples at the edge are
+    padded with the boundary sample value (edge mode) to preserve signal continuity.
+
+    Args:
+        epoch: 2D array of shape (n_channels, n_times).
+        shift: Number of samples to shift (positive = shift right, negative = shift left).
+
+    Returns:
+        Shifted epoch of identical shape.
+    """
+    if shift == 0:
+        return epoch
+
+    shifted = np.empty_like(epoch)
+    if shift > 0:
+        # Shifted to the right: beginning is padded with the first column
+        shifted[:, :shift] = epoch[:, :1]
+        shifted[:, shift:] = epoch[:, :-shift]
+    else:
+        # Shifted to the left: end is padded with the last column
+        abs_shift = -shift
+        shifted[:, :-abs_shift] = epoch[:, abs_shift:]
+        shifted[:, -abs_shift:] = epoch[:, -1:]
+    return shifted
+
+
 class BasicAugmentor(IAugmentor):
     """
     Basic augmentation pipeline for EEG data.
@@ -30,7 +61,7 @@ class BasicAugmentor(IAugmentor):
 
         Augmentation transformations applied to training data:
         1. Gaussian Noise: Adds random normal noise.
-        2. Time Shift: Shifts epochs randomly along the time axis.
+        2. Linear Time Shift: Shifts epochs along the time axis (non-circular, edge-padded).
         3. Channel Dropout: Randomly sets channel values to zero.
 
         Args:
@@ -39,8 +70,7 @@ class BasicAugmentor(IAugmentor):
             run_ctx (RunContext): Context keeping track of the current pipeline execution.
 
         Returns:
-            StepResult[DatasetSplitDTO]: A step result wrapping the updated dataset splits,
-                with training data augmented according to the configuration.
+            StepResult[DatasetSplitDTO]: Updated dataset splits with training data augmented.
         """
         log = run_ctx.logger.for_step("BASIC_AUGMENTATION")
         config: AugmentationConfigBasic = input_dto.augmentation_config
@@ -110,18 +140,22 @@ class BasicAugmentor(IAugmentor):
         for rec in train_data_dto.data:
             x = rec.data
             labels = None
+            metadata = rec.metadata.copy() if isinstance(rec.metadata, dict) else {}
 
-            # Handle MNE vs NumPy
+            # Handle MNE vs NumPy and preserve essential metadata
             if isinstance(x, mne.Epochs):
                 labels = x.events[:, -1]
+                metadata.setdefault("sfreq", float(x.info["sfreq"]))
+                metadata.setdefault("ch_names", list(x.ch_names))
                 x = x.get_data(copy=False)
-            elif isinstance(rec.metadata, dict) and "labels" in rec.metadata:
-                labels = rec.metadata["labels"]
+            elif "labels" in metadata:
+                labels = np.array(metadata["labels"])
             else:
-                labels = np.zeros(len(x))
+                labels = np.zeros(len(x), dtype=int)
 
             original_shape = x.shape
-            total_original_samples += original_shape[0]
+            n_orig = original_shape[0]
+            total_original_samples += n_orig
 
             # Initialize lists with original data
             augmented_x_list = [x]
@@ -131,22 +165,22 @@ class BasicAugmentor(IAugmentor):
             for _ in range(config.copies_per_sample):
                 x_aug = np.copy(x)
 
-                # Add Gaussian noise
+                # 1. Add Gaussian noise
                 if config.gaussian_noise.std > 0.0:
                     noise = np.random.normal(0, config.gaussian_noise.std, size=x_aug.shape)
                     x_aug += noise
 
-                # Apply time shift
+                # 2. Apply non-circular linear time shift with edge padding
                 if config.time_shift.max_samples > 0:
                     shifts = np.random.randint(
                         -config.time_shift.max_samples,
                         config.time_shift.max_samples + 1,
-                        size=x_aug.shape[0],
+                        size=n_orig,
                     )
                     for idx, shift in enumerate(shifts):
-                        x_aug[idx] = np.roll(x_aug[idx], shift, axis=-1)
+                        x_aug[idx] = _apply_linear_time_shift(x_aug[idx], shift)
 
-                # Apply channel dropout
+                # 3. Apply channel dropout
                 if config.channel_dropout.prob > 0.0:
                     mask_shape = (x_aug.shape[0], x_aug.shape[1], 1)
                     dropout_mask = (np.random.rand(*mask_shape) > config.channel_dropout.prob).astype(np.float32)
@@ -155,20 +189,56 @@ class BasicAugmentor(IAugmentor):
                 augmented_x_list.append(x_aug)
                 augmented_labels_list.append(labels)
 
-            # Combine into final arrays
+            # Combine original and augmented copies
             final_signal = np.vstack(augmented_x_list)
             final_labels = np.concatenate(augmented_labels_list)
-            total_augmented_samples += final_signal.shape[0]
+            n_total = final_signal.shape[0]
+            total_augmented_samples += n_total
 
-            log.debug(f"Recording run id: {rec.subject_id}_{rec.session_id}_{rec.run_id}. Original shape: {original_shape}. Augmented shape: {final_signal.shape}", VerbosityLevel.TRACE)
+            # Replicate any per-epoch metadata to match the new sample count
+            final_metadata = metadata.copy()
+            multiplier = 1 + config.copies_per_sample
+            for k, v in metadata.items():
+                if k == "labels":
+                    continue
+                if isinstance(v, (list, np.ndarray)) and len(v) == n_orig:
+                    if isinstance(v, np.ndarray):
+                        final_metadata[k] = np.tile(v, multiplier)
+                    else:
+                        final_metadata[k] = v * multiplier
 
-            # Metadata replication
-            final_metadata = rec.metadata.copy()
-            if "labels" in final_metadata:
-                final_metadata["labels"] = final_labels
+            # Shuffle combined samples so originals and copies are evenly mixed
+            perm = np.random.permutation(n_total)
+            final_signal = final_signal[perm]
+            final_labels = final_labels[perm]
+            final_metadata["labels"] = final_labels
 
-            new_rec = RecordingDTO(data=final_signal, dataset_name=rec.dataset_name, subject_id=rec.subject_id, session_id=rec.session_id, run_id=rec.run_id, metadata=final_metadata)
+            for k, v in final_metadata.items():
+                if k == "labels":
+                    continue
+                if isinstance(v, np.ndarray) and len(v) == n_total:
+                    final_metadata[k] = v[perm]
+                elif isinstance(v, list) and len(v) == n_total:
+                    final_metadata[k] = [v[p] for p in perm]
+
+            log.debug(
+                f"Recording: {rec.subject_id}_{rec.session_id}_{rec.run_id}. "
+                f"Original: {original_shape} -> Augmented: {final_signal.shape}",
+                VerbosityLevel.TRACE,
+            )
+
+            new_rec = RecordingDTO(
+                data=final_signal,
+                dataset_name=rec.dataset_name,
+                subject_id=rec.subject_id,
+                session_id=rec.session_id,
+                run_id=rec.run_id,
+                metadata=final_metadata,
+            )
             augmented_recordings.append(new_rec)
 
-        log.info(f"Single fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}", VerbosityLevel.DETAILED)
+        log.info(
+            f"Augmentation summary: {total_original_samples} -> {total_augmented_samples} samples.",
+            VerbosityLevel.DETAILED,
+        )
         return EpochPreprocessedDTO(data=augmented_recordings)

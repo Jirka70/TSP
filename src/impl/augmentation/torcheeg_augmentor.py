@@ -41,7 +41,6 @@ class RandomAmplitudeScale:
             Dictionary containing the (possibly) transformed 'eeg' tensor.
         """
         if random.random() < self.p:
-            # Generate a random factor within the [min, max] range
             factor = random.uniform(self.min_scale, self.max_scale)
             eeg = eeg * factor
 
@@ -70,8 +69,7 @@ class TorchEEGAugmentor(IAugmentor):
             run_ctx (RunContext): Context keeping track of the current pipeline execution.
 
         Returns:
-            StepResult[DatasetSplitDTO]: A step result wrapping the updated
-                dataset splits, with training data augmented according to the configuration.
+            StepResult[DatasetSplitDTO]: Updated dataset splits with training data augmented.
         """
         log = run_ctx.logger.for_step("TORCHEEG_AUGMENTATION")
         config: AugmentationConfigTorchEEG = input_dto.augmentation_config
@@ -135,15 +133,7 @@ class TorchEEGAugmentor(IAugmentor):
         return StepResult(DatasetSplitDTO(folds=augmented_folds))
 
     def _build_transforms(self, config: AugmentationConfigTorchEEG, log: PipelineLogger) -> transforms.Compose | None:
-        """
-        Helper method to construct the TorchEEG transformation pipeline.
-
-        Args:
-            config: The TorchEEG augmentation configuration.
-
-        Returns:
-            A transforms.Compose object containing all configured transformations, or None if empty.
-        """
+        """Helper method to construct the TorchEEG transformation pipeline."""
         transform_list = []
 
         # Add Random Noise
@@ -173,18 +163,14 @@ class TorchEEGAugmentor(IAugmentor):
 
         return transforms.Compose(transform_list) if transform_list else None
 
-    def _augment_single_fold(self, train_data_dto: EpochPreprocessedDTO, torcheeg_transform: transforms.Compose, copies_per_sample: int, log: PipelineLogger) -> EpochPreprocessedDTO:
-        """
-        Core logic for augmenting all recordings within a single training partition.
-
-        Args:
-            train_data_dto: The training data to augment.
-            torcheeg_transform: The compiled TorchEEG transformation pipeline.
-            copies_per_sample: Number of augmented copies to create for each original sample.
-
-        Returns:
-            Updated EpochPreprocessedDTO containing original and augmented recordings.
-        """
+    def _augment_single_fold(
+        self,
+        train_data_dto: EpochPreprocessedDTO,
+        torcheeg_transform: transforms.Compose,
+        copies_per_sample: int,
+        log: PipelineLogger,
+    ) -> EpochPreprocessedDTO:
+        """Core logic for augmenting all recordings within a single training partition."""
         from src.types.dto.load.recording import RecordingDTO
 
         augmented_recordings = []
@@ -195,51 +181,78 @@ class TorchEEGAugmentor(IAugmentor):
         for rec in train_data_dto.data:
             x_np = rec.data
             labels = None
+            metadata = rec.metadata.copy() if isinstance(rec.metadata, dict) else {}
 
-            # 1. Extract labels (trying MNE Epochs first, then metadata fallback)
+            # 1. Extract labels and preserve essential MNE metadata
             if isinstance(x_np, mne.Epochs):
                 labels = x_np.events[:, -1]
+                metadata.setdefault("sfreq", float(x_np.info["sfreq"]))
+                metadata.setdefault("ch_names", list(x_np.ch_names))
                 x_np = x_np.get_data(copy=False)
-            elif isinstance(rec.metadata, dict) and "labels" in rec.metadata:
-                labels = rec.metadata["labels"]
+            elif "labels" in metadata:
+                labels = np.array(metadata["labels"])
             else:
-                # Fallback if no labels are found
-                labels = np.zeros(len(x_np))
+                labels = np.zeros(len(x_np), dtype=int)
 
             original_shape = x_np.shape
-            total_original_samples += original_shape[0]
+            n_orig = original_shape[0]
+            total_original_samples += n_orig
 
-            # Initialize lists with the original data (the first copy)
+            # Initialize lists with original data
             augmented_x_list = [x_np]
             augmented_labels_list = [labels]
 
-            # 2. Generation loop: Create N copies
+            # 2. Generation loop: Vectorized batch transformation
+            batch_tensor = torch.tensor(x_np, dtype=torch.float32)
             for _ in range(copies_per_sample):
-                epoch_augmented_list = []
-
-                # Apply transformations to each epoch in the recording individually
-                for i in range(x_np.shape[0]):
-                    # Convert to tensor for TorchEEG compatibility
-                    single_epoch_tensor = torch.tensor(x_np[i], dtype=torch.float32)
-                    transformed = torcheeg_transform(eeg=single_epoch_tensor)["eeg"]
-                    epoch_augmented_list.append(transformed.numpy())
-
-                augmented_x_list.append(np.array(epoch_augmented_list))
+                transformed = torcheeg_transform(eeg=batch_tensor.clone())["eeg"]
+                augmented_x_list.append(transformed.detach().cpu().numpy())
                 augmented_labels_list.append(labels)
 
             # 3. Concatenate all original and augmented copies
             final_signal = np.vstack(augmented_x_list)
             final_labels = np.concatenate(augmented_labels_list)
-            total_augmented_samples += final_signal.shape[0]
+            n_total = final_signal.shape[0]
+            total_augmented_samples += n_total
 
-            # 4. Replicate metadata and update labels
-            final_metadata = rec.metadata.copy()
-            if "labels" in final_metadata:
-                final_metadata["labels"] = final_labels
+            # 4. Replicate any per-epoch metadata to match the new sample count
+            final_metadata = metadata.copy()
+            multiplier = 1 + copies_per_sample
+            for k, v in metadata.items():
+                if k == "labels":
+                    continue
+                if isinstance(v, (list, np.ndarray)) and len(v) == n_orig:
+                    if isinstance(v, np.ndarray):
+                        final_metadata[k] = np.tile(v, multiplier)
+                    else:
+                        final_metadata[k] = v * multiplier
 
-            # Create a new RecordingDTO with the augmented data
-            new_rec = RecordingDTO(data=final_signal, dataset_name=rec.dataset_name, subject_id=rec.subject_id, session_id=rec.session_id, run_id=rec.run_id, metadata=final_metadata)
+            # 5. Shuffle combined samples so originals and copies are evenly mixed
+            perm = np.random.permutation(n_total)
+            final_signal = final_signal[perm]
+            final_labels = final_labels[perm]
+            final_metadata["labels"] = final_labels
+
+            for k, v in final_metadata.items():
+                if k == "labels":
+                    continue
+                if isinstance(v, np.ndarray) and len(v) == n_total:
+                    final_metadata[k] = v[perm]
+                elif isinstance(v, list) and len(v) == n_total:
+                    final_metadata[k] = [v[p] for p in perm]
+
+            new_rec = RecordingDTO(
+                data=final_signal,
+                dataset_name=rec.dataset_name,
+                subject_id=rec.subject_id,
+                session_id=rec.session_id,
+                run_id=rec.run_id,
+                metadata=final_metadata,
+            )
             augmented_recordings.append(new_rec)
 
-        log.info(f"Fold augmentation summary: Total samples before: {total_original_samples}, After: {total_augmented_samples}", VerbosityLevel.DETAILED)
+        log.info(
+            f"TorchEEG fold augmentation summary: {total_original_samples} -> {total_augmented_samples} samples.",
+            VerbosityLevel.DETAILED,
+        )
         return EpochPreprocessedDTO(data=augmented_recordings)

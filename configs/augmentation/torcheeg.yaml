@@ -10,7 +10,7 @@ random_seed: 42                # Ensures reproducibility of the random transform
 copies_per_sample: 1           # Number of augmented variants generated per original training sample
 
 gaussian_noise:
-  std: 0.01                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
+  std: 0.00001                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
 
 mask:
   prob: 0.3                    # Probability (0.0 to 1.0) of applying a random mask (zeroing segments)

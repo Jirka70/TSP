@@ -6,7 +6,7 @@ from src.types.dto.config.astageconfig import AStageConfig
 
 
 class GaussianNoiseConfig(BaseModel):
-    std: float = Field(default=0.0, ge=0.0)
+    std: float = Field(default=0.0, ge=0.0, le=0.0001)
 
 
 class MaskConfig(BaseModel):

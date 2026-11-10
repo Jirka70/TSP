@@ -6,17 +6,17 @@ defaults:
   - raw_augmentation: none
   - paradigm: default
   - epoch_preprocessing: default
-  - split: training/general
+  - split: cross_validation/moabb_within_session
   - augmentation: torcheeg
   - dataset_export: default
   - model: machine_learning/riemannian_svm
   - metrics_aggregator: default
   - final_trainer: machine_learning/sklearn
-  - evaluation: experiment
+  - evaluation: cross_validation
   - visualization: matplotlib
-  - save_artifacts: experiment
+  - save_artifacts: default
   - model_path: machine_learning/sklearn
 
 # possible modes: training, evaluation, experiment
-mode: experiment
+mode: evaluation
 output_dir: ./outputs

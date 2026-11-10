@@ -62,7 +62,7 @@ class EvaluationPipeline(IPipeline):
         evaluator: ICrossValidationEvaluator,
         visualizer: IVisualizer,
     ) -> None:
-        """Initialize the cross_validation pipeline with all required stage components."""
+        """Initialize the evaluation pipeline with all required stage components."""
         self._log = logging.getLogger(__name__)
         self._data_loader = data_loader
         self._raw_preprocessing = raw_preprocessing
@@ -78,7 +78,7 @@ class EvaluationPipeline(IPipeline):
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         """
-        Execute the cross_validation pipeline sequentially.
+        Execute the evaluation pipeline sequentially.
 
         Stages:
             1. Data loading
@@ -90,7 +90,7 @@ class EvaluationPipeline(IPipeline):
             7. Augmentation + visualization
             8. Dataset export
             9. Fold-based model training (small ML models only)
-            10. Fold-level cross_validation (each model evaluated on its fold's test data)
+            10. Fold-level evaluation (each model evaluated on its fold's test data)
 
         Args:
             config: The master experiment configuration.
@@ -130,7 +130,6 @@ class EvaluationPipeline(IPipeline):
         # --- 7. Augmentation ---
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
-        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
         copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
         self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
@@ -141,9 +140,9 @@ class EvaluationPipeline(IPipeline):
         # --- 9. Fold-based Model Training ---
         folds = augmentation_result.data.folds
         if not folds:
-            raise ValueError("Splitting/Augmentation returned no folds. Cannot continue cross_validation.")
+            raise ValueError("Splitting/Augmentation returned no folds. Cannot continue evaluation.")
 
-        self._log.info(f"Training {len(folds)} fold model(s) for cross_validation.")
+        self._log.info(f"Training {len(folds)} fold model(s) for evaluation.")
         training_input = TrainingInputDTO(config=config.model, folds=folds)
         model_training_result: StepResult[TrainingResultDTO] = self._model_trainer.run(training_input, run_ctx)
 
