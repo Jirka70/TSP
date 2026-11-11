@@ -2,6 +2,80 @@
 
 Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
 
+## Odstranění foldové metriky a verze DL exportu (2026-11-07)
+
+- [x] Odstranit z EEGNetModel historický klíč `fold_accuracy`; každé volání `validate()` zapisuje
+  accuracy val sady do `validation_accuracy`. Dříve tento správně pojmenovaný seznam zůstával prázdný.
+- [x] Zavést společnou definici formátu a verze pro serializer a loader. Nový checkpoint má
+  `format="eegnet_checkpoint"` a explicitní `format_version=2`; verze je také v metadatech artefaktu.
+- [x] Loader podporuje pouze verzi 2. Verzi 1, neznámou, chybějící nebo neplatně typovanou verzi
+  odmítne před konstrukcí sítě; nenahrazuje ji výchozí hodnotou a neprovádí tichou migraci.
+- [x] Ověřit historii, ukládání/načítání a odmítání verzí. Celá sada: 154 testů prošlo;
+  cílený mypy (6 souborů), Ruff včetně E501 a kontrola formátování prošly.
+
+Jde o výslovně novou hranici kompatibility exportu. Samotná historie není součástí checkpointu v1 ani v2;
+ukládá se samostatným artifact saverem. Změna metriky nemění architekturu, váhy ani trénovací výpočet.
+Společné `TrainedModelDTO` nadále obsahuje volitelné `fold_idx` pro ML; DL jej nenastavuje a neserializuje.
+ML foldy, splittery a jejich vyhodnocení zůstávají zachované. Tento zápis nahrazuje starší informaci
+o zachování verze formátu při přepisu ze stejného dne; staré checkpointy vyžadují starší loader.
+
+
+## Přepis DL podle coding konvencí (2026-11-07)
+
+Aktuální zadání zahrnuje přepis DL větve a ověření shody s posledními reálnými běhy.
+Veřejné DTO, train/val hranice traineru a samostatná testovací evaluace zůstávají zachované.
+
+- [x] Upravit trainer, smyčku a EEGNetModel; oddělit výpočet batch loss, aktualizaci vah a agregaci metrik.
+- [x] Zpřesnit typy validace, továrny, konstrukce sítě, stavu modelu a checkpointu bez nového adaptéru DTO.
+- [x] Upravit serializer a loader; zachovat metadata PyTorch state dictionary. Novou verzi exportu určuje zápis výše.
+- [x] Ověřit výběr nejstarší nejlepší epochy, obnovu vah a izolaci validačního průchodu.
+- [x] Spustit celou sadu včetně souběžné změny exportu: 154 testů prošlo; cílený mypy a Ruff včetně E501 prošly.
+- [x] Znovu připravit BNCI2014_001 a ověřit přesnou shodu hashů train, val, test a augmentovaného train
+  s oběma běhy ze 4. listopadu.
+- [x] Dokončit 15epochové běhy a porovnat číselnou historii, váhy, predikce a metriky; všechny jsou přesně shodné.
+
+Výsledek finální verze 2: běžný split accuracy 87,258687 %, osoba 8 accuracy 96,875 %.
+Vstupní hashe, číselné historie, vybrané váhy a testovací predikce jsou přesně stejné jako 4. listopadu;
+maximální rozdíl pravděpodobností je 0. Přejmenování validační metriky se v porovnání mapuje explicitně.
+Podrobnosti a meze jsou v `reviews/dl-refactor-2026-11-07/report.md`.
+
+Reprodukční skripty jsou v `reviews/dl-refactor-2026-11-07/`, průběžné artefakty a záznam původních zdrojů
+v `outputs/dl-refactor-2026-11-07/`. Tento přepis nemění splitter, preprocessing ani parametry učení.
+
+## Ověření výkonu na vstupu z 15. května (2026-11-04)
+
+Aktuální pracovní strom byl ověřen na BNCI2014_001, osobách 1–9 a stejném uloženém nastavení
+preprocessingu a parametrů EEGNetu (15 epoch). Dva dokončené běhy používají současné komponenty,
+předzpracování po osobách kvůli chybě nedostatku místa při společném běhu.
+
+- Osoba 8, stejná vyhodnocovaná osoba jako historicky: test accuracy 96,875 % (279/288), stejně
+  jako původní validační accuracy. Současná val je ze zbývajících osob a vybírá 14. epochu.
+- Běžný současný GeneralSplitter: test accuracy 87,2587 %, F1 macro 87,2214 % na 518 epochách.
+  Výsledek na jiné směsi osob není přímým důkazem regrese proti historické osobě 8.
+- Potvrzeno, že konfigurace poměrů 70/10/20 vytvoří přibližně 72/8/20. Validation fraction se
+  počítá až ze zbytku po testu. V tomto ověření nebyl splitter upraven.
+- Oba modely byly uložené, načtené a prošly současnou kontrolou shody predikcí na val.
+
+Podrobnosti, meze srovnání, konfigurace a reprodukční skripty jsou v
+`reviews/dl-performance-2026-11-04/report.md`; číselné artefakty v `outputs/dl-performance-2026-11-04/`.
+Výsledky jsou jednorázové, nejde o důkaz shody historických vah ani výkonu napříč seedy.
+
+## Odstranění foldového trénování pouze z EEGNetu (2026-11-04)
+
+Na výslovné zadání uživatele je smazán `EEGNetModelTrainer`, jeho import a registrace ve StageFactory
+a obě konfigurace `training_dl_fold.yaml`. `EEGNetConfig` a aktivní DL konfigurace již neobsahují
+`fold_training`. Továrna pokus o vytvoření foldového EEGNet traineru odmítne s konkrétní chybou;
+EEGNet dál používá pouze `FinalEEGNetTrainer` s train/val a samostatnou finální evaluací na testu.
+
+ML implementace a jejich konfigurace, společné foldové DTO, splitter a foldová evaluační pipeline se nemění.
+Aktivní DL smoke konfigurace používají cestu `split: training/general` z mergnuté větve.
+Starší pole `fold_training` v konfiguraci checkpointu Pydantic při načtení ignoruje; žádné foldové trénování
+tím nelze aktivovat. Test pokrývá kompatibilitu této starší konfigurace.
+
+Ověření: testy konfigurace a továrny — 43 testů prošlo, včetně kompozice obou aktivních DL smoke konfigurací.
+Finální ověření: `.venv/bin/python -m pytest -q --tb=short` — 133 testů prošlo, Ruff kontrola prošla.
+Přidané Python řádky splňují limit 120 znaků; ML implementace ani jejich konfigurace nejsou mezi změněnými soubory.
+
 ## Jednoduché ověření serializace na val (2026-11-04)
 
 Na zadání uživatele `FinalEEGNetTrainer` předává celou ověřenou val sadu v novém volitelném poli

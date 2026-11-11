@@ -7,7 +7,10 @@ from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.config.model.training_config import TrainingConfig
 
 
-def create_eegnet_model(normalization="none", network=None):
+def create_eegnet_model(
+    normalization: str = "none",
+    network: nn.Module | None = None,
+) -> EEGNetModel:
     configuration = EEGNetConfig.model_construct(
         model_name="eegnet",
         n_classes=2,

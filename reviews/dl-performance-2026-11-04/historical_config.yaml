@@ -1,0 +1,163 @@
+mode: training
+output_dir: ./outputs
+raw_preprocessing:
+  backend: default
+  resampling:
+    enabled: false
+    sfreq: 250
+  high_pass_filter:
+    enabled: true
+    l_freq: 1.0
+  low_pass_filter:
+    enabled: false
+    h_freq: 40.0
+  notch_filter:
+    enabled: true
+    freqs:
+    - 50
+  bad_channels_interpolation:
+    enabled: true
+  re_referencing:
+    enabled: true
+    method: CSD
+  ica:
+    enabled: false
+    n_components: 0.95
+    method: infomax
+  annotate_break:
+    enabled: true
+    min_break_duration: 2.5
+paradigm:
+  backend: default
+  events:
+    left_hand: 1
+    right_hand: 2
+  filter:
+    fmin: 8.0
+    fmax: 35.0
+  window:
+    tmin: -0.5
+    tmax: 4.0
+    baseline:
+    - -0.5
+    - 0.0
+  resampling:
+    enabled: true
+    sfreq: 128.0
+  reject_by_annotation: true
+  preload: true
+epoch_preprocessing:
+  backend: default
+  alignment:
+    enabled: true
+    tmin_offset: -0.2
+  ica:
+    enabled: true
+    n_components: 15
+    random_state: 42
+    method: fastica
+    eog_threshold: 3.0
+  autoreject:
+    enabled: true
+    n_interpolate:
+    - 1
+    - 4
+    - 8
+    consensus:
+    - 0.2
+    - 0.5
+    - 0.8
+    cv: 5
+  csp:
+    enabled: false
+    n_components: 4
+    reg: null
+    log: true
+    norm_trace: false
+split:
+  backend: moabb_within_session
+  enabled: true
+  pre_split_validation: true
+  validation_ratio: 0.2
+  evaluator:
+    _target_: moabb.evaluations.WithinSessionSplitter
+    random_state: 42
+    n_folds: 5
+    shuffle: true
+    cv_class: sklearn.model_selection.StratifiedKFold
+augmentation:
+  enabled: true
+  backend: torcheeg
+  copies_per_sample: 1
+  gaussian_noise_std: 0.01
+  mask_prob: 0.3
+  mask_ratio: 0.1
+  shift_prob: 0.2
+  sign_flip_prob: 0.2
+  scale_prob: 0.3
+  scale_min: 0.9
+  scale_max: 1.1
+  random_seed: 42
+model:
+  training:
+    epochs: 15
+    batch_size: 16
+    learning_rate: 0.0005
+    optimizer: adam
+  fold_training: true
+  model_name: tomas-kopelent-fold-duplicates
+  backend: eegnet
+  n_classes: 2
+  dropout: 0.25
+  kernel_length: 16
+  f1: 8
+  d: 2
+  f2: 16
+metrics_aggregator:
+  backend: default
+final_trainer:
+  backend: eegnet
+evaluation:
+  backend: default
+  metrics:
+  - accuracy
+  - f1_macro
+  - precision_macro
+  - recall_macro
+  compute_confusion_matrix: true
+visualization:
+  backend: matplotlib
+  visualize_raw: true
+  visualize_epochs: true
+  visualize_augmentation: true
+  visualize_evaluation: true
+  width: 1500
+  height: 1500
+  n_fft: 2048
+  save_plots: true
+  show_plots: false
+source:
+  backend: external
+  name: BNCI2014_001
+  path: ./data/eegbci
+  subject_ids:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  session_ids: null
+  run_ids: null
+save_artifacts:
+  backend: default
+  save_model: true
+  save_metrics: true
+  save_config: true
+  save_training_history: true
+model_path:
+  backend: default
+  path: ./ahoj.txt/riemannian_svm.joblib

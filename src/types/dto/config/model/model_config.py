@@ -22,8 +22,6 @@ class EEGNetConfig(AStageConfig):
 
     input_normalization: Literal["none", "per_epoch_channel"]
 
-    fold_training: bool
-
     n_classes: PositiveInt = Field(ge=2)
 
     dropout: float = Field(ge=0, le=1)

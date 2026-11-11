@@ -9,7 +9,6 @@ from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.model.final_training_input_dto import FinalTrainingInputDTO
 from src.types.dto.model.learning_dataset import LearningDataset
 
-
 RecordingsByDataset = dict[str, list[ValidatedRecording]]
 
 
@@ -47,9 +46,11 @@ def _validate_matching_channel_and_sample_counts(
     recordings: list[ValidatedRecording],
     reference_shape: tuple[int, ...],
 ) -> None:
-    for index, recording in enumerate(recordings):
+    for recording_index, recording in enumerate(recordings):
         if recording.signal.shape[1:] != reference_shape:
-            raise ValueError(f"{dataset_name}, recording {index}: channel or time sample count differs from train.")
+            raise ValueError(
+                f"{dataset_name}, recording {recording_index}: channel or time sample count differs from train."
+            )
 
 
 def _count_dataset_classes(recordings: list[ValidatedRecording]) -> dict[int, int]:

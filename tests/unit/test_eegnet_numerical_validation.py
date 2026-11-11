@@ -3,6 +3,7 @@ from unittest.mock import patch
 import numpy
 import pytest
 import torch
+from numpy.typing import NDArray
 from torch import nn
 
 from tests.unit.eegnet_numerical_fixtures import create_eegnet_model
@@ -23,11 +24,14 @@ def training_arrays():
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
-def test_rejects_nonfinite_training_loss_before_backward_or_optimizer_update(training_arrays, value):
+def test_rejects_nonfinite_training_loss_before_backward_or_optimizer_update(
+    training_arrays: tuple[NDArray[numpy.float32], NDArray[numpy.int64]],
+    value: float,
+) -> None:
     signal, labels = training_arrays
     model = create_eegnet_model()
     model.initialize_training(labels)
-    model._loss_fn = NonfiniteLoss(value)
+    model._loss_function = NonfiniteLoss(value)
     with patch.object(model._optimizer, "step") as update:
         with pytest.raises(FloatingPointError, match="Training epoch 1, batch 1: loss"):
             model.train_one_epoch(signal, labels)
@@ -37,11 +41,14 @@ def test_rejects_nonfinite_training_loss_before_backward_or_optimizer_update(tra
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf")])
-def test_rejects_nonfinite_validation_loss_without_recording_it(training_arrays, value):
+def test_rejects_nonfinite_validation_loss_without_recording_it(
+    training_arrays: tuple[NDArray[numpy.float32], NDArray[numpy.int64]],
+    value: float,
+) -> None:
     signal, labels = training_arrays
     model = create_eegnet_model()
     model.initialize_training(labels)
-    model._loss_fn = NonfiniteLoss(value)
+    model._loss_function = NonfiniteLoss(value)
     with pytest.raises(FloatingPointError, match="Evaluation after epoch 0, batch 1: loss"):
         model.validate(signal, labels)
     assert model.history.validation_loss == []

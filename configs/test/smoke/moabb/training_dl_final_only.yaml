@@ -5,7 +5,7 @@ defaults:
   - override /source: external
   - override /raw_augmentation: none
   - override /augmentation: none
-  - override /split: basic
+  - override /split: training/general
   - override /model: deep_learning/eegnet
   - override /final_trainer: deep_learning/eegnet
   - override /save_artifacts: default
@@ -27,7 +27,6 @@ split:
     test: 0.2
 
 model:
-  fold_training: false
   training:
     epochs: 2
     batch_size: 8

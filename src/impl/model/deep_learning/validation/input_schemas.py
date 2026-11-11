@@ -1,6 +1,7 @@
 """Validated training arrays without requirements on signal provenance metadata."""
 
 import numpy
+from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
@@ -18,8 +19,8 @@ from src.types.dto.model.learning_dataset import LearningDataset
 class ValidatedRecording(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
-    signal: numpy.ndarray
-    labels: numpy.ndarray
+    signal: NDArray[numpy.generic]
+    labels: NDArray[numpy.generic]
 
     @model_validator(mode="after")
     def validate_arrays_and_copy_signal(self) -> Self:
@@ -49,7 +50,7 @@ def _validate_recording_values(recording: ValidatedRecording) -> None:
         raise ValueError("Labels must be integers.")
 
 
-def _copy_signal_at_training_precision(signal: numpy.ndarray) -> numpy.ndarray:
+def _copy_signal_at_training_precision(signal: NDArray[numpy.generic]) -> NDArray[numpy.generic]:
     converted_signal = copy_as_training_precision(signal)
     if not has_only_finite_numbers(converted_signal):
         raise ValueError("Signal contains NaN or infinity after float32 conversion.")

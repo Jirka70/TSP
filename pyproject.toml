@@ -31,7 +31,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 # Matches your requirement for line length.
-line-length = 250
+line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]

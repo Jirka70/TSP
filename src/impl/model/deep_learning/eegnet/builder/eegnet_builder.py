@@ -9,9 +9,4 @@ def build_eegnet_model(
 ) -> EEGNetModel:
     network = create_eegnet_network(config, input_shape)
 
-    return EEGNetModel(
-        network=network,
-        model_name=config.model_name,
-        config=config,
-        input_shape=input_shape
-    )
+    return EEGNetModel(network=network, model_name=config.model_name, config=config, input_shape=input_shape)

@@ -2,7 +2,6 @@ defaults:
   - training: default
   - _self_
 
-fold_training: false
 model_name: "eegnet"
 
 # Model configuration for EEGNet.

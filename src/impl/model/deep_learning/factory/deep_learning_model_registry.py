@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
 from src.types.dto.config.model.model_config import EEGNetConfig
 
-
 DeepLearningModelBuilder = Callable[[EEGNetConfig, tuple[int, int, int]], EEGNetModel]
 
 
@@ -24,8 +23,7 @@ class DeepLearningModelRegistry:
         if builder is None:
             available_models = ", ".join(sorted(self._builders))
             raise ValueError(
-                f"Unsupported deep learning model: {config.model_name}. "
-                f"Available models: {available_models}"
+                f"Unsupported deep learning model: {config.model_name}. Available models: {available_models}"
             )
 
         return builder(config, input_shape)

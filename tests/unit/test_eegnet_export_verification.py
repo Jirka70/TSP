@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -17,6 +18,7 @@ from src.pipeline.context.run_context import RunContext
 from src.pipeline_logging.pipeline_logger import PipelineLogger
 from src.types.dto.config.model.model_config import EEGNetConfig
 from src.types.dto.config.model.training_config import TrainingConfig
+from src.types.dto.model.deep_learning.eegnet.error.invalid_eegnet_checkpoint_error import InvalidEEGNetCheckpointError
 from src.types.dto.model.learning_dataset import LearningDataset
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 
@@ -27,7 +29,6 @@ def trained_model():
         model_name="eegnet",
         backend="eegnet",
         input_normalization="per_epoch_channel",
-        fold_training=False,
         n_classes=2,
         dropout=0.25,
         kernel_length=16,
@@ -65,11 +66,17 @@ def run_context():
     )
 
 
-def test_saves_loads_and_verifies_real_eegnet_without_saving_validation_data(trained_model, run_context, tmp_path):
+def test_saves_loads_and_verifies_real_eegnet_without_saving_validation_data(
+    trained_model: TrainedModelDTO,
+    run_context: RunContext,
+    tmp_path: Path,
+) -> None:
     serializer = EEGNetModelSerializer()
     saved_artifacts = serializer.save(trained_model, tmp_path / "models", run_context)
     assert saved_artifacts.artifacts[0].path == tmp_path / "models" / "eegnet.pt"
     checkpoint = torch.load(saved_artifacts.artifacts[0].path, map_location="cpu", weights_only=True)
+    assert checkpoint["format_version"] == 2
+    assert saved_artifacts.artifacts[0].metadata["format_version"] == 2
     assert "verification_data" not in checkpoint
     assert "verification_data" not in checkpoint["model_state"]
     assert checkpoint["model_state"]["classes"] == [3, 7]
@@ -149,3 +156,44 @@ def test_sklearn_serializer_accepts_optional_context_without_validation_data(tmp
     trained = TrainedModelDTO(model=model, model_name="csp_lda")
     saved = SklearnModelSerializer().save(trained, tmp_path / "models", run_context)
     assert saved.artifacts[0].path.exists()
+
+
+@pytest.mark.parametrize(
+    "field_name,invalid_value,error_message",
+    [
+        ("format", "unsupported", "Unsupported checkpoint format"),
+        ("format_version", 99, "Unsupported EEGNet checkpoint version"),
+        ("model_state", None, "model_state.*dictionary"),
+        ("metadata", [], "metadata.*dictionary"),
+    ],
+)
+def test_loader_rejects_invalid_checkpoint_fields(
+    trained_model: TrainedModelDTO,
+    run_context: RunContext,
+    tmp_path: Path,
+    field_name: str,
+    invalid_value: object,
+    error_message: str,
+) -> None:
+    saved = EEGNetModelSerializer().save(trained_model, tmp_path / "models", run_context)
+    checkpoint_path = saved.artifacts[0].path
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    checkpoint[field_name] = invalid_value
+    torch.save(checkpoint, checkpoint_path)
+
+    with pytest.raises(InvalidEEGNetCheckpointError, match=error_message):
+        EEGNetModelLoader().load(tmp_path, run_context)
+
+
+def test_loader_preserves_the_cause_of_a_corrupt_checkpoint(
+    run_context: RunContext,
+    tmp_path: Path,
+) -> None:
+    model_directory = tmp_path / "models"
+    model_directory.mkdir()
+    (model_directory / "eegnet.pt").write_bytes(b"corrupt checkpoint")
+
+    with pytest.raises(InvalidEEGNetCheckpointError, match="Failed to load") as raised:
+        EEGNetModelLoader().load(tmp_path, run_context)
+
+    assert raised.value.__cause__ is not None
