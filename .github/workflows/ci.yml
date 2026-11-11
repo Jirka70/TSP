@@ -35,22 +35,29 @@ jobs:
           cache-dependency-path: |
             requirements.lock.txt
             requirements.torcheeg.txt
+            requirements.cpu.txt
+            requirements.tools.txt
             pyproject.toml        
         
       - name: Install CI tools
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements.lock.txt
-          pip install -r requirements.torcheeg.txt --no-deps
-          pip install pytest ruff mypy build 
+          python -m pip install -r requirements.tools.txt
+          python -m pip install --build-constraint requirements.tools.txt -r requirements.lock.txt
+          python -m pip check
+          python -m pip install --build-constraint requirements.tools.txt -r requirements.torcheeg.txt --no-deps
+
+      - name: Verify deep learning dependencies
+        run: |
+          python -m pip show torch torchaudio braindecode
+          python -c "from braindecode.models import EEGNet"
 
       - name: Static analysis
         run: |
           ruff check .
 
-      - name: Run unit tests
+      - name: Run all tests
         run: |
-          pytest tests/unit
+          python -m pytest tests
       
       - name: Training smoke tests
         run: |

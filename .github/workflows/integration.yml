@@ -8,6 +8,8 @@ on:
 jobs:
   moabb-smoke:
     runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
@@ -19,10 +21,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements.lock.txt
-          pip install -r requirements.torcheeg.txt --no-deps
+          python -m pip install -r requirements.tools.txt
+          python -m pip install --build-constraint requirements.tools.txt -r requirements.lock.txt
+          python -m pip check
+          python -m pip install --build-constraint requirements.tools.txt -r requirements.torcheeg.txt --no-deps
           
+      - name: Verify deep learning dependencies
+        run: |
+          python -m pip show torch torchaudio braindecode
+          python -c "from braindecode.models import EEGNet"
+
       - name: Run MOABB smoke tests
         run: |
           shopt -s nullglob

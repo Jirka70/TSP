@@ -1,0 +1,6 @@
+pip==26.0.1
+setuptools==81.0.0
+wheel==0.48.0
+build==1.6.1
+packaging==26.0
+pyproject_hooks==1.2.0
