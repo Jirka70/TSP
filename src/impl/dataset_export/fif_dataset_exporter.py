@@ -68,14 +68,14 @@ class FifDatasetExporter(IDatasetExporter):
         for i, rec in enumerate(dto.data):
             # Reconstruct MNE Epochs
             sfreq = rec.metadata.get("sfreq", 250.0)  # Default fallback
-            ch_names = rec.metadata.get("ch_names")
+            channel_names = rec.metadata.get("channel_names") or rec.metadata.get("ch_names")
 
-            if ch_names is None:
+            if channel_names is None:
                 # Fallback if names are missing - generate generic ones
                 n_channels = rec.data.shape[1]
-                ch_names = [f"EEG {j:03d}" for j in range(n_channels)]
+                channel_names = [f"EEG {j:03d}" for j in range(n_channels)]
 
-            info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types="eeg")
+            info = mne.create_info(ch_names=channel_names, sfreq=sfreq, ch_types="eeg")
 
             # Create dummy events
             n_epochs = rec.data.shape[0]

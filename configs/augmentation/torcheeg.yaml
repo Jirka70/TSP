@@ -5,19 +5,22 @@ backend: torcheeg              # Used by program logic, changing this may break 
 # This backend leverages the torcheeg library for more advanced EEG-specific transformations.
 # Transformations are applied individually to each epoch within a recording.
 
-enabled: true                  # Whether to enable TorchEEG augmentation. If false, the stage is skipped.
 random_seed: 42                # Ensures reproducibility of the random transformations
 copies_per_sample: 1           # Number of augmented variants generated per original training sample
 
 gaussian_noise:
   std: 0.00001                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
+                                  #e.g., for a µV signal, a std of 0.00001 corresponds to 10 µV noise
 
 mask:
   prob: 0.3                    # Probability (0.0 to 1.0) of applying a random mask (zeroing segments)
   ratio: 0.1                   # Ratio of the signal length to be masked when mask is applied
 
-shift:
-  prob: 0.2                    # Probability (0.0 to 1.0) of cyclically shifting the signal in time
+shift:                          # Time shift augmentation parameters
+  prob: 0.2                     # Probability (0.0 to 1.0) of cyclically shifting the signal in time
+  shift_min: -125               # Minimum number of samples to shift (negative for left shift)
+  shift_max: 125                # Maximum number of samples to shift (positive for right shift)
+                                # (e.g., for a 250 Hz signal, -125 to 125 corresponds to -0.5 to 0.5 seconds)
 
 sign_flip:
   prob: 0.2                    # Probability (0.0 to 1.0) of inverting the signal phase (multiplying by -1)

@@ -16,6 +16,15 @@ class MaskConfig(BaseModel):
 
 class ShiftConfig(BaseModel):
     prob: float = Field(default=0.0, ge=0.0, le=1.0)
+    shift_min: int = Field(default=8)
+    shift_max: int = Field(default=12)
+
+    @model_validator(mode="after")
+    def validate_shift_range(self) -> "ShiftConfig":
+        """Ensures that shift_min is strictly less than shift_max."""
+        if self.shift_min >= self.shift_max:
+            raise ValueError(f"shift_min ({self.shift_min}) must be less than shift_max ({self.shift_max})")
+        return self
 
 
 class SignFlipConfig(BaseModel):
@@ -40,7 +49,6 @@ class AugmentationConfigBasic(AStageConfig):
     """Basic augmentation configuration for EEG samples (using numpy)"""
 
     backend: Literal["basic"]
-    enabled: bool
     random_seed: int = Field(default=42)
     copies_per_sample: int = Field(default=1, ge=1)
     gaussian_noise: GaussianNoiseConfig = Field(default_factory=GaussianNoiseConfig)
@@ -52,7 +60,6 @@ class AugmentationConfigTorchEEG(AStageConfig):
     """TorchEEG-based augmentation configuration for EEG samples."""
 
     backend: Literal["torcheeg"]
-    enabled: bool
     random_seed: int = Field(default=42)
     copies_per_sample: int = Field(default=1, ge=1)
     gaussian_noise: GaussianNoiseConfig = Field(default_factory=GaussianNoiseConfig)
@@ -72,5 +79,4 @@ class AugmentationConfigTorchEEG(AStageConfig):
 class AugmentationConfigNone(BaseModel):
     """No augmentation configuration."""
 
-    backend: Literal[None]
-    enabled: bool
+    backend: Literal[None] = None

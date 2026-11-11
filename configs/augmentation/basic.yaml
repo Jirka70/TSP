@@ -5,7 +5,6 @@ backend: basic                 # Used by program logic, changing this may break 
 # This backend applies simple NumPy-based transformations directly to the EEG signal.
 # It is faster but offers fewer complex transformation types than TorchEEG.
 
-enabled: true                  # Whether to enable basic augmentation. If false, data passes through unchanged.
 random_seed: 42                # Ensures reproducibility of the random transformations
 copies_per_sample: 2           # Number of augmented variants generated per original training sample
 
@@ -13,7 +12,8 @@ gaussian_noise:
   std: 0.00001                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
 
 time_shift:
-  max_samples: 10              # Maximum temporal shift (in samples) applied randomly in both directions
+  max_samples: 125               # Maximum temporal shift (in samples) applied randomly in both directions
+                                # (e.g., for a 250 Hz signal, 125 samples corresponds to ±0.5 seconds)
 
 channel_dropout:
   prob: 0.0                    # Probability (0.0 to 1.0) of zeroing out a random channel

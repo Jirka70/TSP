@@ -75,23 +75,18 @@ class TorchEEGAugmentor(IAugmentor):
         config: AugmentationConfigTorchEEG = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
-        # 1. Check if augmentation is enabled
-        if not config.enabled:
-            log.info("TorchEEG Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
-            return StepResult(dataset_splits)
-
-        # 2. Initialize random seeds for all relevant libraries to ensure reproducibility
+        # 1. Initialize random seeds for all relevant libraries to ensure reproducibility
         log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         torch.manual_seed(config.random_seed)
         np.random.seed(config.random_seed)
         random.seed(config.random_seed)
 
-        # 3. Construct the TorchEEG transformation pipeline based on the config
+        # 2. Construct the TorchEEG transformation pipeline based on the config
         torcheeg_transform = self._build_transforms(config, log)
         if torcheeg_transform is not None:
             log.info(f"Applying augmentation steps: {', '.join([str(t) for t in torcheeg_transform.transforms])}", VerbosityLevel.NORMAL)
         else:
-            log.warning("TorchEEG augmentation is enabled, but no transforms were configured. Augmentation stopped and returned original data.")
+            log.warning("TorchEEG augmentation has no transforms configured. Returning original data.")
             return StepResult(dataset_splits)
 
         # --- Training pipeline mode: folds=None, augment train directly ---
@@ -108,12 +103,14 @@ class TorchEEGAugmentor(IAugmentor):
                 log=log,
             )
             log.info("TorchEEG augmentation (training mode) completed.", VerbosityLevel.QUIET)
-            return StepResult(DatasetSplitDTO(
-                folds=None,
-                train=augmented_train,
-                test=dataset_splits.test,
-                validation=dataset_splits.validation,
-            ))
+            return StepResult(
+                DatasetSplitDTO(
+                    folds=None,
+                    train=augmented_train,
+                    test=dataset_splits.test,
+                    validation=dataset_splits.validation,
+                )
+            )
 
         # --- Evaluation pipeline mode: augment each fold's train_data ---
         log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
@@ -148,8 +145,17 @@ class TorchEEGAugmentor(IAugmentor):
 
         # Add Random Shift (cyclic shift in time)
         if config.shift.prob > 0.0:
-            log.info(f"Shift propability enabled with value: {config.shift.prob}", VerbosityLevel.TRACE)
-            transform_list.append(transforms.RandomShift(p=config.shift.prob))
+            log.info(
+                f"Shift enabled with prob: {config.shift.prob}, shift_min: {config.shift.shift_min}, shift_max: {config.shift.shift_max}",
+                VerbosityLevel.TRACE,
+            )
+            transform_list.append(
+                transforms.RandomShift(
+                    p=config.shift.prob,
+                    shift_min=config.shift.shift_min,
+                    shift_max=config.shift.shift_max,
+                )
+            )
 
         # Add Random Sign Flip
         if config.sign_flip.prob > 0.0:
@@ -187,12 +193,17 @@ class TorchEEGAugmentor(IAugmentor):
             if isinstance(x_np, mne.Epochs):
                 labels = x_np.events[:, -1]
                 metadata.setdefault("sfreq", float(x_np.info["sfreq"]))
-                metadata.setdefault("ch_names", list(x_np.ch_names))
+                metadata.setdefault("channel_names", list(x_np.ch_names))
                 x_np = x_np.get_data(copy=False)
             elif "labels" in metadata:
                 labels = np.array(metadata["labels"])
             else:
                 labels = np.zeros(len(x_np), dtype=int)
+
+            if "ch_names" in metadata and "channel_names" not in metadata:
+                metadata["channel_names"] = metadata.pop("ch_names")
+            elif "ch_names" in metadata:
+                metadata.pop("ch_names", None)
 
             original_shape = x_np.shape
             n_orig = original_shape[0]
@@ -202,15 +213,18 @@ class TorchEEGAugmentor(IAugmentor):
             augmented_x_list = [x_np]
             augmented_labels_list = [labels]
 
-            # 2. Generation loop: Vectorized batch transformation
-            batch_tensor = torch.tensor(x_np, dtype=torch.float32)
+            # 2. Generation loop: Per-epoch individual transformation to maximize diversity
+            epochs_tensor = torch.tensor(x_np, dtype=torch.float32)
             for _ in range(copies_per_sample):
-                transformed = torcheeg_transform(eeg=batch_tensor.clone())["eeg"]
-                augmented_x_list.append(transformed.detach().cpu().numpy())
+                transformed_tensor = torch.stack(
+                    [torcheeg_transform(eeg=epoch.clone())["eeg"] for epoch in epochs_tensor],
+                    dim=0,
+                )
+                augmented_x_list.append(transformed_tensor.detach().cpu().numpy())
                 augmented_labels_list.append(labels)
 
             # 3. Concatenate all original and augmented copies
-            final_signal = np.vstack(augmented_x_list)
+            final_signal = np.concatenate(augmented_x_list, axis=0)
             final_labels = np.concatenate(augmented_labels_list)
             n_total = final_signal.shape[0]
             total_augmented_samples += n_total

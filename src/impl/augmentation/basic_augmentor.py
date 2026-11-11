@@ -76,11 +76,6 @@ class BasicAugmentor(IAugmentor):
         config: AugmentationConfigBasic = input_dto.augmentation_config
         dataset_splits: DatasetSplitDTO = input_dto.data
 
-        # 1. Check if augmentation is enabled
-        if not config.enabled:
-            log.info("Basic Augmentation is disabled. Passing data through unchanged.", VerbosityLevel.QUIET)
-            return StepResult(dataset_splits)
-
         log.info(f"Using random seed: {config.random_seed}", VerbosityLevel.TRACE)
         np.random.seed(config.random_seed)
 
@@ -98,7 +93,7 @@ class BasicAugmentor(IAugmentor):
         if active_augs:
             log.info(f"Active augmentations: {', '.join(active_augs)}", VerbosityLevel.NORMAL)
         else:
-            log.warning("Basic Augmentation is enabled but no specific transformations are configured. Only copies will be created.")
+            log.warning("Basic Augmentation has no specific transformations configured. Only copies will be created.")
 
         # --- Training pipeline mode: folds=None, augment train directly ---
         if dataset_splits.folds is None:
@@ -146,12 +141,17 @@ class BasicAugmentor(IAugmentor):
             if isinstance(x, mne.Epochs):
                 labels = x.events[:, -1]
                 metadata.setdefault("sfreq", float(x.info["sfreq"]))
-                metadata.setdefault("ch_names", list(x.ch_names))
+                metadata.setdefault("channel_names", list(x.ch_names))
                 x = x.get_data(copy=False)
             elif "labels" in metadata:
                 labels = np.array(metadata["labels"])
             else:
                 labels = np.zeros(len(x), dtype=int)
+
+            if "ch_names" in metadata and "channel_names" not in metadata:
+                metadata["channel_names"] = metadata.pop("ch_names")
+            elif "ch_names" in metadata:
+                metadata.pop("ch_names", None)
 
             original_shape = x.shape
             n_orig = original_shape[0]
@@ -199,7 +199,7 @@ class BasicAugmentor(IAugmentor):
             final_metadata = metadata.copy()
             multiplier = 1 + config.copies_per_sample
             for k, v in metadata.items():
-                if k == "labels":
+                if k in ["labels", "ch_names", "channel_names"]:
                     continue
                 if isinstance(v, (list, np.ndarray)) and len(v) == n_orig:
                     if isinstance(v, np.ndarray):
@@ -214,7 +214,7 @@ class BasicAugmentor(IAugmentor):
             final_metadata["labels"] = final_labels
 
             for k, v in final_metadata.items():
-                if k == "labels":
+                if k in ["labels", "ch_names", "channel_names"]:
                     continue
                 if isinstance(v, np.ndarray) and len(v) == n_total:
                     final_metadata[k] = v[perm]

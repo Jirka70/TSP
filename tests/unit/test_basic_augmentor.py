@@ -50,7 +50,6 @@ def test_basic_augmentor_replicates_metadata_and_shuffles():
 
     config = AugmentationConfigBasic(
         backend="basic",
-        enabled=True,
         copies_per_sample=2,
         random_seed=42,
         gaussian_noise=GaussianNoiseConfig(std=0.0),
