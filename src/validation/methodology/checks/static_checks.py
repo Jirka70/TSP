@@ -1,27 +1,27 @@
 """Static methodology checks evaluated from the experiment configuration only.
 
-Each check is referenced from ``configs/methodology/rules.yaml`` by its
+Each check is referenced from ``configs/methodology/rules_*.yaml`` by its
 registered name. Checks return a list of findings; an empty list means the
 rule is satisfied.
 """
 
 from __future__ import annotations
 
-from src.types.dto.config.protocol_config import Generalization, Usage
+from src.types.dto.config.protocol_config import EvaluationScheme, Usage
 from src.validation.methodology.check_registry import CheckContext, Finding, methodology_check
 
 
 @methodology_check("split_matches_protocol")
 def split_matches_protocol(ctx: CheckContext) -> list[Finding]:
-    """The split strategy must correspond to the declared generalization.
+    """The split strategy must correspond to the declared evaluation scheme.
 
     Params:
-        compatible_splits: mapping ``generalization -> list of allowed split backends``.
+        compatible_splits: mapping ``evaluation_scheme -> list of allowed split backends``.
     """
-    generalization = ctx.config.protocol.generalization.value
+    scheme = ctx.config.protocol.evaluation_scheme.value
     split_backend = ctx.config.split.backend
     compatible: dict[str, list[str]] = ctx.params.get("compatible_splits", {})
-    allowed = compatible.get(generalization, [])
+    allowed = compatible.get(scheme, [])
 
     if split_backend in allowed:
         return []
@@ -29,7 +29,7 @@ def split_matches_protocol(ctx: CheckContext) -> list[Finding]:
     allowed_text = ", ".join(allowed) if allowed else "none of the available splitters"
     return [
         Finding(
-            detail=f"Declared generalization '{generalization}' requires split backend {allowed_text}, but '{split_backend}' is configured.",
+            detail=f"Declared evaluation scheme '{scheme}' requires split backend {allowed_text}, but '{split_backend}' is configured.",
             location="split.backend",
         )
     ]
@@ -52,7 +52,7 @@ def enough_groups_for_protocol(ctx: CheckContext) -> list[Finding]:
         min_sessions: minimum number of sessions for cross-session (default 2).
         min_subjects: minimum number of subjects for cross-subject (default 2).
     """
-    generalization = ctx.config.protocol.generalization
+    scheme = ctx.config.protocol.evaluation_scheme
     source = ctx.config.source
     min_sessions = int(ctx.params.get("min_sessions", 2))
     min_subjects = int(ctx.params.get("min_subjects", 2))
@@ -65,14 +65,14 @@ def enough_groups_for_protocol(ctx: CheckContext) -> list[Finding]:
         n_sessions = _known_count(getattr(source, "session_ids", None))
 
     findings: list[Finding] = []
-    if generalization == Generalization.CROSS_SESSION and n_sessions is not None and n_sessions < min_sessions:
+    if scheme == EvaluationScheme.CROSS_SESSION and n_sessions is not None and n_sessions < min_sessions:
         findings.append(
             Finding(
                 detail=f"Cross-session protocol needs at least {min_sessions} sessions, the source provides {n_sessions}.",
                 location="source.session_ids",
             )
         )
-    if generalization == Generalization.CROSS_SUBJECT and n_subjects is not None and n_subjects < min_subjects:
+    if scheme == EvaluationScheme.CROSS_SUBJECT and n_subjects is not None and n_subjects < min_subjects:
         findings.append(
             Finding(
                 detail=f"Cross-subject protocol needs at least {min_subjects} subjects, the source provides {n_subjects}.",
@@ -89,7 +89,7 @@ def few_subjects_for_cross_subject(ctx: CheckContext) -> list[Finding]:
     Params:
         min_subjects: recommended minimum number of independent subjects (default 5).
     """
-    if ctx.config.protocol.generalization != Generalization.CROSS_SUBJECT:
+    if ctx.config.protocol.evaluation_scheme != EvaluationScheme.CROSS_SUBJECT:
         return []
 
     min_subjects = int(ctx.params.get("min_subjects", 5))

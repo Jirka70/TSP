@@ -1,0 +1,47 @@
+# =====================================================================
+# Methodology rules - 2. + 5. Evaluation protocol and EEG sample provenance
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: PROT-001
+    title: Split strategy does not match the declared protocol
+    certainty: proven
+    pipeline_modes: [ training, evaluation ]
+    check: split_matches_protocol
+    params:
+      compatible_splits:
+        within_session: [ moabb_within_session, general ]
+        within_subject: [ moabb_within_subject, moabb_within_session, general ]
+        cross_session: [ moabb_cross_session ]
+        cross_subject: [ moabb_cross_subject ]
+        cross_dataset: [ ]
+    impact: The result answers a different research question than the declared one (e.g. random epoch split reported as cross-subject).
+    remediation: Choose the split matching protocol.evaluation_scheme (e.g. split=evaulation/moabb_cross_subject for cross_subject).
+
+  - id: PROT-002
+    title: Not enough groups for the declared protocol
+    certainty: proven
+    pipeline_modes: [ training, evaluation ]
+    check: enough_groups_for_protocol
+    params:
+      min_sessions: 2
+      min_subjects: 2
+    impact: The declared evaluation scheme cannot be evaluated at all with the selected data.
+    remediation: Select more sessions / subjects in `source`, or change protocol.evaluation_scheme.
+
+  - id: GRP-001
+    title: Random epoch split pools sessions and subjects
+    description: "split=general shuffles epochs of all selected sessions and subjects together; this is not a pure within-session estimate."
+    certainty: suspected
+    pipeline_modes: [ training, evaluation ]
+    when:
+      all:
+        - { path: split.backend, eq: general }
+        - { path: split.shuffle, eq: true }
+        - { path: protocol.evaluation_scheme, eq: within_session }
+    impact: Session effects are shared between train and test; results are not comparable with session-wise evaluation.
+    remediation: Use split=evaulation/moabb_within_session, or restrict `source` to a single session.

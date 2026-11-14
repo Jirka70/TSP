@@ -48,7 +48,7 @@ class MethodologyValidator:
 
     @classmethod
     def from_file(cls, path: Path | str = DEFAULT_RULES_PATH, rigor: RigorLevel | None = None) -> MethodologyValidator:
-        """Creates a validator from a rules YAML file (default: ``configs/methodology/rules.yaml``)."""
+        """Creates a validator from the rules catalog (default: the ``configs/methodology/`` directory)."""
         return cls(load_rules_catalog(path), rigor)
 
     @property
@@ -69,7 +69,7 @@ class MethodologyValidator:
 
     def _run(self, phase: RulePhase, config: ExperimentConfig, data: Any) -> MethodologyReport:
         rigor = self._rigor_override or config.protocol.rigor
-        report = MethodologyReport(phase=phase, rigor=rigor, config=config, rules_version=self._catalog.version)
+        report = MethodologyReport(phase=phase, rigor=rigor, config=config)
         dumped = config.model_dump(mode="json")
 
         for rule in self._catalog.rules:

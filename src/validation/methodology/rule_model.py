@@ -1,4 +1,4 @@
-"""Schema of the methodology rules catalog (``configs/methodology/rules.yaml``).
+"""Schema of the methodology rules catalog (``configs/methodology/rules_*.yaml``).
 
 Each rule describes one methodological error that must not happen, how it is
 detected (a declarative condition over the config, or a registered Python
@@ -44,13 +44,20 @@ class RulePhase(str, Enum):
 
 
 class Certainty(str, Enum):
-    """How reliable the detection is."""
+    """How reliable the detection is (not how large the impact is).
+
+    Decision question: can an experiment that triggers the rule still be
+    methodologically correct? No -> ``PROVEN``, yes / it depends -> ``SUSPECTED``.
+    Full definition: ``configs/methodology/_README.md`` (section "Certainty").
+    """
 
     PROVEN = "proven"
-    """The violation is demonstrably present when the rule fires."""
+    """The violation is necessarily present when the rule fires; it follows from the
+    config and known pipeline behaviour alone (no false positives by design)."""
 
     SUSPECTED = "suspected"
-    """The violation is likely, but depends on facts the validator cannot see."""
+    """The violation is likely, but depends on facts the validator cannot see
+    (actual data, a recommended threshold, a step that may be legitimately justified)."""
 
 
 DEFAULT_SEVERITY: dict[Certainty, dict[RigorLevel, RuleAction]] = {
@@ -86,7 +93,7 @@ class Condition(BaseModel):
     Examples (YAML)::
 
         {path: epoch_preprocessing.csp.enabled, eq: true}
-        {path: protocol.generalization, in: [within_session, within_subject]}
+        {path: protocol.evaluation_scheme, in: [within_session, within_subject]}
         {path: evaluation.metrics, contains: balanced_accuracy}
         all: [{...}, {not: {...}}]
     """
@@ -142,11 +149,9 @@ class MethodologyRule(BaseModel):
         id: Unique rule identifier (e.g. ``LEAK-001``).
         title: Short human-readable name of the violation.
         description: What exactly is wrong when the rule fires.
-        section: Reference to the methodology document section.
-        scenario: Optional reference to a demonstration scenario (A-F).
         phase: Whether the rule is checked statically (config) or at runtime (data).
         certainty: Whether the violation is proven or only suspected.
-        modes: Pipeline modes the rule applies to (``None`` = all modes).
+        pipeline_modes: Pipeline modes the rule is applied to (``None`` = all modes).
         when: Declarative condition; the rule fires when it is satisfied.
         check: Name of a registered Python check (alternative to ``when``).
         params: Parameters passed to the Python check.
@@ -160,11 +165,9 @@ class MethodologyRule(BaseModel):
     id: str = Field(min_length=1)
     title: str = Field(min_length=1)
     description: str = ""
-    section: str | None = None
-    scenario: str | None = None
     phase: RulePhase = RulePhase.STATIC
     certainty: Certainty
-    modes: list[Mode] | None = None
+    pipeline_modes: list[Mode] | None = None
 
     when: Condition | None = None
     check: str | None = None
@@ -195,7 +198,7 @@ class MethodologyRule(BaseModel):
 
     def applies_to(self, mode: Mode) -> bool:
         """Whether the rule applies to the given pipeline mode."""
-        return self.modes is None or Mode(mode) in self.modes
+        return self.pipeline_modes is None or Mode(mode) in self.pipeline_modes
 
 
 class RulesCatalog(BaseModel):
@@ -203,7 +206,6 @@ class RulesCatalog(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    version: str
     rules: list[MethodologyRule]
 
     @model_validator(mode="after")

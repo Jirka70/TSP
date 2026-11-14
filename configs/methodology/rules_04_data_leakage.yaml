@@ -1,0 +1,51 @@
+# =====================================================================
+# Methodology rules - 4. Data leakage
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: LEAK-001
+    title: Supervised transformation (CSP) fitted before the split
+    description: "epoch_preprocessing.csp is fitted with labels on all epochs before the split stage, so test labels shape the spatial filters."
+    certainty: proven
+    when:
+      path: epoch_preprocessing.csp.enabled
+      eq: true
+    impact: Optimistically biased performance; the test set influenced the learned features.
+    remediation: Disable epoch_preprocessing.csp and use a model whose pipeline contains CSP (e.g. model=machine_learning/csp_lda), which is fitted inside each training fold.
+
+  - id: LEAK-002
+    title: Raw augmentation before the split
+    description: "raw_augmentation runs before the split stage; augmented copies derived from one recording can end up in both train and test."
+    certainty: proven
+    pipeline_modes: [ training, evaluation ]
+    when:
+      all:
+        - { path: raw_augmentation.enabled, eq: true }
+        - { path: raw_augmentation.backend, ne: none }
+    impact: Near-duplicate samples in train and test inflate the score.
+    remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
+
+  - id: LEAK-003
+    title: Data-driven epoch cleaning fitted on all data
+    description: "epoch_preprocessing ICA / AutoReject is fitted on all epochs (including test) before the split stage."
+    certainty: suspected
+    when:
+      any:
+        - { path: epoch_preprocessing.ica.enabled, eq: true }
+        - { path: epoch_preprocessing.autoreject.enabled, eq: true }
+    impact: Unsupervised statistics of the test data leak into training; usually small, but not an independent estimate.
+    remediation: Disable epoch-level ICA / AutoReject, or justify it as a fixed, label-free cleaning step in the experiment record.
+
+  - id: LEAK-004
+    title: ICA fitted on the whole raw recording
+    description: "raw_preprocessing.ica is fitted on whole recordings before the split stage."
+    certainty: suspected
+    when:
+      path: raw_preprocessing.ica.enabled
+      eq: true
+    impact: Unsupervised statistics of the test segments leak into training.
+    remediation: Document ICA as a label-free cleaning step, or fit it on training recordings only.

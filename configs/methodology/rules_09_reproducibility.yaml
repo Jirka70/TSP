@@ -1,0 +1,28 @@
+# =====================================================================
+# Methodology rules - 9. Reproducibility
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: REP-001
+    title: Shuffled split without a fixed seed
+    certainty: proven
+    pipeline_modes: [ training, evaluation ]
+    check: split_reproducibility
+    impact: The train/test partition cannot be recreated.
+    remediation: Set split.evaluator.random_state.
+
+  - id: REP-002
+    title: Non-deterministic deep learning training
+    description: "model.training.deterministic is false; repeated runs can give different results."
+    certainty: suspected
+    pipeline_modes: [ training, evaluation ]
+    when:
+      all:
+        - { path: model.backend, eq: eegnet }
+        - { path: model.training.deterministic, eq: false }
+    impact: Results cannot be reproduced exactly.
+    remediation: Set model.training.deterministic=true.

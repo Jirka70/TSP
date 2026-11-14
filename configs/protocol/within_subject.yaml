@@ -3,7 +3,6 @@
 # Correct split: split=evaulation/moabb_within_subject.
 
 task: "motor imagery classification"
-generalization: within_subject
+evaluation_scheme: within_subject
 usage: offline
-adaptation: none
 rigor: standard

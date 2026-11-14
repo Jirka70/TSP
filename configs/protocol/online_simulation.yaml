@@ -3,7 +3,6 @@
 # Only causal processing is allowed (no future samples, no whole-session statistics).
 
 task: "motor imagery classification"
-generalization: cross_session
+evaluation_scheme: cross_session
 usage: simulated_online
-adaptation: none
 rigor: standard

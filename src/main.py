@@ -35,7 +35,7 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
-    # Methodology validation (rules: configs/methodology/rules.yaml, strictness: protocol.rigor)
+    # Methodology validation (rules: configs/methodology/, strictness: protocol.rigor)
     methodology_report = MethodologyValidator.from_file().validate(ex_conf)
     report_path = methodology_report.save(resolve_report_dir(ex_conf))
     if methodology_report.is_valid:

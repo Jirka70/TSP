@@ -1,0 +1,40 @@
+# =====================================================================
+# Methodology rules - 8. Offline vs. simulated online vs. online
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: ONL-001
+    title: Non-causal filter in a declared online scenario
+    certainty: proven
+    check: non_causal_filter_online
+    severity: { exploratory: warn, standard: warn, publication: error }
+    impact: Filtering uses future samples that are not available during real-time prediction.
+    remediation: Use causal filtering for online claims, or declare protocol.usage=offline.
+
+  - id: ONL-002
+    title: Whole-recording statistics in a declared online scenario
+    description: "ICA / AutoReject is fitted on whole recordings or all epochs, which is not available during real-time prediction."
+    certainty: suspected
+    when:
+      all:
+        - { path: protocol.usage, ne: offline }
+        - any:
+            - { path: raw_preprocessing.ica.enabled, eq: true }
+            - { path: epoch_preprocessing.ica.enabled, eq: true }
+            - { path: epoch_preprocessing.autoreject.enabled, eq: true }
+    impact: The online claim relies on information from the future of the session.
+    remediation: Fit cleaning on calibration data only, or declare protocol.usage=offline.
+
+  - id: ONL-003
+    title: Real online usage claimed for an offline pipeline
+    description: "protocol.usage=online, but the pipeline only processes recorded data; at most a simulated online scenario can be evaluated."
+    certainty: proven
+    when:
+      path: protocol.usage
+      eq: online
+    impact: Results would be presented as real-time performance without evidence.
+    remediation: Declare protocol.usage=simulated_online.

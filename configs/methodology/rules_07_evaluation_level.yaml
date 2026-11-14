@@ -1,0 +1,30 @@
+# =====================================================================
+# Methodology rules - 7. Evaluation at the appropriate level
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: STAT-001
+    title: Too few independent subjects for cross-subject statistics
+    certainty: suspected
+    pipeline_modes: [ training, evaluation ]
+    check: few_subjects_for_cross_subject
+    params:
+      min_subjects: 5
+    impact: Windows of few subjects are not independent replications; uncertainty of the result cannot be estimated.
+    remediation: Use more subjects and report per-subject results with their spread.
+
+  - id: MET-001
+    title: Accuracy without class-balance-aware metric
+    description: "evaluation.metrics contains neither balanced_accuracy nor f1_macro."
+    certainty: suspected
+    when:
+      not:
+        any:
+          - { path: evaluation.metrics, contains: balanced_accuracy }
+          - { path: evaluation.metrics, contains: f1_macro }
+    impact: With imbalanced classes accuracy alone overstates the quality.
+    remediation: Add balanced_accuracy and/or f1_macro to evaluation.metrics.

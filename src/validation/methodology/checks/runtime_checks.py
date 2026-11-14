@@ -5,7 +5,7 @@ Runtime checks are registered exactly like static ones, only with
 object (e.g. ``DatasetSplitDTO`` right after the splitting stage). They are
 evaluated by ``MethodologyValidator.validate_runtime``.
 
-Planned checks (see the commented-out rules in ``configs/methodology/rules.yaml``):
+Planned checks (see the commented-out rules in ``configs/methodology/rules_runtime_planned.yaml``):
     - ``subjects_disjoint`` (PROT-002, scenario D): no subject id in both train and test.
     - ``sessions_disjoint``: no session in both train and test for cross-session.
     - ``trials_disjoint`` (GRP-001, scenario C): no (subject, session, run, trial) in both train and test.

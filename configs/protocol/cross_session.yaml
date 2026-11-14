@@ -4,7 +4,6 @@
 # Requires at least two sessions per subject (e.g. BNCI2014_001 / BCI Competition IV-2a).
 
 task: "4-class motor imagery"
-generalization: cross_session
+evaluation_scheme: cross_session
 usage: offline
-adaptation: none
 rigor: standard

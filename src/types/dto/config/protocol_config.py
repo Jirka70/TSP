@@ -1,9 +1,8 @@
 """Declaration of the experiment's methodological protocol.
 
-The protocol states *what question the experiment answers* (which kind of
-generalization is evaluated, whether results are claimed for offline or online
-use, how adaptation to new users is handled) and *how strictly* the
-methodology rules are enforced (``rigor``). It is consumed by the methodology
+The protocol states *what question the experiment answers* (which evaluation
+scheme is used, i.e. what is new in the test data, whether results are claimed for offline or online
+use) and *how strictly* the methodology rules are enforced (``rigor``). It is consumed by the methodology
 validator (``src/validation/methodology``), not by the pipeline stages.
 """
 
@@ -12,8 +11,12 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class Generalization(str, Enum):
-    """Kind of generalization the evaluation protocol is supposed to measure."""
+class EvaluationScheme(str, Enum):
+    """What is new (never seen in training) in the test data.
+
+    Names follow MOABB evaluations (WithinSessionEvaluation, CrossSessionEvaluation,
+    CrossSubjectEvaluation) and the split configs ``split=evaulation/moabb_*``.
+    """
 
     WITHIN_SESSION = "within_session"
     """New trials of an already seen session."""
@@ -39,14 +42,6 @@ class Usage(str, Enum):
     ONLINE = "online"
 
 
-class Adaptation(str, Enum):
-    """Declared adaptation to the target user / session."""
-
-    NONE = "none"
-    LABELED_CALIBRATION = "labeled_calibration"
-    UNLABELED_TARGET = "unlabeled_target"
-
-
 class RigorLevel(str, Enum):
     """How strictly methodology rules are enforced."""
 
@@ -65,14 +60,12 @@ class ProtocolConfig(BaseModel):
 
     Attributes:
         task: Research question / task definition (e.g. "4-class motor imagery").
-        generalization: Kind of generalization the experiment evaluates.
+        evaluation_scheme: What is new in the test data (new trials / session / subject / dataset).
         usage: Whether results are claimed for offline, simulated online or online use.
-        adaptation: Declared adaptation to the target user.
         rigor: Strictness level of the methodology validation.
     """
 
     task: str = Field(min_length=1)
-    generalization: Generalization
+    evaluation_scheme: EvaluationScheme
     usage: Usage = Usage.OFFLINE
-    adaptation: Adaptation = Adaptation.NONE
     rigor: RigorLevel = RigorLevel.STANDARD

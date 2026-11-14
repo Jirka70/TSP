@@ -48,8 +48,6 @@ class RuleViolation:
             "action": self.action.value,
             "certainty": self.rule.certainty.value,
             "phase": self.rule.phase.value,
-            "section": self.rule.section,
-            "scenario": self.rule.scenario,
             "detail": self.detail,
             "location": self.location,
             "impact": self.rule.impact,
@@ -72,7 +70,6 @@ class MethodologyReport:
     phase: RulePhase
     rigor: RigorLevel
     config: ExperimentConfig
-    rules_version: str
     violations: list[RuleViolation] = field(default_factory=list)
     passed_rules: list[str] = field(default_factory=list)
     skipped_rules: list[SkippedRule] = field(default_factory=list)
@@ -94,7 +91,6 @@ class MethodologyReport:
             "created_at_utc": self.created_at_utc.isoformat(),
             "phase": self.phase.value,
             "rigor": self.rigor.value,
-            "rules_version": self.rules_version,
             "is_valid": self.is_valid,
             "mode": self.config.mode.value if hasattr(self.config.mode, "value") else str(self.config.mode),
             "protocol": self.config.protocol.model_dump(mode="json"),

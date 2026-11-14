@@ -1,0 +1,32 @@
+# =====================================================================
+# Methodology rules - 3. Roles of training / validation / test
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  - id: SEL-001
+    title: Model selection on the test fold
+    description: "In evaluation mode the EEGNet fold trainer uses each fold's test data as validation data and keeps the epoch with the best test accuracy."
+    certainty: proven
+    pipeline_modes: [ evaluation ]
+    when:
+      path: model.backend
+      eq: eegnet
+    impact: Reported fold scores are selected on the test fold and are optimistically biased.
+    remediation: Use an inner validation split (or nested CV) for early stopping / best-epoch selection.
+
+  - id: EVAL-001
+    title: No independent test set
+    description: "Training mode with split.ratios.test = 0; the final model has no independent performance estimate."
+    certainty: proven
+    pipeline_modes: [ training ]
+    when:
+      all:
+        - { path: split.backend, eq: general }
+        - { path: split.ratios.test, le: 0.0 }
+    severity: { exploratory: info, standard: warn, publication: error }
+    impact: No generalization estimate can be reported for this run.
+    remediation: Reserve a test partition, or evaluate the model with mode=evaluation.

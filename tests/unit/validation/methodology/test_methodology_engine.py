@@ -118,7 +118,7 @@ def test_default_catalog_loads_and_all_checks_exist() -> None:
 def test_catalog_with_unknown_check_is_rejected(tmp_path: Path) -> None:
     path = tmp_path / "rules.yaml"
     path.write_text(
-        'version: "t"\nrules:\n  - {id: X-1, title: t, certainty: proven, check: does_not_exist}\n',
+        'rules:\n  - {id: X-1, title: t, certainty: proven, check: does_not_exist}\n',
         encoding="utf-8",
     )
 
@@ -129,7 +129,34 @@ def test_catalog_with_unknown_check_is_rejected(tmp_path: Path) -> None:
 def test_catalog_with_duplicate_ids_is_rejected(tmp_path: Path) -> None:
     rule = "  - {id: X-1, title: t, certainty: proven, when: {path: a, eq: 1}}\n"
     path = tmp_path / "rules.yaml"
-    path.write_text('version: "t"\nrules:\n' + rule + rule, encoding="utf-8")
+    path.write_text("rules:\n" + rule + rule, encoding="utf-8")
 
     with pytest.raises(RulesCatalogError, match="Duplicate"):
         load_rules_catalog(path)
+
+
+def test_catalog_directory_merges_rule_files(tmp_path: Path) -> None:
+    (tmp_path / "_README.md").write_text("# not a rule file\n", encoding="utf-8")
+    (tmp_path / "rules_a.yaml").write_text("rules:\n  - {id: X-1, title: t, certainty: proven, when: {path: a, eq: 1}}\n", encoding="utf-8")
+    (tmp_path / "rules_b.yaml").write_text("rules:\n  - {id: X-2, title: t, certainty: proven, when: {path: a, eq: 2}}\n", encoding="utf-8")
+    (tmp_path / "rules_empty.yaml").write_text("rules: []\n", encoding="utf-8")
+
+    catalog = load_rules_catalog(tmp_path)
+
+    assert [rule.id for rule in catalog.rules] == ["X-1", "X-2"]
+
+
+def test_catalog_directory_rejects_duplicate_ids_across_files(tmp_path: Path) -> None:
+    rule = "rules:\n  - {id: X-1, title: t, certainty: proven, when: {path: a, eq: 1}}\n"
+    (tmp_path / "rules_a.yaml").write_text(rule, encoding="utf-8")
+    (tmp_path / "rules_b.yaml").write_text(rule, encoding="utf-8")
+
+    with pytest.raises(RulesCatalogError, match="Duplicate"):
+        load_rules_catalog(tmp_path)
+
+
+def test_catalog_directory_rejects_unexpected_keys(tmp_path: Path) -> None:
+    (tmp_path / "rules_a.yaml").write_text('version: "x"\nrules: []\n', encoding="utf-8")
+
+    with pytest.raises(RulesCatalogError, match="unexpected keys"):
+        load_rules_catalog(tmp_path)

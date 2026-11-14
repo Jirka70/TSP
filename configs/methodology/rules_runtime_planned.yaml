@@ -1,0 +1,26 @@
+# =====================================================================
+# Methodology rules - Runtime rules (planned, NOT active yet)
+# =====================================================================
+# Require provenance (subject/session/run/trial/interval) on every epoch and
+# a runtime guard after the split stage; see checks/runtime_checks.py.
+# Part of the methodology rules catalog; see _README.md.
+# =====================================================================
+
+rules: [ ]
+  # - id: PROT-101
+  #   title: Same subject in train and test (cross-subject)
+  #   phase: runtime
+  #   certainty: proven
+  #   check: subjects_disjoint
+  #
+  # - id: GRP-101
+  #   title: Windows of the same trial in train and test
+  #   phase: runtime
+  #   certainty: proven
+  #   check: trials_disjoint
+  #
+  # - id: SEL-101
+  #   title: Test set used before the final evaluation
+  #   phase: runtime
+  #   certainty: suspected
+#   check: test_set_access_count
