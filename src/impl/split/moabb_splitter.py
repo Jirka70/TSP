@@ -50,40 +50,51 @@ class MoabbSplitter(ISplitter):
         for rec in recordings:
             signal = rec.data
             labels = None
+            metadata = rec.metadata.copy() if isinstance(rec.metadata, dict) else {}
 
             # 1. Extract labels from metadata or MNE Epochs
-            if isinstance(rec.metadata, dict) and "labels" in rec.metadata:
-                labels = np.array(rec.metadata["labels"])
+            if "labels" in metadata:
+                labels = np.array(metadata["labels"])
             elif isinstance(signal, mne.BaseEpochs):
                 labels = signal.events[:, -1]
+                metadata.setdefault("sfreq", float(signal.info["sfreq"]))
+                metadata.setdefault("channel_names", list(signal.ch_names))
+                metadata.setdefault("n_channels", len(signal.ch_names))
                 signal = signal.get_data()
 
             # Final safety check for labels
             if labels is None:
                 raise ValueError(f"No labels found for recording {rec.subject_id}. MOABB splitters require labels for correct operation.")
 
+            # Standardize channel names to 'channel_names'
+            if "ch_names" in metadata and "channel_names" not in metadata:
+                metadata["channel_names"] = metadata.pop("ch_names")
+            elif "ch_names" in metadata:
+                metadata.pop("ch_names", None)
+
             all_signals.append(signal)
             all_labels.append(labels)
 
             # 2. Metadata handling - MOABB requires 'subject' and 'session' columns
             # Ensure we have standardized subject, session and run identifiers
-            subj = rec.metadata.get("subject", rec.subject_id) if isinstance(rec.metadata, dict) else rec.subject_id
-            sess = rec.metadata.get("session", rec.session_id) if isinstance(rec.metadata, dict) else rec.session_id
-            run = rec.metadata.get("run", rec.run_id) if isinstance(rec.metadata, dict) else rec.run_id
+            subj = metadata.get("subject", rec.subject_id)
+            sess = metadata.get("session", rec.session_id)
+            run = metadata.get("run", rec.run_id)
 
             # Create a row template for this recording's epochs
             row_data = {"subject": subj, "session": sess, "run": run}
 
             # Include other scalar metadata fields
-            if isinstance(rec.metadata, dict):
-                for k, v in rec.metadata.items():
-                    if k not in ["subject", "session", "run", "labels"] and (np.isscalar(v) or k in ["ch_names", "sfreq"]):
-                        row_data[k] = v
+            for k, v in metadata.items():
+                if k not in ["subject", "session", "run", "labels", "ch_names"] and (
+                    np.isscalar(v) or k in ["channel_names", "sfreq", "n_channels"]
+                ):
+                    row_data[k] = v
 
             # Replicate the row for every epoch in this recording
             df_meta = pd.DataFrame([row_data] * len(labels))
-            if "ch_names" in row_data and not np.isscalar(row_data["ch_names"]):
-                df_meta["ch_names"] = [row_data["ch_names"]] * len(labels)
+            if "channel_names" in row_data and not np.isscalar(row_data["channel_names"]):
+                df_meta["channel_names"] = [row_data["channel_names"]] * len(labels)
 
             all_metadata.append(df_meta)
 

@@ -54,14 +54,18 @@ class GeneralSplitter(ISplitter):
         for rec in recordings:
             signal = rec.data
             labels = None
+            metadata = rec.metadata.copy() if isinstance(rec.metadata, dict) else {}
 
             # 1. Attempt to extract labels from metadata
-            if isinstance(rec.metadata, dict) and "labels" in rec.metadata:
-                labels = np.array(rec.metadata["labels"])
+            if "labels" in metadata:
+                labels = np.array(metadata["labels"])
 
             # 2. Extract labels and data from MNE Epochs
             elif isinstance(signal, mne.BaseEpochs):
                 labels = signal.events[:, -1]
+                metadata.setdefault("sfreq", float(signal.info["sfreq"]))
+                metadata.setdefault("channel_names", list(signal.ch_names))
+                metadata.setdefault("n_channels", len(signal.ch_names))
                 signal = signal.get_data()
 
             # Final safety check for labels
@@ -69,25 +73,32 @@ class GeneralSplitter(ISplitter):
                 log.error(f"No labels found for recording {rec.subject_id}. BasicSplitter requires labels for partitioning.")
                 raise ValueError(f"No labels found for recording {rec.subject_id}. BasicSplitter requires labels for partitioning.")
 
+            # Standardize channel names to 'channel_names'
+            if "ch_names" in metadata and "channel_names" not in metadata:
+                metadata["channel_names"] = metadata.pop("ch_names")
+            elif "ch_names" in metadata:
+                metadata.pop("ch_names", None)
+
             all_signals.append(signal)
             all_labels.append(labels)
 
             # Replicate metadata to match the number of epochs
             # Standardize required columns for grouping if available
-            subj = rec.metadata.get("subject", rec.subject_id) if isinstance(rec.metadata, dict) else rec.subject_id
-            sess = rec.metadata.get("session", rec.session_id) if isinstance(rec.metadata, dict) else rec.session_id
-            run = rec.metadata.get("run", rec.run_id) if isinstance(rec.metadata, dict) else rec.run_id
+            subj = metadata.get("subject", rec.subject_id)
+            sess = metadata.get("session", rec.session_id)
+            run = metadata.get("run", rec.run_id)
 
             row_data = {"subject": subj, "session": sess, "run": run}
-            if isinstance(rec.metadata, dict):
-                for k, v in rec.metadata.items():
-                    if k not in ["subject", "session", "run", "labels"] and (np.isscalar(v) or k in ["ch_names", "sfreq"]):
-                        row_data[k] = v
+            for k, v in metadata.items():
+                if k not in ["subject", "session", "run", "labels", "ch_names"] and (
+                    np.isscalar(v) or k in ["channel_names", "sfreq", "n_channels"]
+                ):
+                    row_data[k] = v
 
             df_meta = pd.DataFrame([row_data] * len(labels))
-            # We need to handle non-scalar data like ch_names manually if they were included
-            if "ch_names" in row_data and not np.isscalar(row_data["ch_names"]):
-                df_meta["ch_names"] = [row_data["ch_names"]] * len(labels)
+            # Handle non-scalar data like channel_names
+            if "channel_names" in row_data and not np.isscalar(row_data["channel_names"]):
+                df_meta["channel_names"] = [row_data["channel_names"]] * len(labels)
 
             all_metadata.append(df_meta)
 

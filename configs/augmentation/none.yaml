@@ -3,5 +3,3 @@ backend: null               # Used by program logic, changing this may break the
 # --- No Augmentation Configuration ---
 
 # This configuration explicitly disables the data augmentation stage.
-
-enabled: true               # Data augmentation is skipped, passing data to the next stage unchanged

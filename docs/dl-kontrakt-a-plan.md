@@ -2,6 +2,19 @@
 
 Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
 
+## Merge main do DL větve (2026-11-18)
+
+- [x] Sloučit `origin/main` (`6e88602`) do `feature/Analyze-DL-methodology`; při textovém konfliktu
+  v testu továrny mají přednost změny z main, včetně nového `TrainingEvaluator`.
+- [x] Odstranit neplatné importy a registraci již smazaného `EEGNetModelTrainer` v továrně a testu.
+  Továrna pokus o foldové trénování EEGNetu výslovně odmítá. ML foldy a nové evaluátory z main zůstávají.
+- [x] Ověřit celou testovací sadu: `.venv/bin/python -m pytest -q --tb=short` — 157 testů prošlo.
+  Ruff, E501 a kontrola formátování továrny a jejího testu prošly; `git diff --check` prošel.
+- [x] Spustit cílený mypy s `--follow-imports=silent` na `src/pipeline/stage_factory.py`.
+  Kontrola neprošla: 20 chyb kvůli přiřazení `None` do `ExperimentConfig` a návratovým hodnotám `Any`
+  z dynamické registrace. Stejných 20 chyb obsahuje i verze továrny z `origin/main`, porovnaná
+  ve stejném prostředí; ta navíc odkazuje na odstraněný EEGNet trainer. Typování továrny se zde nepřepisuje.
+
 ## Odstranění foldové metriky a verze DL exportu (2026-11-07)
 
 - [x] Odstranit z EEGNetModel historický klíč `fold_accuracy`; každé volání `validate()` zapisuje

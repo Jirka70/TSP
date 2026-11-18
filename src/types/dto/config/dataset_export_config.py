@@ -3,10 +3,20 @@ from typing import Literal
 from pydantic import BaseModel
 
 
-class DatasetExportConfig(BaseModel):
+class DatasetExportConfigDefault(BaseModel):
     """
     Configuration for exporting the augmented dataset.
     """
 
-    backend: Literal["fif", "none"] = "none"
-    enabled: bool = False
+    backend: Literal["default"]
+
+
+class DatasetExportConfigNone(BaseModel):
+    """
+    Configuration for disabling dataset export.
+    """
+
+    backend: Literal["none"]
+
+
+DatasetExportConfig = DatasetExportConfigDefault | DatasetExportConfigNone
