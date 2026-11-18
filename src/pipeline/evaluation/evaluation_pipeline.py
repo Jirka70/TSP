@@ -131,7 +131,8 @@ class EvaluationPipeline(IPipeline):
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
 
-        if config.augmentation.shuffle == False:
+        is_shuffle_enabled = getattr(config.augmentation, "shuffle", False)
+        if not is_shuffle_enabled:
             copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
             self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
 

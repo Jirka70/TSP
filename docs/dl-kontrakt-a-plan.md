@@ -4,6 +4,12 @@ Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge s
 
 ## Merge main do DL větve (2026-11-18)
 
+- [x] Při přípravě GitHub workflows sladit všech pět smoke konfigurací s novými cestami splitterů
+  a oddělenými training/cross-validation evaluátory z main.
+- [x] Opravit čtení `shuffle` při vypnuté augmentaci v trénovací a evaluační pipeline.
+  Konfigurace `AugmentationConfigNone` toto pole nemá; bez augmentace se data nepřehazují.
+  Oba syntetické smoke běhy (ML a DL) prošly včetně exportu modelu a ověření načteného EEGNetu;
+  celá sada má nadále 157 úspěšných testů a Ruff kontrola celého projektu prošla.
 - [x] Sloučit `origin/main` (`6e88602`) do `feature/Analyze-DL-methodology`; při textovém konfliktu
   v testu továrny mají přednost změny z main, včetně nového `TrainingEvaluator`.
 - [x] Odstranit neplatné importy a registraci již smazaného `EEGNetModelTrainer` v továrně a testu.
