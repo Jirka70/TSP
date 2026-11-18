@@ -51,6 +51,7 @@ class AugmentationConfigBasic(AStageConfig):
     backend: Literal["basic"]
     random_seed: int = Field(default=42)
     copies_per_sample: int = Field(default=1, ge=1)
+    shuffle: bool = Field(default=True)
     gaussian_noise: GaussianNoiseConfig = Field(default_factory=GaussianNoiseConfig)
     time_shift: TimeShiftConfig = Field(default_factory=TimeShiftConfig)
     channel_dropout: ChannelDropoutConfig = Field(default_factory=ChannelDropoutConfig)
@@ -62,6 +63,7 @@ class AugmentationConfigTorchEEG(AStageConfig):
     backend: Literal["torcheeg"]
     random_seed: int = Field(default=42)
     copies_per_sample: int = Field(default=1, ge=1)
+    shuffle: bool = Field(default=True)
     gaussian_noise: GaussianNoiseConfig = Field(default_factory=GaussianNoiseConfig)
     mask: MaskConfig = Field(default_factory=MaskConfig)
     shift: ShiftConfig = Field(default_factory=ShiftConfig)

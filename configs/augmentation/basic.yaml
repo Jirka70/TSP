@@ -7,6 +7,7 @@ backend: basic                 # Used by program logic, changing this may break 
 
 random_seed: 42                # Ensures reproducibility of the random transformations
 copies_per_sample: 2           # Number of augmented variants generated per original training sample
+shuffle: true                  # Shuffle original and augmented samples together (false = originals first, then copies in order)
 
 gaussian_noise:
   std: 0.00001                    # Standard deviation of Gaussian noise added to the signal (0.0 to disable)

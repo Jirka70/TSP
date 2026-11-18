@@ -95,11 +95,12 @@ class TorchEEGAugmentor(IAugmentor):
                 log.warning("TorchEEGAugmentor (training mode): no train data available, passing through unchanged.")
                 return StepResult(dataset_splits)
 
-            log.info(f"Running TorchEEGAugmentor (training mode): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+            log.info(f"Running TorchEEGAugmentor (training mode): creating {config.copies_per_sample} copies per sample (shuffle={config.shuffle}).", VerbosityLevel.QUIET)
             augmented_train = self._augment_single_fold(
                 train_data_dto=dataset_splits.train,
                 torcheeg_transform=torcheeg_transform,
                 copies_per_sample=config.copies_per_sample,
+                shuffle=config.shuffle,
                 log=log,
             )
             log.info("TorchEEG augmentation (training mode) completed.", VerbosityLevel.QUIET)
@@ -113,7 +114,7 @@ class TorchEEGAugmentor(IAugmentor):
             )
 
         # --- Evaluation pipeline mode: augment each fold's train_data ---
-        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
+        log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample (shuffle={config.shuffle}).", VerbosityLevel.QUIET)
         augmented_folds = []
         for fold in dataset_splits.folds:
             log.info(f"Augmenting Fold {fold.fold_idx}.", VerbosityLevel.DETAILED)
@@ -121,6 +122,7 @@ class TorchEEGAugmentor(IAugmentor):
                 train_data_dto=fold.train_data,
                 torcheeg_transform=torcheeg_transform,
                 copies_per_sample=config.copies_per_sample,
+                shuffle=config.shuffle,
                 log=log,
             )
             new_fold = FoldDTO(fold_idx=fold.fold_idx, train_data=augmented_train_data, test_data=fold.test_data)
@@ -174,6 +176,7 @@ class TorchEEGAugmentor(IAugmentor):
         train_data_dto: EpochPreprocessedDTO,
         torcheeg_transform: transforms.Compose,
         copies_per_sample: int,
+        shuffle: bool,
         log: PipelineLogger,
     ) -> EpochPreprocessedDTO:
         """Core logic for augmenting all recordings within a single training partition."""
@@ -233,7 +236,7 @@ class TorchEEGAugmentor(IAugmentor):
             final_metadata = metadata.copy()
             multiplier = 1 + copies_per_sample
             for k, v in metadata.items():
-                if k == "labels":
+                if k in ["labels", "ch_names", "channel_names"]:
                     continue
                 if isinstance(v, (list, np.ndarray)) and len(v) == n_orig:
                     if isinstance(v, np.ndarray):
@@ -241,19 +244,21 @@ class TorchEEGAugmentor(IAugmentor):
                     else:
                         final_metadata[k] = v * multiplier
 
-            # 5. Shuffle combined samples so originals and copies are evenly mixed
-            perm = np.random.permutation(n_total)
-            final_signal = final_signal[perm]
-            final_labels = final_labels[perm]
-            final_metadata["labels"] = final_labels
+            # 5. Optionally shuffle combined samples so originals and copies are evenly mixed
+            if shuffle:
+                perm = np.random.permutation(n_total)
+                final_signal = final_signal[perm]
+                final_labels = final_labels[perm]
 
-            for k, v in final_metadata.items():
-                if k == "labels":
-                    continue
-                if isinstance(v, np.ndarray) and len(v) == n_total:
-                    final_metadata[k] = v[perm]
-                elif isinstance(v, list) and len(v) == n_total:
-                    final_metadata[k] = [v[p] for p in perm]
+                for k, v in final_metadata.items():
+                    if k in ["labels", "ch_names", "channel_names"]:
+                        continue
+                    if isinstance(v, np.ndarray) and len(v) == n_total:
+                        final_metadata[k] = v[perm]
+                    elif isinstance(v, list) and len(v) == n_total:
+                        final_metadata[k] = [v[p] for p in perm]
+
+            final_metadata["labels"] = final_labels
 
             new_rec = RecordingDTO(
                 data=final_signal,

@@ -132,8 +132,9 @@ class TrainingPipeline(IPipeline):
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result: StepResult[DatasetSplitDTO] = self._augmentation.run(augmentation_input, run_ctx)
 
-        copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
-        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
+        if (config.augmentation.shuffle == False):
+            copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
+            self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
 
         # --- 8. Dataset Export ---
         self._dataset_exporter.run(config.dataset_export, augmentation_result.data, run_ctx)
