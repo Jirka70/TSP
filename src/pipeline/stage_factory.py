@@ -14,7 +14,6 @@ from src.impl.evaluator.cross_validation_evaluator import CrossValidationEvaluat
 from src.impl.evaluator.experiment_evaluator import ExperimentEvaluator
 from src.impl.evaluator.training_evaluator import TrainingEvaluator
 from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
-from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
@@ -96,7 +95,6 @@ class StageFactory:
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
-            "eegnet": EEGNetModelTrainer,
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
@@ -152,6 +150,8 @@ class StageFactory:
         return StageFactory._targets[StageType.AUGMENTATION][self._config.augmentation.backend]()
 
     def create_model_trainer_stage(self) -> IModelTrainer:
+        if self._config.model.backend == "eegnet":
+            raise ValueError("EEGNet does not support fold training. Use FinalEEGNetTrainer with train/val data.")
         return StageFactory._targets[StageType.MODEL_TRAINER][self._config.model.backend]()
 
     def create_metrics_aggregator_stage(self) -> IMetricsAggregator:
@@ -173,7 +173,9 @@ class StageFactory:
         return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
 
     def create_visualizer(self) -> IVisualizer:
-        return StageFactory._targets[StageType.VISUALIZER][self._config.visualization.backend](self._config.visualization)
+        return StageFactory._targets[StageType.VISUALIZER][self._config.visualization.backend](
+            self._config.visualization
+        )
 
     def create_saver(self) -> IArtifactSaver:
         return StageFactory._targets[StageType.SAVER][self._config.save_artifacts.backend]()

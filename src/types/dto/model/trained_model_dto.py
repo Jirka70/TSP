@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from src.types.dto.model.learning_dataset import LearningDataset
 from src.types.dto.model.train_history import TrainingHistory
 from src.types.interfaces.model.model import IModel
 
@@ -21,3 +22,4 @@ class TrainedModelDTO:
     fold_idx: int | None = None
 
     metadata: dict[str, object] = field(default_factory=dict)
+    verification_data: LearningDataset | None = None

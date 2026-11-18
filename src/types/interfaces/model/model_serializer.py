@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from src.pipeline.context.run_context import RunContext
 from src.types.dto.model.trained_model_dto import TrainedModelDTO
 from src.types.dto.save_artifacts.saved_artifacts_dto import SavedArtifactsDTO
 
@@ -31,7 +32,12 @@ class IModelSerializer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def save(self, trained_model: TrainedModelDTO, output_path: Path) -> SavedArtifactsDTO:
+    def save(
+        self,
+        trained_model: TrainedModelDTO,
+        output_path: Path,
+        run_ctx: RunContext | None = None,
+    ) -> SavedArtifactsDTO:
         """
         Serializes the trained model and its associated metadata to the file system.
 
@@ -42,6 +48,7 @@ class IModelSerializer(ABC):
             trained_model (TrainedModelDTO): The data transfer object containing
                 the trained model instance and its training history.
             output_path (Path): The directory path where the artifacts should be saved.
+            run_ctx (RunContext | None): Run context for serializers that verify exports through a model loader.
 
         Returns:
             SavedArtifactsDTO: A DTO containing paths to all generated files

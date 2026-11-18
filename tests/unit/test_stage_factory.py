@@ -12,7 +12,6 @@ from src.impl.dataset_export.dummy_dataset_exporter import DummyDatasetExporter
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.training_evaluator import TrainingEvaluator
-from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
@@ -57,7 +56,7 @@ def _factory_config(
     *,
     source="external",
     raw_augmentation="none",
-    split="basic",
+    split="general",
     augmentation=None,
     model="sklearn",
     final_trainer="sklearn",
@@ -93,7 +92,7 @@ def _factory_config(
         (StageType.RAW_AUGMENTATION, "raw_torcheeg", TorchEEGRawAugmentor),
         (StageType.PARADIGM, "default", ParadigmPreprocessor),
         (StageType.EPOCH_PREPROCESSING, "default", EpochPreprocessor),
-        (StageType.SPLIT, "basic", GeneralSplitter),
+        (StageType.SPLIT, "general", GeneralSplitter),
         (StageType.SPLIT, "moabb_within_session", MoabbSplitter),
         (StageType.SPLIT, "moabb_within_subject", MoabbSplitter),
         (StageType.SPLIT, "moabb_cross_subject", MoabbSplitter),
@@ -101,7 +100,6 @@ def _factory_config(
         (StageType.AUGMENTATION, "basic", BasicAugmentor),
         (StageType.AUGMENTATION, "torcheeg", TorchEEGAugmentor),
         (StageType.AUGMENTATION, None, DummyAugmentor),
-        (StageType.MODEL_TRAINER, "eegnet", EEGNetModelTrainer),
         (StageType.MODEL_TRAINER, "sklearn", GenericSklearnTrainer),
         (StageType.METRICS_AGGREGATOR, "default", MetricsAggregator),
         (StageType.FINAL_TRAINER, "sklearn", FinalSklearnTrainer),
@@ -157,7 +155,12 @@ def test_stage_factory_creates_expected_deep_learning_implementations():
     assert isinstance(factory.create_raw_augmentation_stage(), TorchEEGRawAugmentor)
     assert isinstance(factory.create_split_stage(), MoabbSplitter)
     assert isinstance(factory.create_augmentation_stage(), TorchEEGAugmentor)
-    assert isinstance(factory.create_model_trainer_stage(), EEGNetModelTrainer)
     assert isinstance(factory.create_final_trainer_stage(), FinalEEGNetTrainer)
     assert isinstance(factory.create_model_serializer(), EEGNetModelSerializer)
     assert isinstance(factory.create_visualizer(), PlotlyVisualizer)
+
+
+def test_stage_factory_rejects_eegnet_fold_training():
+    factory = StageFactory(_factory_config(model="eegnet", final_trainer="eegnet"))
+    with pytest.raises(ValueError, match="EEGNet does not support fold training"):
+        factory.create_model_trainer_stage()

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from hydra import compose, initialize_config_dir
 from pydantic import ValidationError
 
 from src.types.dto.config.model.model_config import EEGNetConfig
@@ -15,7 +16,6 @@ def _valid_eegnet_config() -> dict:
         "backend": "eegnet",
         "model_name": "eegnet",
         "input_normalization": "per_epoch_channel",
-        "fold_training": True,
         "n_classes": 2,
         "dropout": 0.25,
         "kernel_length": 16,
@@ -81,3 +81,19 @@ def test_training_config_rejects_unknown_keys() -> None:
 
     with pytest.raises(ValidationError, match="unknown_key"):
         EEGNetConfig.model_validate(config)
+
+
+def test_legacy_checkpoint_configuration_does_not_enable_fold_training() -> None:
+    configuration = _valid_eegnet_config()
+    configuration["fold_training"] = True
+    restored_configuration = EEGNetConfig.model_validate(configuration)
+    assert "fold_training" not in restored_configuration.model_dump()
+
+
+@pytest.mark.parametrize("source_name", ["synthetic", "moabb"])
+def test_final_eegnet_smoke_configuration_uses_direct_splits(source_name: str) -> None:
+    with initialize_config_dir(config_dir=str(PROJECT_ROOT / "configs"), version_base=None):
+        configuration = compose(config_name=f"test/smoke/{source_name}/training_dl_final_only")
+    assert configuration.split.backend == "general"
+    assert "fold_training" not in configuration.model
+    assert EEGNetConfig.model_validate(dict(configuration.model)).backend == "eegnet"

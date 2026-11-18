@@ -30,7 +30,7 @@ class ArtifactSaver(IArtifactSaver):
         config = input_dto.config
 
         if config.save_model:
-            model_artifacts = self._save_model(input_dto, output_path)
+            model_artifacts = self._save_model(input_dto, output_path, run_ctx)
             saved_artifacts.extend(model_artifacts.artifacts)
 
         if config.save_metrics:
@@ -82,6 +82,7 @@ class ArtifactSaver(IArtifactSaver):
             self,
             input_dto: SaveArtifactsInputDTO,
             output_path: Path,
+            run_ctx: RunContext,
     ) -> SavedArtifactsDTO:
         if input_dto.model_serializer is None:
             raise ValueError("Model serializer is required when save_model=True.")
@@ -100,7 +101,8 @@ class ArtifactSaver(IArtifactSaver):
 
         return serializer.save(
             trained_model=trained_model,
-            output_path=output_path / "models"
+            output_path=output_path / "models",
+            run_ctx=run_ctx,
         )
 
     def _save_metrics(self, input_dto: SaveArtifactsInputDTO, output_path: Path) -> ArtifactRef | None:

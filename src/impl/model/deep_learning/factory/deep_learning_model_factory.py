@@ -1,6 +1,6 @@
-from src.impl.model.deep_learning.factory.deep_learning_model_registry import DeepLearningModelRegistry
 from src.impl.model.deep_learning.eegnet.builder.eegnet_builder import build_eegnet_model
 from src.impl.model.deep_learning.eegnet.model.eegnet_model import EEGNetModel
+from src.impl.model.deep_learning.factory.deep_learning_model_registry import DeepLearningModelRegistry
 from src.types.dto.config.model.model_config import EEGNetConfig
 
 
@@ -12,7 +12,9 @@ def create_default_deep_learning_model_registry() -> DeepLearningModelRegistry:
 
 class DeepLearningModelFactory:
     def __init__(self, registry: DeepLearningModelRegistry | None = None) -> None:
-        self._registry = registry or create_default_deep_learning_model_registry()
+        if registry is None:
+            registry = create_default_deep_learning_model_registry()
+        self._registry = registry
 
     def create(
         self,

@@ -301,8 +301,9 @@ kernel_length: 16
 f1: 8
 d: 2
 f2: 16          # should equal f1 * d
-fold_training: true
 ```
+
+EEGNet trains one final model on separate training and validation data; fold training is not supported.
 
 Training hyperparameters are in `model/training/default.yaml`:
 
