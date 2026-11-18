@@ -1,2 +1,1 @@
-backend: "fif"
-enabled: false
+backend: default               # Used this backend in main config to enable the dataset export.

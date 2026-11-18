@@ -7,6 +7,7 @@ from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
 from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
+from src.impl.dataset_export.dummy_dataset_exporter import DummyDatasetExporter
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
 from src.impl.evaluator.cross_validation_evaluator import CrossValidationEvaluator
@@ -119,8 +120,8 @@ class StageFactory:
         },
         StageType.MODEL_PATH: {"default": ModelLoader, "eegnet": EEGNetModelLoader},
         StageType.DATASET_EXPORT: {
-            "fif": FifDatasetExporter,
-            "none": None,
+            "default": FifDatasetExporter,
+            "none": DummyDatasetExporter,
         },
     }
 
