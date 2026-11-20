@@ -83,6 +83,23 @@ def test_rigor_is_taken_from_protocol() -> None:
     assert report.is_valid
 
 
+@pytest.mark.parametrize(
+    "scenario",
+    ["A_csp_before_split", "B_selection_on_test", "C_augmentation_before_split", "D_random_split_cross_subject", "E_non_causal_online"],
+)
+def test_rigor_none_evaluates_no_rule(scenario: str) -> None:
+    config = _load(f"test/methodology/{scenario}", ["protocol.rigor=none"])
+
+    validator = MethodologyValidator.from_file()
+    report = validator.validate(config)
+
+    assert config.protocol.rigor == RigorLevel.NONE
+    assert report.violations == []
+    assert report.passed_rules == []
+    assert len(report.skipped_rules) == len(validator.rules)
+    assert report.is_valid
+
+
 def test_report_is_saved(tmp_path: Path) -> None:
     config = _load("test/methodology/A_csp_before_split")
     report = MethodologyValidator.from_file().validate(config)

@@ -5,4 +5,4 @@
 task: "motor imagery classification"   # Research question / task definition
 evaluation_scheme: within_session       # within_session | within_subject | cross_session | cross_subject | cross_dataset
 usage: offline                          # offline | simulated_online | online
-rigor: standard                         # exploratory | standard | publication (strictness of methodology validation)
+rigor: standard                         # none | exploratory | standard | publication (strictness of methodology validation)

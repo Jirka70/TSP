@@ -101,6 +101,9 @@ Levels that are not listed default by `certainty`:
 
 Override example: `severity: {exploratory: info, standard: warn, publication: error}`.
 
+Rigor `none` disables the methodology validation, so every rule is `off` there. Any other
+action for `none` in `severity` is rejected (the catalog fails to load).
+
 ## Condition DSL (`when`)
 
 ```yaml

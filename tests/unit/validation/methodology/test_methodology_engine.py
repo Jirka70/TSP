@@ -79,8 +79,13 @@ def test_default_severity_by_certainty() -> None:
     proven = _rule()
     suspected = _rule(certainty="suspected")
 
-    assert [proven.action_for(level) for level in RigorLevel] == [RuleAction.WARN, RuleAction.ERROR, RuleAction.ERROR]
-    assert [suspected.action_for(level) for level in RigorLevel] == [RuleAction.INFO, RuleAction.WARN, RuleAction.ERROR]
+    assert [proven.action_for(level) for level in RigorLevel] == [RuleAction.OFF, RuleAction.WARN, RuleAction.ERROR, RuleAction.ERROR]
+    assert [suspected.action_for(level) for level in RigorLevel] == [RuleAction.OFF, RuleAction.INFO, RuleAction.WARN, RuleAction.ERROR]
+
+
+def test_severity_for_rigor_none_cannot_be_overridden() -> None:
+    with pytest.raises(ValidationError):
+        _rule(severity={"none": "error"})
 
 
 def test_severity_override_keeps_other_defaults() -> None:

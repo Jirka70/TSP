@@ -62,17 +62,22 @@ class Certainty(str, Enum):
 
 DEFAULT_SEVERITY: dict[Certainty, dict[RigorLevel, RuleAction]] = {
     Certainty.PROVEN: {
+        RigorLevel.NONE: RuleAction.OFF,
         RigorLevel.EXPLORATORY: RuleAction.WARN,
         RigorLevel.STANDARD: RuleAction.ERROR,
         RigorLevel.PUBLICATION: RuleAction.ERROR,
     },
     Certainty.SUSPECTED: {
+        RigorLevel.NONE: RuleAction.OFF,
         RigorLevel.EXPLORATORY: RuleAction.INFO,
         RigorLevel.STANDARD: RuleAction.WARN,
         RigorLevel.PUBLICATION: RuleAction.ERROR,
     },
 }
-"""Action per rigor level used when a rule does not override it."""
+"""Action per rigor level used when a rule does not override it.
+
+Rigor ``none`` disables methodology validation, so every rule is ``off`` there and rules cannot override it.
+"""
 
 
 _OPERATORS: tuple[str, ...] = ("eq", "ne", "in_", "not_in", "exists", "gt", "ge", "lt", "le", "contains")
@@ -155,7 +160,7 @@ class MethodologyRule(BaseModel):
         when: Declarative condition; the rule fires when it is satisfied.
         check: Name of a registered Python check (alternative to ``when``).
         params: Parameters passed to the Python check.
-        severity: Per-rigor action overrides (missing levels use ``DEFAULT_SEVERITY``).
+        severity: Per-rigor action overrides (missing levels use ``DEFAULT_SEVERITY``; ``none`` is always ``off``).
         impact: Possible impact on the reported results.
         remediation: How to fix the experiment.
     """
@@ -187,6 +192,8 @@ class MethodologyRule(BaseModel):
             raise ValueError(f"Rule '{self.id}': declarative 'when' conditions are only supported for static rules.")
         if self.params and self.check is None:
             raise ValueError(f"Rule '{self.id}': 'params' are only used by Python checks.")
+        if self.severity.get(RigorLevel.NONE, RuleAction.OFF) != RuleAction.OFF:
+            raise ValueError(f"Rule '{self.id}': severity for rigor '{RigorLevel.NONE.value}' must be 'off' (methodology validation is disabled there).")
 
         defaults = DEFAULT_SEVERITY[self.certainty]
         self.severity = {level: self.severity.get(level, defaults[level]) for level in RigorLevel}

@@ -45,6 +45,9 @@ class Usage(str, Enum):
 class RigorLevel(str, Enum):
     """How strictly methodology rules are enforced."""
 
+    NONE = "none"
+    """Methodology validation is disabled; no rule is evaluated and the pipeline runs right after config validation."""
+
     EXPLORATORY = "exploratory"
     """Quick experiments; violations are mostly reported, rarely blocking."""
 
@@ -62,7 +65,7 @@ class ProtocolConfig(BaseModel):
         task: Research question / task definition (e.g. "4-class motor imagery").
         evaluation_scheme: What is new in the test data (new trials / session / subject / dataset).
         usage: Whether results are claimed for offline, simulated online or online use.
-        rigor: Strictness level of the methodology validation.
+        rigor: Strictness level of the methodology validation (``none`` disables it).
     """
 
     task: str = Field(min_length=1)

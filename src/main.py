@@ -11,6 +11,7 @@ from src.pipeline.stage_factory import StageFactory
 from src.pipeline.benchmark.benchmark_pipeline import BenchmarkPipeline
 from src.pipeline.training.training_pipeline import TrainingPipeline
 from src.types.dto.config.experiment_config import Mode
+from src.types.dto.config.protocol_config import RigorLevel
 from src.validation.config_validator import ExperimentConfigValidator
 from src.validation.methodology.methodology_report import resolve_report_dir
 from src.validation.methodology.methodology_validator import MethodologyValidator
@@ -35,14 +36,17 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
-    # Methodology validation (rules: configs/methodology/, strictness: protocol.rigor)
-    methodology_report = MethodologyValidator.from_file().validate(ex_conf)
-    report_path = methodology_report.save(resolve_report_dir(ex_conf))
-    if methodology_report.is_valid:
-        log.info(f"Methodology validated (rigor={methodology_report.rigor.value}, violations={len(methodology_report.violations)}), report: {report_path}")
+    # Methodology validation (rules: configs/methodology/, strictness: protocol.rigor; rigor=none skips it)
+    if ex_conf.protocol.rigor == RigorLevel.NONE:
+        log.warning("Methodology validation disabled (protocol.rigor=none): rules are not applied")
     else:
-        log.error(f"Methodology validation failed (rigor={methodology_report.rigor.value}), report: {report_path}")
-        return
+        methodology_report = MethodologyValidator.from_file().validate(ex_conf)
+        report_path = methodology_report.save(resolve_report_dir(ex_conf))
+        if methodology_report.is_valid:
+            log.info(f"Methodology validated (rigor={methodology_report.rigor.value}, violations={len(methodology_report.violations)}), report: {report_path}")
+        else:
+            log.error(f"Methodology validation failed (rigor={methodology_report.rigor.value}), report: {report_path}")
+            return
 
     # Logging setup
     setup_pipeline_logging(ex_conf.logging)

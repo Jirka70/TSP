@@ -28,6 +28,7 @@ class MethodologyValidator:
     """Evaluates methodology rules for an experiment.
 
     The rigor level is taken from ``config.protocol.rigor`` unless overridden.
+    At rigor ``none`` no rule is evaluated (all are skipped) and the report is always valid.
 
     Usage::
 
@@ -94,6 +95,8 @@ class MethodologyValidator:
 
     @staticmethod
     def _skip_reason(rule: MethodologyRule, phase: RulePhase, config: ExperimentConfig, rigor: RigorLevel) -> str | None:
+        if rigor == RigorLevel.NONE:
+            return f"methodology validation disabled (rigor '{rigor.value}')"
         if rule.phase != phase:
             return f"phase '{rule.phase.value}'"
         if not rule.applies_to(config.mode):

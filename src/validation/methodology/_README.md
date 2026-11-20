@@ -43,13 +43,13 @@ It does not change the pipeline; it is a declaration the rules compare against.
 task: "motor imagery classification"
 evaluation_scheme: cross_subject   # what is new in the test data: trials / session / subject / dataset
 usage: offline                     # offline | simulated_online | online
-rigor: standard                    # exploratory | standard | publication
+rigor: standard                    # none | exploratory | standard | publication
 ```
 
 - `evaluation_scheme`: which question the result answers, e.g. "does it work for a new user?".
   The split must match it.
 - `usage`: whether a real-time claim is made (then only causal processing is allowed).
-- `rigor`: how strict the validation is (see below).
+- `rigor`: how strict the validation is (see below); `none` skips the methodology validation entirely.
 
 Details: `configs/protocol/_README.md`.
 
@@ -85,13 +85,18 @@ Details and a checklist for writing rules: `configs/methodology/_README.md`.
 The action depends on the rule's `certainty` and the protocol's `rigor`
 (a rule can override this with its own `severity`):
 
-| certainty \ rigor | exploratory | standard | publication |
-|---|---|---|---|
-| `proven` | warn | **error** | **error** |
-| `suspected` | info | warn | **error** |
+| certainty \ rigor | none | exploratory | standard | publication |
+|---|---|---|---|---|
+| `proven` | off | warn | **error** | **error** |
+| `suspected` | off | info | warn | **error** |
 
 `error` blocks the experiment; `info` and `warn` are only logged and written to the report.
 So the same config can run as an exploratory experiment but be blocked for publication.
+
+`rigor: none` disables the methodology validation: `src/main.py` does not run the validator
+at all (no report is written, a warning is logged) and the pipeline starts right after the
+config validation. If the validator is called anyway, it skips every rule and the report is valid.
+A rule's `severity` cannot set any other action than `off` for `none`.
 
 ## 4. The engine (`src/validation/methodology/`)
 
@@ -121,6 +126,7 @@ and the lists of passed and skipped rules.
 ## Typical tasks
 
 - **Run a stricter check** → `protocol.rigor=publication`.
+- **Skip the methodology check** → `protocol.rigor=none`.
 - **Test a new user scenario** → `protocol=cross_subject` + `split=evaulation/moabb_cross_subject`.
 - **Add a rule** → add it to the matching `configs/methodology/rules_*.yaml`
   (a Python check goes to `checks/static_checks.py`), then run

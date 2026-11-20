@@ -36,7 +36,7 @@ defaults:
 | `task` | yes | free text | Research question / task definition, e.g. `"4-class motor imagery"` |
 | `evaluation_scheme` | yes | see [Evaluation scheme](#evaluation-scheme) | What is **new** in the test data (trials / session / subject / dataset) |
 | `usage` | no (default `offline`) | see [Usage](#usage) | For which kind of use the results are claimed |
-| `rigor` | no (default `standard`) | see [Rigor](#rigor) | How strictly the methodology rules are enforced |
+| `rigor` | no (default `standard`) | see [Rigor](#rigor) | How strictly the methodology rules are enforced (`none` = not at all) |
 
 ### Evaluation scheme
 
@@ -120,15 +120,26 @@ For which kind of use the results are claimed.
 ### Rigor
 
 How strictly the methodology rules are enforced. Together with the rule's `certainty` it
-determines the action taken when a rule fires (see `configs/methodology/README.md`):
+determines the action taken when a rule fires (see `configs/methodology/_README.md`):
 
 | Value | Intended for | Rule with `proven` certainty | Rule with `suspected` certainty |
 |---|---|---|---|
+| `none` | Running the pipeline without any methodology check | off (not evaluated) | off (not evaluated) |
 | `exploratory` | Quick experiments, debugging | warn | info |
 | `standard` | Default | **error** (blocked) | warn |
 | `publication` | Results meant to be reported | **error** (blocked) | **error** (blocked) |
 
-Rules can override these defaults with their own `severity`.
+Rules can override these defaults with their own `severity`, except for `none`.
+
+`rigor: none` turns the methodology validation off completely: no rule is evaluated, the
+protocol is not compared against the config, and no `methodology_report.json` is written.
+Only the config itself is validated (schema of `ExperimentConfig`), then the pipeline runs.
+A warning is logged so the run is not mistaken for a validated one. The other protocol
+fields are still required, but they have no effect.
+
+```bash
+python -m src.main protocol.rigor=none
+```
 
 ## Prepared protocols
 
@@ -148,7 +159,8 @@ All of them use `rigor: standard`.
 2. **Choose the matching `split`** from the evaluation scheme table above.
 3. **Check `source`**: enough sessions for `cross_session`, enough subjects for `cross_subject`.
 4. **Real-time claim?** Use `usage: simulated_online` and causal processing only; otherwise `offline`.
-5. **Choose `rigor`**: `exploratory` while experimenting, `standard` by default, `publication` for reported results.
+5. **Choose `rigor`**: `exploratory` while experimenting, `standard` by default, `publication` for reported results
+   (`none` only when the methodology check should be skipped entirely).
 6. Run the experiment; the methodology report is saved next to the outputs. If any
    violation has the action `error`, the experiment does not run.
 
