@@ -1,1 +1,1 @@
-torcheeg~=1.1.3
+torcheeg==1.1.3

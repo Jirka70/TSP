@@ -1,0 +1,185 @@
+mode: training
+output_dir: /Users/jirka/TSP/outputs/dl-performance-2026-11-04
+logging:
+  verbosity: trace
+  console: true
+  file: false
+  file_path: null
+  format: plain
+  context:
+    run_id: true
+    git_commit_hash: true
+    pipeline_name: true
+    step: true
+source:
+  backend: external
+  name: BNCI2014_001
+  path: ./data/eegbci
+  subject_ids:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  session_ids: null
+  run_ids: null
+raw_preprocessing:
+  backend: default
+  resampling:
+    enabled: false
+    sfreq: 250
+  high_pass_filter:
+    enabled: true
+    l_freq: 1.0
+  low_pass_filter:
+    enabled: false
+    h_freq: 40.0
+  notch_filter:
+    enabled: true
+    freqs:
+    - 50
+  bad_channels_interpolation:
+    enabled: true
+  re_referencing:
+    enabled: true
+    method: CSD
+  ica:
+    enabled: false
+    n_components: 0.95
+    method: infomax
+  annotate_break:
+    enabled: true
+    min_break_duration: 2.5
+raw_augmentation:
+  enabled: false
+  backend: none
+paradigm:
+  backend: default
+  events:
+    left_hand: 1
+    right_hand: 2
+  filter:
+    fmin: 8.0
+    fmax: 35.0
+  window:
+    tmin: -0.5
+    tmax: 4.0
+    baseline:
+    - -0.5
+    - 0.0
+  resampling:
+    enabled: true
+    sfreq: 128.0
+  reject_by_annotation: true
+  preload: true
+epoch_preprocessing:
+  backend: default
+  alignment:
+    enabled: true
+    tmin_offset: -0.2
+  ica:
+    enabled: true
+    n_components: 15
+    random_state: 42
+    method: fastica
+    eog_threshold: 3.0
+  autoreject:
+    enabled: true
+    n_interpolate:
+    - 1
+    - 4
+    - 8
+    consensus:
+    - 0.2
+    - 0.5
+    - 0.8
+    cv: 5
+  csp:
+    enabled: false
+    n_components: 4
+    reg: null
+    log: true
+    norm_trace: false
+split:
+  backend: general
+  enabled: true
+  ratios:
+    train: 0.7
+    validation: 0.1
+    test: 0.2
+  shuffle: true
+  random_seed: 42
+augmentation:
+  backend: torcheeg
+  enabled: true
+  copies_per_sample: 1
+  random_seed: 42
+  gaussian_noise:
+    std: 0.01
+  mask:
+    prob: 0.3
+    ratio: 0.1
+  shift:
+    prob: 0.2
+  sign_flip:
+    prob: 0.2
+  scale:
+    prob: 0.3
+    min: 0.9
+    max: 1.1
+dataset_export:
+  backend: fif
+  enabled: false
+model:
+  training:
+    epochs: 15
+    batch_size: 16
+    learning_rate: 0.0005
+    optimizer: adam
+    random_state: 67
+    deterministic: true
+  model_name: eegnet
+  backend: eegnet
+  input_normalization: per_epoch_channel
+  n_classes: 2
+  dropout: 0.25
+  kernel_length: 16
+  temporal_filters: 8
+  depth_multiplier: 2
+  pointwise_filters: 16
+metrics_aggregator:
+  backend: default
+final_trainer:
+  backend: eegnet
+evaluation:
+  backend: default
+  metrics:
+  - accuracy
+  - f1_macro
+  - precision_macro
+  - recall_macro
+  compute_confusion_matrix: true
+visualization:
+  backend: matplotlib
+  visualize:
+    raw: false
+    raw_augmentation: false
+    epochs: false
+    augmentation: false
+    evaluation: false
+  n_fft: 2048
+  save_plots: false
+  show_plots: false
+save_artifacts:
+  backend: default
+  save_model: true
+  save_metrics: true
+  save_config: true
+  save_training_history: true
+model_path:
+  backend: default
+  path: ./ahoj.txt/riemannian_svm.joblib

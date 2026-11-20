@@ -1,0 +1,4 @@
+# Official Linux CPU wheels; used with requirements.lock.txt.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0+cpu; sys_platform == "linux"
+torchaudio==2.11.0+cpu; sys_platform == "linux"

@@ -8,10 +8,10 @@ from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
+from src.impl.dataset_export.dummy_dataset_exporter import DummyDatasetExporter
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from src.impl.evaluator.standard_evaluator import StandardEvaluator
-from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
+from src.impl.evaluator.training_evaluator import TrainingEvaluator
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
@@ -61,6 +61,7 @@ def _factory_config(
     model="sklearn",
     final_trainer="sklearn",
     visualization="matplotlib",
+    dataset_export="default",
 ):
     return SimpleNamespace(
         source=_stage_config(source),
@@ -73,11 +74,11 @@ def _factory_config(
         model=_stage_config(model),
         metrics_aggregator=_stage_config("default"),
         final_trainer=_stage_config(final_trainer),
-        evaluation=_stage_config("default"),
+        evaluation=_stage_config("training"),
         save_artifacts=_stage_config("default"),
         visualization=_visualization_config(visualization),
         model_path=_stage_config("default"),
-        dataset_export=_stage_config("fif"),
+        dataset_export=_stage_config(dataset_export),
     )
 
 
@@ -99,19 +100,19 @@ def _factory_config(
         (StageType.AUGMENTATION, "basic", BasicAugmentor),
         (StageType.AUGMENTATION, "torcheeg", TorchEEGAugmentor),
         (StageType.AUGMENTATION, None, DummyAugmentor),
-        (StageType.MODEL_TRAINER, "eegnet", EEGNetModelTrainer),
         (StageType.MODEL_TRAINER, "sklearn", GenericSklearnTrainer),
         (StageType.METRICS_AGGREGATOR, "default", MetricsAggregator),
         (StageType.FINAL_TRAINER, "sklearn", FinalSklearnTrainer),
         (StageType.FINAL_TRAINER, "eegnet", FinalEEGNetTrainer),
-        (StageType.EVALUATOR, "default", StandardEvaluator),
+        (StageType.EVALUATOR, "training", TrainingEvaluator),
         (StageType.SAVER, "default", ArtifactSaver),
         (StageType.MODEL_SERIALIZER, "sklearn", SklearnModelSerializer),
         (StageType.MODEL_SERIALIZER, "eegnet", EEGNetModelSerializer),
         (StageType.VISUALIZER, "matplotlib", MatplotlibVisualizer),
         (StageType.VISUALIZER, "plotly", PlotlyVisualizer),
         (StageType.MODEL_PATH, "default", ModelLoader),
-        (StageType.DATASET_EXPORT, "fif", FifDatasetExporter),
+        (StageType.DATASET_EXPORT, "default", FifDatasetExporter),
+        (StageType.DATASET_EXPORT, "none", DummyDatasetExporter),
     ],
 )
 def test_stage_factory_backend_mappings(stage_type, backend, expected_class):
@@ -131,7 +132,7 @@ def test_stage_factory_creates_expected_default_training_implementations():
     assert isinstance(factory.create_model_trainer_stage(), GenericSklearnTrainer)
     assert isinstance(factory.create_metrics_aggregator_stage(), MetricsAggregator)
     assert isinstance(factory.create_final_trainer_stage(), FinalSklearnTrainer)
-    assert isinstance(factory.create_evaluator_stage(), StandardEvaluator)
+    assert isinstance(factory.create_evaluator_stage(), TrainingEvaluator)
     assert isinstance(factory.create_saver(), ArtifactSaver)
     assert isinstance(factory.create_model_serializer(), SklearnModelSerializer)
     assert isinstance(factory.create_visualizer(), MatplotlibVisualizer)
@@ -154,7 +155,12 @@ def test_stage_factory_creates_expected_deep_learning_implementations():
     assert isinstance(factory.create_raw_augmentation_stage(), TorchEEGRawAugmentor)
     assert isinstance(factory.create_split_stage(), MoabbSplitter)
     assert isinstance(factory.create_augmentation_stage(), TorchEEGAugmentor)
-    assert isinstance(factory.create_model_trainer_stage(), EEGNetModelTrainer)
     assert isinstance(factory.create_final_trainer_stage(), FinalEEGNetTrainer)
     assert isinstance(factory.create_model_serializer(), EEGNetModelSerializer)
     assert isinstance(factory.create_visualizer(), PlotlyVisualizer)
+
+
+def test_stage_factory_rejects_eegnet_fold_training():
+    factory = StageFactory(_factory_config(model="eegnet", final_trainer="eegnet"))
+    with pytest.raises(ValueError, match="EEGNet does not support fold training"):
+        factory.create_model_trainer_stage()

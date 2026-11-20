@@ -1,0 +1,50 @@
+{
+  "run": "2026-05-15/17-05-29",
+  "evaluation_subject": 8,
+  "evaluation_samples": 288,
+  "evaluation_partition": "validation reused after every epoch",
+  "reported_final_metrics_rounded": {
+    "accuracy": 0.9688,
+    "precision_macro": 0.969,
+    "recall_macro": 0.9688
+  },
+  "final_validation_accuracy_full_precision": 0.96875,
+  "best_validation_accuracy_full_precision": 0.96875,
+  "training_accuracy_history": [
+    0.6070652173913044,
+    0.6407608695652174,
+    0.6630434782608695,
+    0.6858695652173913,
+    0.7070652173913043,
+    0.7230978260869565,
+    0.7375,
+    0.7355978260869566,
+    0.7380434782608696,
+    0.7434782608695653,
+    0.7584239130434782,
+    0.7611413043478261,
+    0.7546195652173913,
+    0.7673913043478261,
+    0.7581521739130435
+  ],
+  "validation_accuracy_history": [
+    0.8923611111111112,
+    0.90625,
+    0.9027777777777778,
+    0.9166666666666666,
+    0.9305555555555556,
+    0.9583333333333334,
+    0.9652777777777778,
+    0.96875,
+    0.9270833333333334,
+    0.96875,
+    0.9652777777777778,
+    0.96875,
+    0.9652777777777778,
+    0.9652777777777778,
+    0.96875
+  ],
+  "training_seconds_from_log": 451.95,
+  "historical_config": "outputs/2026-05-15/17-05-29/.hydra/config.yaml",
+  "historical_code_commit": "not recorded in the run log; nearby git history is not proof of exact running code"
+}

@@ -57,7 +57,6 @@ def my_app(cfg):
     raw_preprocessing = sf.create_raw_preprocessing_stage()
     paradigm = sf.create_paradigm_stage()
     epoch_preprocessing = sf.create_epoch_preprocessing_stage()
-    evaluator = sf.create_evaluator_stage()
     visualizer = sf.create_visualizer()
     saver = sf.create_saver()
     model_serializer = sf.create_model_serializer()
@@ -73,11 +72,27 @@ def my_app(cfg):
         augmentation = sf.create_augmentation_stage()
         dataset_exporter = sf.create_dataset_exporter_stage()
         final_trainer = sf.create_final_trainer_stage()
+        evaluator = sf.create_single_model_evaluator_stage()
 
-        pipeline = TrainingPipeline(dl, raw_preprocessing, raw_augmentation, paradigm, epoch_preprocessing, split, augmentation, dataset_exporter, final_trainer, evaluator, visualizer, saver, model_serializer)
+        pipeline = TrainingPipeline(
+            dl,
+            raw_preprocessing,
+            raw_augmentation,
+            paradigm,
+            epoch_preprocessing,
+            split,
+            augmentation,
+            dataset_exporter,
+            final_trainer,
+            evaluator,
+            visualizer,
+            saver,
+            model_serializer,
+        )
 
     elif ex_conf.mode == Mode.EXPERIMENT.value:
         model_loader = sf.create_model_loader()
+        evaluator = sf.create_inference_evaluator_stage()
 
         pipeline = ExperimentPipeline(
             data_loader=dl,
@@ -96,6 +111,7 @@ def my_app(cfg):
         augmentation = sf.create_augmentation_stage()
         dataset_exporter = sf.create_dataset_exporter_stage()
         model_trainer = sf.create_model_trainer_stage()
+        evaluator = sf.create_fold_evaluator_stage()
 
         pipeline = BenchmarkPipeline(
             data_loader=dl,

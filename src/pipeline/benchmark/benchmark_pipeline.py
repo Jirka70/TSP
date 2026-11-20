@@ -7,9 +7,8 @@ from src.pipeline.contracts.step_result import StepResult
 from src.pipeline.pipeline import IPipeline
 from src.types.dto.augmentation.augmentation_input_dto import AugmentationInputDTO
 from src.types.dto.config.experiment_config import ExperimentConfig
-from src.types.dto.epoch_preprocessing.epoch_preprocessed_dto import EpochPreprocessedDTO
 from src.types.dto.epoch_preprocessing.epoch_preprocessing_input_dto import EpochPreprocessingInputDTO
-from src.types.dto.evaluation.evaluation_input_dto import EvaluationInputDTO
+from src.types.dto.evaluation.evaluation_input_dto import CrossValidationEvaluationInputDTO
 from src.types.dto.load.raw_data_dto import RawDataDTO
 from src.types.dto.model.training_input_dto import TrainingInputDTO
 from src.types.dto.model.training_result_dto import TrainingResultDTO
@@ -24,7 +23,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.dataset_exporter import IDatasetExporter
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
-from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.evaluator import ICrossValidationEvaluator
 from src.types.interfaces.model.model_trainer import IModelTrainer
 from src.types.interfaces.paradigm import IParadigm
 from src.types.interfaces.raw_augmentor import IRawAugmentor
@@ -60,7 +59,7 @@ class BenchmarkPipeline(IPipeline):
         augmentation: IAugmentor,
         dataset_exporter: IDatasetExporter,
         model_trainer: IModelTrainer,
-        evaluator: IEvaluator,
+        evaluator: ICrossValidationEvaluator,
         visualizer: IVisualizer,
     ) -> None:
         """Initialize the benchmark pipeline with all required stage components."""
@@ -94,8 +93,8 @@ class BenchmarkPipeline(IPipeline):
             10. Fold-level evaluation (each model evaluated on its fold's test data)
 
         Args:
-            config (ExperimentConfig): The master experiment configuration.
-            run_ctx (RunContext): Context keeping track of unique runtime metadata.
+            config: The master experiment configuration.
+            run_ctx: Context keeping track of unique runtime metadata.
 
         Raises:
             ValueError: If splitting produces no folds.
@@ -104,12 +103,8 @@ class BenchmarkPipeline(IPipeline):
         load_result: StepResult[RawDataDTO] = self._data_loader.run(config.source, run_ctx)
 
         # --- 2. Raw Preprocessing ---
-        raw_preprocessing_input: RawPreprocessingInputDTO = RawPreprocessingInputDTO(
-            config.raw_preprocessing, load_result.data
-        )
-        raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(
-            raw_preprocessing_input, run_ctx
-        )
+        raw_preprocessing_input = RawPreprocessingInputDTO(config.raw_preprocessing, load_result.data)
+        raw_preprocessing_result: StepResult[RawPreprocessedDTO] = self._raw_preprocessing.run(raw_preprocessing_input, run_ctx)
         self._visualizer.visualize_raw(raw_preprocessing_result.data, run_ctx)
 
         # --- 3. Raw Augmentation ---
@@ -120,16 +115,12 @@ class BenchmarkPipeline(IPipeline):
         self._visualizer.visualize_raw_augmentation(raw_augmentation_result.data, run_ctx, copies_per_sample_raw)
 
         # --- 4. Paradigm Extraction ---
-        paradigm_input: ParadigmInputDTO = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
+        paradigm_input = ParadigmInputDTO(config.paradigm, raw_augmentation_result.data)
         paradigm_result: StepResult[ParadigmResultDTO] = self._paradigm.run(paradigm_input, run_ctx)
 
         # --- 5. Epoch Preprocessing ---
-        epoch_preprocessing_input: EpochPreprocessingInputDTO = EpochPreprocessingInputDTO(
-            config.epoch_preprocessing, paradigm_result.data
-        )
-        epoch_preprocessing_result: StepResult[EpochPreprocessedDTO] = self._epoch_preprocessing.run(
-            epoch_preprocessing_input, run_ctx
-        )
+        epoch_preprocessing_input = EpochPreprocessingInputDTO(config.epoch_preprocessing, paradigm_result.data)
+        epoch_preprocessing_result = self._epoch_preprocessing.run(epoch_preprocessing_input, run_ctx)
         self._visualizer.visualize_epochs(epoch_preprocessing_result.data, run_ctx)
 
         # --- 6. MOABB Splitting into folds ---
@@ -139,10 +130,11 @@ class BenchmarkPipeline(IPipeline):
         # --- 7. Augmentation ---
         augmentation_input = AugmentationInputDTO(config.augmentation, splitting_result.data)
         augmentation_result = self._augmentation.run(augmentation_input, run_ctx)
-        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx)
 
-        copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
-        self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
+        is_shuffle_enabled = getattr(config.augmentation, "shuffle", False)
+        if not is_shuffle_enabled:
+            copies_per_sample = getattr(config.augmentation, "copies_per_sample", 0)
+            self._visualizer.visualize_augmentation(augmentation_result.data, run_ctx, copies_per_sample)
 
         # --- 8. Dataset Export ---
         self._dataset_exporter.run(config.dataset_export, augmentation_result.data, run_ctx)
@@ -158,10 +150,10 @@ class BenchmarkPipeline(IPipeline):
 
         # --- 10. Fold-level Evaluation ---
         self._log.info("Evaluating fold-trained models on their respective fold test data.")
-        fold_evaluation_input = EvaluationInputDTO(
+        fold_evaluation_input = CrossValidationEvaluationInputDTO(
             config=config.evaluation,
-            trained_models=model_training_result.data.trained_models, #TODO DTO looks different than expected - change this or DTO
-            dataset_split=augmentation_result.data,
+            trained_models=model_training_result.data.trained_models,
+            folds=folds,
         )
         self._evaluator.run(fold_evaluation_input, run_ctx)
 

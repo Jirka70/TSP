@@ -1,31 +1,30 @@
 from enum import Enum
 
-from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
 from src.impl.artifacts_saver.artifacts_saver import ArtifactSaver
 from src.impl.augmentation.basic_augmentor import BasicAugmentor
 from src.impl.augmentation.dummy_augmentor import DummyAugmentor
 from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.FilesystemDatasetLoader import FilesystemDatasetLoader
-
-# from src.impl.augmentation.torcheeg_augmentor import TorchEEGAugmentor
 from src.impl.data_loader.MOABBDataLoader import MOABBDataLoader
+from src.impl.data_loader.SyntheticDataLoader import SyntheticDataLoader
+from src.impl.dataset_export.dummy_dataset_exporter import DummyDatasetExporter
 from src.impl.dataset_export.fif_dataset_exporter import FifDatasetExporter
 from src.impl.epoch_preprocessing.epoch_preprocessing import EpochPreprocessor
-from src.impl.evaluator.fold_evaluator import FoldEvaluator
-from src.impl.evaluator.standard_evaluator import StandardEvaluator
+from src.impl.evaluator.cross_validation_evaluator import CrossValidationEvaluator
+from src.impl.evaluator.experiment_evaluator import ExperimentEvaluator
+from src.impl.evaluator.training_evaluator import TrainingEvaluator
 from src.impl.model.deep_learning.eegnet.load.eegnet_model_loader import EEGNetModelLoader
-from src.impl.model.deep_learning.eegnet.trainer.eegnet_model_trainer import EEGNetModelTrainer
 from src.impl.model.deep_learning.eegnet.trainer.final_eegnet_trainer import FinalEEGNetTrainer
 from src.impl.model.machine_learning.final_sklearn_trainer import FinalSklearnTrainer
 from src.impl.model.machine_learning.generic_sklearn_trainer import GenericSklearnTrainer
 from src.impl.model.metrics_aggregator import MetricsAggregator
 from src.impl.model.model_loader import ModelLoader
-from src.impl.save_artifacts.deep_learning.eegnet.eegnet_model_serializer import EEGNetModelSerializer
-from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.paradigm.paradigm_preprocessing import ParadigmPreprocessor
 from src.impl.raw_augmentation.dummy_raw_augmentor import DummyRawAugmentor
 from src.impl.raw_augmentation.torcheeg_raw_augmentor import TorchEEGRawAugmentor
 from src.impl.raw_preprocessing.raw_preprocessing import RawPreprocessor
+from src.impl.save_artifacts.deep_learning.eegnet.eegnet_model_serializer import EEGNetModelSerializer
+from src.impl.save_artifacts.machine_learning.sklearn_model_serializer import SklearnModelSerializer
 from src.impl.split.general_splitter import GeneralSplitter
 from src.impl.split.moabb_splitter import MoabbSplitter
 from src.impl.visualization.matplotlib_visualizer import MatplotlibVisualizer
@@ -36,7 +35,7 @@ from src.types.interfaces.augmentor import IAugmentor
 from src.types.interfaces.data_loader import IDataLoader
 from src.types.interfaces.dataset_exporter import IDatasetExporter
 from src.types.interfaces.epoch_preprocessing import IEpochPreprocessing
-from src.types.interfaces.evaluator import IEvaluator
+from src.types.interfaces.evaluator import ICrossValidationEvaluator, IExperimentEvaluator, ITrainingEvaluator
 from src.types.interfaces.metrics_aggregator import IMetricsAggregator
 from src.types.interfaces.model.final_trainer import IFinalTrainer
 from src.types.interfaces.model.model_loader import IModelLoader
@@ -70,7 +69,11 @@ class StageType(Enum):
 
 class StageFactory:
     _targets: dict[StageType, dict[str | None, type]] = {
-        StageType.DATA_LOADER: {"external": MOABBDataLoader, "filesystem": FilesystemDatasetLoader, "synthetic": SyntheticDataLoader},
+        StageType.DATA_LOADER: {
+            "external": MOABBDataLoader,
+            "filesystem": FilesystemDatasetLoader,
+            "synthetic": SyntheticDataLoader,
+        },
         StageType.RAW_PREPROCESSING: {"default": RawPreprocessor},
         StageType.RAW_AUGMENTATION: {
             "none": DummyRawAugmentor,
@@ -79,6 +82,7 @@ class StageFactory:
         StageType.PARADIGM: {"default": ParadigmPreprocessor},
         StageType.EPOCH_PREPROCESSING: {"default": EpochPreprocessor},
         StageType.SPLIT: {
+            "basic": GeneralSplitter,
             "general": GeneralSplitter,
             "moabb_within_session": MoabbSplitter,
             "moabb_within_subject": MoabbSplitter,
@@ -91,14 +95,14 @@ class StageFactory:
             None: DummyAugmentor,
         },
         StageType.MODEL_TRAINER: {
-            "eegnet": EEGNetModelTrainer,
             "sklearn": GenericSklearnTrainer,
         },
         StageType.METRICS_AGGREGATOR: {"default": MetricsAggregator},
         StageType.FINAL_TRAINER: {"sklearn": FinalSklearnTrainer, "eegnet": FinalEEGNetTrainer},
         StageType.EVALUATOR: {
-            "default": StandardEvaluator,
-            "fold": FoldEvaluator,
+            "training": TrainingEvaluator,
+            "cross_validation": CrossValidationEvaluator,
+            "experiment": ExperimentEvaluator,
         },
         StageType.SAVER: {
             "default": ArtifactSaver,
@@ -114,8 +118,8 @@ class StageFactory:
         },
         StageType.MODEL_PATH: {"default": ModelLoader, "eegnet": EEGNetModelLoader},
         StageType.DATASET_EXPORT: {
-            "fif": FifDatasetExporter,
-            "none": None,
+            "default": FifDatasetExporter,
+            "none": DummyDatasetExporter,
         },
     }
 
@@ -146,6 +150,8 @@ class StageFactory:
         return StageFactory._targets[StageType.AUGMENTATION][self._config.augmentation.backend]()
 
     def create_model_trainer_stage(self) -> IModelTrainer:
+        if self._config.model.backend == "eegnet":
+            raise ValueError("EEGNet does not support fold training. Use FinalEEGNetTrainer with train/val data.")
         return StageFactory._targets[StageType.MODEL_TRAINER][self._config.model.backend]()
 
     def create_metrics_aggregator_stage(self) -> IMetricsAggregator:
@@ -154,11 +160,22 @@ class StageFactory:
     def create_final_trainer_stage(self) -> IFinalTrainer:
         return StageFactory._targets[StageType.FINAL_TRAINER][self._config.final_trainer.backend]()
 
-    def create_evaluator_stage(self) -> IEvaluator:
+    def create_single_model_evaluator_stage(self) -> ITrainingEvaluator:
+        return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
+
+    def create_fold_evaluator_stage(self) -> ICrossValidationEvaluator:
+        return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
+
+    def create_inference_evaluator_stage(self) -> IExperimentEvaluator:
+        return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
+
+    def create_evaluator_stage(self) -> ITrainingEvaluator | ICrossValidationEvaluator | IExperimentEvaluator:
         return StageFactory._targets[StageType.EVALUATOR][self._config.evaluation.backend]()
 
     def create_visualizer(self) -> IVisualizer:
-        return StageFactory._targets[StageType.VISUALIZER][self._config.visualization.backend](self._config.visualization)
+        return StageFactory._targets[StageType.VISUALIZER][self._config.visualization.backend](
+            self._config.visualization
+        )
 
     def create_saver(self) -> IArtifactSaver:
         return StageFactory._targets[StageType.SAVER][self._config.save_artifacts.backend]()

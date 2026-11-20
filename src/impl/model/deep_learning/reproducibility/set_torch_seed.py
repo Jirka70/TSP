@@ -14,7 +14,8 @@ def set_torch_seed(seed: int, deterministic: bool = False) -> None:
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-    if deterministic:
+    is_deterministic_enabled = deterministic
+    if is_deterministic_enabled:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.use_deterministic_algorithms(True, warn_only=True)

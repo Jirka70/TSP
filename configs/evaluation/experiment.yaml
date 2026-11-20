@@ -1,0 +1,12 @@
+backend: experiment
+# Default cross_validation configuration for experiment pipeline.
+
+# Metrics to compute after experiment pipeline.
+metrics:
+  - accuracy
+  - f1_macro
+  - precision_macro
+  - recall_macro
+
+# Whether to compute a confusion matrix.
+compute_confusion_matrix: true
