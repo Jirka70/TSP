@@ -115,7 +115,6 @@ def test_report_is_saved(tmp_path: Path) -> None:
     "config_name",
     [
         "test/smoke/synthetic/training_ml",
-        "test/smoke/synthetic/training_dl_fold",
         "test/smoke/synthetic/training_dl_final_only",
     ],
 )

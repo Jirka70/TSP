@@ -5,8 +5,8 @@
 defaults:
   - /config
   - override /protocol: online_simulation
-  - override /split: evaulation/moabb_cross_session
-  - override /evaluation: fold
+  - override /split: cross_validation/moabb_cross_session
+  - override /evaluation: cross_validation
   - override /raw_augmentation: none
   - override /augmentation: none
   - _self_

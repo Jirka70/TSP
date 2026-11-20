@@ -76,10 +76,10 @@ declared explicitly, and the split must match it.
 
 | Value | What is new in the test data | Train contains | Test contains | Answers the question | Compatible split |
 |---|---|---|---|---|---|
-| `within_session` | new **trials** | other trials of the **same session** | remaining trials of that session | "Does it work later in the same recording?" | `split=evaulation/moabb_within_session`, `split=training/general` |
-| `within_subject` | new **trials** | trials of the **same subject**, sessions pooled | remaining trials of that subject | "Does it work for this person (data mixed across days)?" | `split=evaulation/moabb_within_subject`, `.../moabb_within_session`, `split=training/general` |
-| `cross_session` | a new **session** | whole sessions of the subject | a **different session** (other day) of the same subject | "Does it work for the same person on another day?" | `split=evaulation/moabb_cross_session` |
-| `cross_subject` | a new **subject** | whole data of other subjects | all data of a **subject never seen** in training | "Does it work for a new user without calibration?" | `split=evaulation/moabb_cross_subject` |
+| `within_session` | new **trials** | other trials of the **same session** | remaining trials of that session | "Does it work later in the same recording?" | `split=cross_validation/moabb_within_session`, `split=training/general` |
+| `within_subject` | new **trials** | trials of the **same subject**, sessions pooled | remaining trials of that subject | "Does it work for this person (data mixed across days)?" | `split=cross_validation/moabb_within_subject`, `.../moabb_within_session`, `split=training/general` |
+| `cross_session` | a new **session** | whole sessions of the subject | a **different session** (other day) of the same subject | "Does it work for the same person on another day?" | `split=cross_validation/moabb_cross_session` |
+| `cross_subject` | a new **subject** | whole data of other subjects | all data of a **subject never seen** in training | "Does it work for a new user without calibration?" | `split=cross_validation/moabb_cross_subject` |
 | `cross_dataset` | a new **dataset** | one dataset / lab | a different dataset / lab | "Does it work with other hardware / another lab?" | none yet (always reported by `PROT-001`) |
 
 `within_session` vs. `within_subject`: both test on new trials of a known person. In
@@ -95,7 +95,7 @@ Example with BNCI2014_001, subject 1, which has two sessions recorded on differe
 #### Naming
 
 The values follow MOABB evaluations (`WithinSessionEvaluation`, `CrossSessionEvaluation`,
-`CrossSubjectEvaluation`) and the split configs `split=evaulation/moabb_<scheme>`, so the
+`CrossSubjectEvaluation`) and the split configs `split=cross_validation/moabb_<scheme>`, so the
 protocol `cross_subject` goes with the split `moabb_cross_subject`.
 
 #### Rules that use it

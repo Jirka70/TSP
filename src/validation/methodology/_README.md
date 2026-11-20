@@ -127,7 +127,7 @@ and the lists of passed and skipped rules.
 
 - **Run a stricter check** → `protocol.rigor=publication`.
 - **Skip the methodology check** → `protocol.rigor=none`.
-- **Test a new user scenario** → `protocol=cross_subject` + `split=evaulation/moabb_cross_subject`.
+- **Test a new user scenario** → `protocol=cross_subject` + `split=cross_validation/moabb_cross_subject`.
 - **Add a rule** → add it to the matching `configs/methodology/rules_*.yaml`
   (a Python check goes to `checks/static_checks.py`), then run
   `pytest tests/unit/validation/methodology`.

@@ -6,7 +6,7 @@ defaults:
   - /config
   - override /protocol: cross_subject
   - override /split: training/general
-  - override /evaluation: fold
+  - override /evaluation: cross_validation
   - override /raw_augmentation: none
   - override /augmentation: none
   - _self_

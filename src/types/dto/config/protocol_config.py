@@ -15,7 +15,7 @@ class EvaluationScheme(str, Enum):
     """What is new (never seen in training) in the test data.
 
     Names follow MOABB evaluations (WithinSessionEvaluation, CrossSessionEvaluation,
-    CrossSubjectEvaluation) and the split configs ``split=evaulation/moabb_*``.
+    CrossSubjectEvaluation) and the split configs ``split=cross_validation/moabb_*``.
     """
 
     WITHIN_SESSION = "within_session"

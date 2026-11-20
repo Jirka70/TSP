@@ -20,7 +20,7 @@ rules:
         cross_subject: [ moabb_cross_subject ]
         cross_dataset: [ ]
     impact: The result answers a different research question than the declared one (e.g. random epoch split reported as cross-subject).
-    remediation: Choose the split matching protocol.evaluation_scheme (e.g. split=evaulation/moabb_cross_subject for cross_subject).
+    remediation: Choose the split matching protocol.evaluation_scheme (e.g. split=cross_validation/moabb_cross_subject for cross_subject).
 
   - id: PROT-002
     title: Not enough groups for the declared protocol
@@ -44,4 +44,4 @@ rules:
         - { path: split.shuffle, eq: true }
         - { path: protocol.evaluation_scheme, eq: within_session }
     impact: Session effects are shared between train and test; results are not comparable with session-wise evaluation.
-    remediation: Use split=evaulation/moabb_within_session, or restrict `source` to a single session.
+    remediation: Use split=cross_validation/moabb_within_session, or restrict `source` to a single session.
