@@ -10,7 +10,7 @@ rules:
   - id: STAT-001
     title: Too few independent subjects for cross-subject statistics
     certainty: suspected
-    pipeline_modes: [ training, evaluation ]
+    pipeline_modes: [ training, benchmark ]
     check: few_subjects_for_cross_subject
     params:
       min_subjects: 5

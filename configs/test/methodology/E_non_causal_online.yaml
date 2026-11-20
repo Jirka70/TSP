@@ -11,7 +11,7 @@ defaults:
   - override /augmentation: none
   - _self_
 
-mode: evaluation
+mode: benchmark
 output_dir: ./outputs/methodology
 
 source:

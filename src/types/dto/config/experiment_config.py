@@ -34,7 +34,7 @@ from src.types.dto.config.visualization_config import VisualizationConfig
 class Mode(str, Enum):
     TRAINING = "training"
     EXPERIMENT = "experiment"
-    EVALUATION = "evaluation"
+    BENCHMARK = "benchmark"
 
 
 @dataclass
@@ -97,6 +97,6 @@ class ExperimentConfig(BaseModel):
         elif self.mode == Mode.EXPERIMENT:
             if self.save_artifacts.backend != "experiment":
                 raise ValueError(f"Experiment mode doesn't support '{self.save_artifacts.backend}' saver")
-        # Mode.EVALUATION does not use artifact_saver (no artifact saving step)
+        # Mode.BENCHMARK does not use artifact_saver (no artifact saving step)
 
         return self

@@ -10,7 +10,7 @@ class FoldDTO:
     """
     Represents a single cross-validation fold or data partition.
 
-    Used by the evaluation pipeline for cross-validation.
+    Used by the benchmark pipeline for cross-validation.
 
     Attributes:
         fold_idx: Index of the fold (starting from 0).
@@ -32,14 +32,14 @@ class DatasetSplitDTO:  # TODO: necheceme toto DTO prejmenovat na AugmentedDataD
 
     - **Training pipeline** (basic splitter): ``folds`` is ``None``;
       ``train``, ``test`` and ``validation`` carry the data partitions directly.
-    - **Evaluation pipeline** (MOABB / cross-validation splitter): ``train``,
+    - **Benchmark pipeline** (MOABB / cross-validation splitter): ``train``,
       ``test`` and ``validation`` are ``None``; ``folds`` holds the CV folds.
 
     Attributes:
-        folds: Cross-validation folds produced by the evaluation pipeline splitter.
+        folds: Cross-validation folds produced by the benchmark pipeline splitter.
             ``None`` when the training pipeline is used.
         train: Training data for the final model (training pipeline only).
-            ``None`` when the evaluation pipeline is used.
+            ``None`` when the benchmark pipeline is used.
         test: Held-out test data for final model evaluation (training pipeline only).
             May be ``None`` if ``test_ratio`` is 0.0.
         validation: Validation data used during DL epoch training (training pipeline only).

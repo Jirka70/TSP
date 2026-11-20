@@ -14,7 +14,7 @@ defaults:
   - override /model_path: deep_learning/eegnet
   - _self_
 
-mode: evaluation
+mode: benchmark
 output_dir: ./outputs/methodology
 
 source:

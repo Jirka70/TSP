@@ -18,6 +18,6 @@ defaults:
   - save_artifacts: experiment
   - model_path: machine_learning/sklearn
 
-# possible modes: training, evaluation, experiment
+# possible modes: training, benchmark, experiment
 mode: experiment
 output_dir: ./outputs

@@ -56,7 +56,7 @@ class TorchEEGAugmentor(IAugmentor):
 
     - **Training pipeline** (``folds=None``): augments ``train`` data only;
       ``test`` and ``validation`` are passed through unchanged.
-    - **Evaluation pipeline** (``folds`` is set): augments the ``train_data``
+    - **Benchmark pipeline** (``folds`` is set): augments the ``train_data``
       inside each fold; fold ``test_data`` is passed through unchanged.
     """
 
@@ -117,7 +117,7 @@ class TorchEEGAugmentor(IAugmentor):
                 validation=dataset_splits.validation,
             ))
 
-        # --- Evaluation pipeline mode: augment each fold's train_data ---
+        # --- Benchmark pipeline mode: augment each fold's train_data ---
         log.info(f"Running TorchEEGAugmentor on {len(dataset_splits.folds)} fold(s): creating {config.copies_per_sample} copies per sample.", VerbosityLevel.QUIET)
         augmented_folds = []
         for fold in dataset_splits.folds:

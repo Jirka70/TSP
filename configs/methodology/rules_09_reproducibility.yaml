@@ -10,7 +10,7 @@ rules:
   - id: REP-001
     title: Shuffled split without a fixed seed
     certainty: proven
-    pipeline_modes: [ training, evaluation ]
+    pipeline_modes: [ training, benchmark ]
     check: split_reproducibility
     impact: The train/test partition cannot be recreated.
     remediation: Set split.evaluator.random_state.
@@ -19,7 +19,7 @@ rules:
     title: Non-deterministic deep learning training
     description: "model.training.deterministic is false; repeated runs can give different results."
     certainty: suspected
-    pipeline_modes: [ training, evaluation ]
+    pipeline_modes: [ training, benchmark ]
     when:
       all:
         - { path: model.backend, eq: eegnet }

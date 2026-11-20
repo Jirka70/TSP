@@ -12,7 +12,7 @@ defaults:
   - override /logging: trace
   - _self_
 
-mode: evaluation
+mode: benchmark
 output_dir: ./outputs/smoke-eval-ml
 
 source:

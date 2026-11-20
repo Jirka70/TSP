@@ -158,7 +158,7 @@ class MoabbSplitConfig(AStageConfig):
 
     MOABB splitters always produce only train/test folds — no global validation
     data is extracted. Each fold's test set serves as the held-out evaluation
-    partition (used by FoldEvaluator in the evaluation pipeline, or for fold-level
+    partition (used by FoldEvaluator in the benchmark pipeline, or for fold-level
     metrics in the training pipeline).
     """
 

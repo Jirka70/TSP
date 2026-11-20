@@ -1,4 +1,4 @@
-"""Evaluation pipeline for cross-validation feasibility assessment."""
+"""Benchmark pipeline for cross-validation feasibility assessment."""
 
 import logging
 
@@ -33,7 +33,7 @@ from src.types.interfaces.splitter import ISplitter
 from src.types.interfaces.visualizer import IVisualizer
 
 
-class EvaluationPipeline(IPipeline):
+class BenchmarkPipeline(IPipeline):
     """
     Orchestrator pipeline for cross-validation feasibility assessment.
 
@@ -63,7 +63,7 @@ class EvaluationPipeline(IPipeline):
         evaluator: IEvaluator,
         visualizer: IVisualizer,
     ) -> None:
-        """Initialize the evaluation pipeline with all required stage components."""
+        """Initialize the benchmark pipeline with all required stage components."""
         self._log = logging.getLogger(__name__)
         self._data_loader = data_loader
         self._raw_preprocessing = raw_preprocessing
@@ -79,7 +79,7 @@ class EvaluationPipeline(IPipeline):
 
     def run(self, config: ExperimentConfig, run_ctx: RunContext) -> None:
         """
-        Execute the evaluation pipeline sequentially.
+        Execute the benchmark pipeline sequentially.
 
         Stages:
             1. Data loading
@@ -165,4 +165,4 @@ class EvaluationPipeline(IPipeline):
         )
         self._evaluator.run(fold_evaluation_input, run_ctx)
 
-        self._log.info("Evaluation pipeline finished successfully.")
+        self._log.info("Benchmark pipeline finished successfully.")

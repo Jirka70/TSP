@@ -21,7 +21,7 @@ rules:
     title: Raw augmentation before the split
     description: "raw_augmentation runs before the split stage; augmented copies derived from one recording can end up in both train and test."
     certainty: proven
-    pipeline_modes: [ training, evaluation ]
+    pipeline_modes: [ training, benchmark ]
     when:
       all:
         - { path: raw_augmentation.enabled, eq: true }

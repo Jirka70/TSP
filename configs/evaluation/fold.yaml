@@ -1,5 +1,5 @@
 backend: fold
-# Fold-level evaluation configuration for the evaluation pipeline.
+# Fold-level evaluation configuration for the benchmark pipeline.
 # Used by FoldEvaluator — evaluates each trained model on its fold's test_data.
 
 # Metrics to compute per fold (then aggregated as mean across folds).

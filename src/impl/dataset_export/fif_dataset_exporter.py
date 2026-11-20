@@ -23,7 +23,7 @@ class FifDatasetExporter(IDatasetExporter):
 
     - **Training pipeline** (``folds=None``): exports ``train``, ``validation``,
       and ``test`` partitions to separate sub-directories.
-    - **Evaluation pipeline** (``folds`` is set): exports each fold's
+    - **Benchmark pipeline** (``folds`` is set): exports each fold's
       ``train_data`` and ``test_data`` to ``fold_train`` / ``fold_test``
       sub-directories.
     """
@@ -49,7 +49,7 @@ class FifDatasetExporter(IDatasetExporter):
             if data.test:
                 self._export_epoch_dto(data.test, export_dir / "test", "test")
         else:
-            # --- Evaluation pipeline mode: export per-fold data ---
+            # --- Benchmark pipeline mode: export per-fold data ---
             for fold in data.folds:
                 fold_name = f"fold_{fold.fold_idx}"
                 if fold.train_data:
@@ -110,10 +110,10 @@ class FifDatasetExporter(IDatasetExporter):
                 "test_samples": sum(rec.data.shape[0] for rec in data.test.data) if data.test else 0,
             }
         else:
-            # Evaluation pipeline mode
+            # Benchmark pipeline mode
             metadata = {
                 "backend": config.backend,
-                "mode": "evaluation",
+                "mode": "benchmark",
                 "num_folds": len(data.folds),
                 "folds": [],
             }

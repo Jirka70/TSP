@@ -1,4 +1,4 @@
-"""Fold-level evaluator for the evaluation pipeline."""
+"""Fold-level evaluator for the benchmark pipeline."""
 
 import numpy as np
 from sklearn.metrics import confusion_matrix, get_scorer
@@ -14,7 +14,7 @@ from src.types.interfaces.evaluator import IEvaluator
 
 class FoldEvaluator(IEvaluator):
     """
-    A fold-level evaluator designed for the evaluation pipeline.
+    A fold-level evaluator designed for the benchmark pipeline.
 
     Unlike StandardEvaluator (which evaluates on global validation data),
     FoldEvaluator evaluates each trained model on its corresponding fold's

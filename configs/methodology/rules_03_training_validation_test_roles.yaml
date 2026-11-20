@@ -9,9 +9,9 @@ rules:
 
   - id: SEL-001
     title: Model selection on the test fold
-    description: "In evaluation mode the EEGNet fold trainer uses each fold's test data as validation data and keeps the epoch with the best test accuracy."
+    description: "In benchmark mode the EEGNet fold trainer uses each fold's test data as validation data and keeps the epoch with the best test accuracy."
     certainty: proven
-    pipeline_modes: [ evaluation ]
+    pipeline_modes: [ benchmark ]
     when:
       path: model.backend
       eq: eegnet
@@ -29,4 +29,4 @@ rules:
         - { path: split.ratios.test, le: 0.0 }
     severity: { exploratory: info, standard: warn, publication: error }
     impact: No generalization estimate can be reported for this run.
-    remediation: Reserve a test partition, or evaluate the model with mode=evaluation.
+    remediation: Reserve a test partition, or evaluate the model with mode=benchmark.

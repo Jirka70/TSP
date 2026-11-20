@@ -30,7 +30,7 @@ A new section = a new `rules_*.yaml` file, nothing else has to be registered.
 | `description` | no | What is wrong when the rule fires (used as the finding text for `when` rules) |
 | `phase` | no | `static` (config, before the run; default) or `runtime` (data, during the run; not wired yet) |
 | `certainty` | yes | `proven` or `suspected`: how reliable the detection is, see [Certainty](#certainty) |
-| `pipeline_modes` | no | Pipeline modes the rule is applied to (= experiment `mode`: `training`, `experiment`, `evaluation`); omitted = all modes |
+| `pipeline_modes` | no | Pipeline modes the rule is applied to (= experiment `mode`: `training`, `experiment`, `benchmark`); omitted = all modes |
 | `when` | one of `when` / `check` | Declarative condition over the config (static rules only), see [Condition DSL](#condition-dsl-when) |
 | `check` | one of `when` / `check` | Name of a registered Python check, see [Python checks](#python-checks-check--params) |
 | `params` | no | Values passed to the Python check as `ctx.params`; only allowed with `check` |
