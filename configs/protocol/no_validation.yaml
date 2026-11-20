@@ -1,0 +1,10 @@
+# --- Experiment protocol: no methodology validation ---
+# Question: none; the methodology check is skipped (rigor: none), no rule is evaluated
+# and no methodology report is written. Only the config schema is validated, then the pipeline runs.
+# Use for debugging / quick runs; results of such a run are not methodologically validated.
+# The remaining fields are required by the schema but have no effect.
+
+task: "motor imagery classification"   # Research question / task definition
+evaluation_scheme: within_session       # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: offline                          # offline | simulated_online | online
+rigor: none                             # none | exploratory | standard | publication (strictness of methodology validation)

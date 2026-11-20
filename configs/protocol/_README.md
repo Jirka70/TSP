@@ -150,8 +150,10 @@ python -m src.main protocol.rigor=none
 | `cross_session.yaml` | `cross_session` | `offline` | A new session of an already seen subject? |
 | `cross_subject.yaml` | `cross_subject` | `offline` | A completely unseen subject? |
 | `online_simulation.yaml` | `cross_session` | `simulated_online` | Would the model work in real time on a new session? |
+| `no_validation.yaml` | `within_session` (no effect) | `offline` (no effect) | None; methodology validation is skipped |
 
-All of them use `rigor: standard`.
+All of them use `rigor: standard`, except `no_validation.yaml`, which uses `rigor: none`
+(`python -m src.main protocol=no_validation`).
 
 ## Choosing a protocol (checklist)
 
