@@ -2,6 +2,18 @@
 
 Datum zápisu: 2026-11-03. Stav: přímý vstup train/val do traineru po merge splitteru; předchozí převod byl odstraněn.
 
+## Síťový fallback integračního workflow (2026-11-21)
+
+- [x] Před MOABB smoke testy připravit raw soubory podle všech MOABB smoke konfigurací.
+  Při chybě spojení, timeoutu nebo HTTP 408/429/5xx spustit existující syntetické ML/DL smoke scénáře.
+  Jiné chyby ani selhání následného preprocessingu a trénování fallback neaktivují.
+- [x] Fallback označit warningem a zápisem do GitHub job summary: skutečná MOABB integrace nebyla ověřena.
+  Hlavní CI už používá syntetická data a nemění se. Instalace závislostí dál potřebuje síť.
+- [x] Ověřit 169 pytest testů, oba skutečné syntetické smoke běhy, Ruff včetně E501,
+  formátování nových souborů, YAML a shellovou syntaxi i větvení workflow pro návratové kódy 0/75/1.
+  Cílený mypy neprošel pouze kvůli chybějícím typovým stubům MOABB a requests (6 hlášení);
+  nové závislosti ani potlačení kontrol nebyly přidány. Běh na GitHub runneru nebyl proveden.
+
 ## Merge main do DL větve (2026-11-18)
 
 - [x] Při přípravě GitHub workflows sladit všech pět smoke konfigurací s novými cestami splitterů

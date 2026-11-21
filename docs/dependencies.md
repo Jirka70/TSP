@@ -1,5 +1,19 @@
 # Připnuté závislosti
 
+## Síť a integrační smoke testy
+
+Integrační workflow nejprve pomocí `python -m scripts.prepare_moabb_data` připraví raw soubory
+pro všechny konfigurace v `configs/test/smoke/moabb/`. Návratový kód 75 označuje chybu spojení,
+timeout nebo dočasnou HTTP chybu 408/429/5xx při stahování. Pouze v takovém případě workflow
+spustí místo MOABB celou existující sadu `configs/test/smoke/synthetic/` a uvede warning
+i záznam v job summary, že skutečná MOABB integrace nebyla ověřena.
+
+Ostatní chyby přípravy dat a všechny chyby následných smoke testů dál ukončí workflow neúspěchem.
+Fallback nemění zdroj dat produkčního loaderu. Neřeší nedostupnost GitHubu ani instalace knihoven;
+tyto kroky potřebují síť ještě před výběrem smoke scénářů.
+
+## Verze knihoven
+
 Hlavní prostředí používá přesné verze v `requirements.lock.txt`, včetně nepřímých závislostí.
 `requirements.txt` tento soubor zahrnuje a přidává volitelné Qt pro desktopové grafy.
 Instalační a build nástroje jsou připnuté v `requirements.tools.txt` a build backend v `pyproject.toml`.

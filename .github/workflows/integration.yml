@@ -31,13 +31,32 @@ jobs:
           python -m pip show torch torchaudio braindecode
           python -c "from braindecode.models import EEGNet"
 
-      - name: Run MOABB smoke tests
+      - name: Prepare MOABB data or select synthetic fallback
+        id: smoke-source
+        run: |
+          if python -m scripts.prepare_moabb_data; then
+            echo "source=moabb" >> "$GITHUB_OUTPUT"
+            echo "MOABB data ready; running integration tests with real data." >> "$GITHUB_STEP_SUMMARY"
+          else
+            status=$?
+            if [ "$status" -ne 75 ]; then
+              exit "$status"
+            fi
+            echo "source=synthetic" >> "$GITHUB_OUTPUT"
+            echo "::warning::MOABB download unavailable; running synthetic smoke tests instead."
+            echo "MOABB integration NOT verified: download unavailable. Running synthetic ML/DL smoke tests." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Run smoke tests (${{ steps.smoke-source.outputs.source }})
+        env:
+          SMOKE_SOURCE: ${{ steps.smoke-source.outputs.source }}
         run: |
           shopt -s nullglob
-          configs=(configs/test/smoke/moabb/*.yaml)
+          configs=(configs/test/smoke/"$SMOKE_SOURCE"/*.yaml)
 
           if [ ${#configs[@]} -eq 0 ]; then
-            echo "No smoke configs found in configs/test/smoke/moabb/"
+            echo "No smoke configs found in configs/test/smoke/$SMOKE_SOURCE/"
             exit 1
           fi
           
