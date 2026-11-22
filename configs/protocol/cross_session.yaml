@@ -2,8 +2,9 @@
 # Question: does the model generalize to a NEW SESSION of an already seen subject?
 # Correct split: train on one session, test on another (split=cross_validation/moabb_cross_session).
 # Requires at least two sessions per subject (e.g. BNCI2014_001 / BCI Competition IV-2a).
+# Methodology rules: PROT-001 (split must be moabb_cross_session), PROT-002 (>= 2 sessions).
 
-task: "4-class motor imagery"
-evaluation_scheme: cross_session
-usage: offline
-rigor: standard
+task: "4-class motor imagery"           # Research question / task definition
+evaluation_scheme: cross_session        # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: offline                          # offline | simulated_online | online
+rigor: standard                         # none | exploratory | standard | publication (strictness of methodology validation)

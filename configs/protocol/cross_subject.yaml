@@ -1,8 +1,10 @@
 # --- Experiment protocol: cross-subject ---
 # Question: does the model generalize to a completely UNSEEN SUBJECT?
 # Correct split: whole subjects are held out (split=cross_validation/moabb_cross_subject).
+# Requires at least two subjects; at least five are recommended for per-subject statistics.
+# Methodology rules: PROT-001 (split must be moabb_cross_subject), PROT-002 (>= 2 subjects), STAT-001 (< 5 subjects).
 
-task: "motor imagery classification"
-evaluation_scheme: cross_subject
-usage: offline
-rigor: standard
+task: "motor imagery classification"    # Research question / task definition
+evaluation_scheme: cross_subject        # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: offline                          # offline | simulated_online | online
+rigor: standard                         # none | exploratory | standard | publication (strictness of methodology validation)

@@ -25,7 +25,7 @@ A new section = a new `rules_*.yaml` file, nothing else has to be registered.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `id` | yes | Unique id; prefix = category: `LEAK`, `SEL`, `GRP`, `PROT`, `STAT`, `ONL`, `MET`, `REP`, `EVAL` |
+| `id` | yes | Unique id; prefix = category: `LEAK`, `SEL`, `GRP`, `PROT`, `STAT`, `ONL`, `MET`, `REP`, `EVAL`, `PRE` (preprocessing and its compatibility with the model) |
 | `title` | yes | Short name of the violation |
 | `description` | no | What is wrong when the rule fires (used as the finding text for `when` rules) |
 | `phase` | no | `static` (config, before the run; default) or `runtime` (data, during the run; not wired yet) |
@@ -132,10 +132,15 @@ when:
 Use `check` instead of `when` when the logic is too complex for the condition DSL
 (branching, counting, combining several config fields).
 
-1. Write a function `(ctx: CheckContext) -> list[Finding]` in
-   `src/validation/methodology/checks/static_checks.py` and register it with
+1. Write a function `(ctx: CheckContext) -> list[Finding]` in a module of
+   `src/validation/methodology/checks/` (`static_checks.py`, `preprocessing_checks.py`,
+   `training_run_checks.py`; a new module must be imported in `checks/__init__.py`) and register it with
    `@methodology_check("<name>")` (runtime checks: `phase=RulePhase.RUNTIME`).
 2. Reference it from a rule with `check: <name>` and optional `params: {...}`.
+
+Experiment-mode checks in `training_run_checks.py` compare the experiment with `<run>/config.json`,
+the config snapshot the artifact saver stores next to the loaded model (`<run>/models/<model file>`);
+without that snapshot they report nothing.
 
 The function receives:
 

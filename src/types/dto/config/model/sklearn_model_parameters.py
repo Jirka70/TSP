@@ -58,6 +58,8 @@ class RiemannianRfParameters(RiemannianBaseParameters):
     """Parameters for the Riemannian + Random Forest pipeline."""
 
     n_estimators: int = Field(default=100, ge=1)
+    # None leaves the forest unseeded; methodology rule REP-003 reports it.
+    random_state: int | None = Field(default=None)
 
 
 SKLEARN_MODEL_PARAMETER_MODELS: dict[str, type[SklearnModelParameters]] = {

@@ -30,3 +30,15 @@ rules:
     severity: { exploratory: info, standard: warn, publication: error }
     impact: No generalization estimate can be reported for this run.
     remediation: Reserve a test partition, or evaluate the model with mode=benchmark.
+
+  - id: EVAL-002
+    title: Benchmark without cross-validated ML models
+    description: "mode=benchmark with model.fold_training=false; no fold model is trained, so the benchmark produces no score."
+    certainty: proven
+    pipeline_modes: [ benchmark ]
+    when:
+      all:
+        - { path: model.backend, eq: sklearn }
+        - { path: model.fold_training, eq: false }
+    impact: The benchmark reports no performance estimate at all.
+    remediation: Set model.fold_training=true for benchmark runs.

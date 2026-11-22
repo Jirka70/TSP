@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 
+from src.impl.model.util.extract.brain_channel_signal import get_brain_channel_signal
 from src.impl.model.machine_learning.generic_sklearn_model import GenericSklearnModel
 from src.impl.model.model_factory import ModelFactory
 from src.pipeline.context.run_context import RunContext
@@ -119,7 +120,7 @@ class GenericSklearnTrainer(IModelTrainer):
 
             # Check if data is an MNE Epochs instance or a raw numpy array
             if hasattr(epochs, "get_data"):
-                x_list.append(epochs.get_data(copy=False))
+                x_list.append(get_brain_channel_signal(epochs))
                 y_list.append(epochs.events[:, -1])
             else:
                 x_list.append(epochs)

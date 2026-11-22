@@ -3,6 +3,7 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix, get_scorer
 
+from src.impl.model.util.extract.brain_channel_signal import get_brain_channel_signal
 from src.pipeline.context.run_context import RunContext
 from src.pipeline.contracts.step_result import StepResult
 from src.types.dto.config.logging.verbosity_level import VerbosityLevel
@@ -131,7 +132,7 @@ class ExperimentEvaluator(IExperimentEvaluator):
         for recording in preprocessed_data.data:
             epochs = recording.data
             if hasattr(epochs, "get_data"):
-                x_list.append(epochs.get_data(copy=False))
+                x_list.append(get_brain_channel_signal(epochs))
                 labels = epochs.events[:, -1]
                 y_list.append(labels)
                 has_any_labels = True
