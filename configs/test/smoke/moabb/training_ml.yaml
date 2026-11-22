@@ -2,6 +2,7 @@
 
 defaults:
   - /config
+  - override /protocol: within_session
   - override /source: external
   - override /raw_augmentation: none
   - override /augmentation: none

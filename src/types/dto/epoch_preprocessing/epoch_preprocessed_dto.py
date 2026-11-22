@@ -13,9 +13,7 @@ class EpochPreprocessedDTO:
     analysis or machine learning tasks.
 
     Attributes:
-        signal (np.ndarray): The preprocessed signal data for the epoch(s), shaped
-            (n_epochs, n_csp_components) after CSP transformation.
-        labels (np.ndarray): Integer class label for each epoch, shaped (n_epochs,).
+        data (list[RecordingDTO]): Preprocessed recordings; each entry holds cleaned MNE Epochs.
     """
 
     data: list[RecordingDTO]

@@ -1,4 +1,4 @@
-"""Demonstration scenarios A-F from the methodology document (section 10)."""
+"""Demonstration scenarios B-F from the methodology document (section 10); scenario A (CSP) was removed."""
 
 from pathlib import Path
 
@@ -31,7 +31,6 @@ def _actions(config: ExperimentConfig, rigor: RigorLevel | None = None) -> dict[
 @pytest.mark.parametrize(
     ("scenario", "rule_id", "action_at_standard"),
     [
-        ("A_csp_before_split", "LEAK-001", RuleAction.ERROR),
         ("B_selection_on_test", "SEL-001", RuleAction.ERROR),
         ("C_augmentation_before_split", "LEAK-002", RuleAction.ERROR),
         ("D_random_split_cross_subject", "PROT-001", RuleAction.ERROR),
@@ -48,7 +47,7 @@ def test_faulty_scenario_is_detected(scenario: str, rule_id: str, action_at_stan
 
 @pytest.mark.parametrize(
     "scenario",
-    ["A_csp_before_split", "B_selection_on_test", "C_augmentation_before_split", "D_random_split_cross_subject"],
+    ["B_selection_on_test", "C_augmentation_before_split", "D_random_split_cross_subject"],
 )
 def test_blocking_scenarios_block_at_standard_but_not_at_exploratory(scenario: str) -> None:
     config = _load(f"test/methodology/{scenario}")
@@ -75,7 +74,7 @@ def test_correct_cross_session_scenario_has_no_violation(rigor: RigorLevel) -> N
 
 
 def test_rigor_is_taken_from_protocol() -> None:
-    config = _load("test/methodology/A_csp_before_split", ["protocol.rigor=exploratory"])
+    config = _load("test/methodology/C_augmentation_before_split", ["protocol.rigor=exploratory"])
 
     report = MethodologyValidator.from_file().validate(config)
 
@@ -85,7 +84,7 @@ def test_rigor_is_taken_from_protocol() -> None:
 
 @pytest.mark.parametrize(
     "scenario",
-    ["A_csp_before_split", "B_selection_on_test", "C_augmentation_before_split", "D_random_split_cross_subject", "E_non_causal_online"],
+    ["B_selection_on_test", "C_augmentation_before_split", "D_random_split_cross_subject", "E_non_causal_online"],
 )
 def test_rigor_none_evaluates_no_rule(scenario: str) -> None:
     config = _load(f"test/methodology/{scenario}", ["protocol.rigor=none"])
@@ -101,13 +100,13 @@ def test_rigor_none_evaluates_no_rule(scenario: str) -> None:
 
 
 def test_report_is_saved(tmp_path: Path) -> None:
-    config = _load("test/methodology/A_csp_before_split")
+    config = _load("test/methodology/C_augmentation_before_split")
     report = MethodologyValidator.from_file().validate(config)
 
     path = report.save(tmp_path)
 
     content = path.read_text(encoding="utf-8")
-    assert '"LEAK-001"' in content
+    assert '"LEAK-002"' in content
     assert '"is_valid": false' in content
 
 
@@ -116,6 +115,9 @@ def test_report_is_saved(tmp_path: Path) -> None:
     [
         "test/smoke/synthetic/training_ml",
         "test/smoke/synthetic/training_dl_final_only",
+        "test/smoke/moabb/training_ml",
+        "test/smoke/moabb/training_dl_final_only",
+        "test/smoke/moabb/benchmark_ml",
     ],
 )
 def test_ci_smoke_configs_are_not_blocked(config_name: str) -> None:

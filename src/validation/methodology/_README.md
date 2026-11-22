@@ -59,13 +59,13 @@ Each `rules_*.yaml` file holds the rules of one section of the methodology docum
 (data leakage, reproducibility, ...). All files are merged into one catalog.
 
 ```yaml
-  - id: LEAK-001
-    title: Supervised transformation (CSP) fitted before the split
+  - id: LEAK-002
+    title: Raw augmentation before the split
     certainty: proven
     when:                                   # condition over the config ...
-      path: epoch_preprocessing.csp.enabled
+      path: raw_augmentation.enabled
       eq: true
-    remediation: Use a model whose pipeline contains CSP.
+    remediation: Augment after the split (augmentation stage, train part only).
 ```
 
 A rule detects the error in one of two ways:

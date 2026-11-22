@@ -2,6 +2,7 @@
 
 defaults:
   - /config
+  - override /protocol: within_session
   - override /raw_augmentation: none
   - override /augmentation: none
   - override /split: training/general

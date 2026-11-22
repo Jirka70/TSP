@@ -7,16 +7,6 @@
 
 rules:
 
-  - id: LEAK-001
-    title: Supervised transformation (CSP) fitted before the split
-    description: "epoch_preprocessing.csp is fitted with labels on all epochs before the split stage, so test labels shape the spatial filters."
-    certainty: proven
-    when:
-      path: epoch_preprocessing.csp.enabled
-      eq: true
-    impact: Optimistically biased performance; the test set influenced the learned features.
-    remediation: Disable epoch_preprocessing.csp and use a model whose pipeline contains CSP (e.g. model=machine_learning/csp_lda), which is fitted inside each training fold.
-
   - id: LEAK-002
     title: Raw augmentation before the split
     description: "raw_augmentation runs before the split stage; augmented copies derived from one recording can end up in both train and test."

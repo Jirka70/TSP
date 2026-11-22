@@ -188,7 +188,6 @@ resampling:
 | `alignment`  | enabled  | `tmin_offset: -0.2` s                    |
 | `ica`        | enabled  | `n_components: 15`, `eog_threshold: 3.0` |
 | `autoreject` | enabled  | `n_interpolate: [1,4,8]`, `cv: 5`        |
-| `csp`        | disabled | `n_components: 4`, `log: true`           |
 
 ---
 
