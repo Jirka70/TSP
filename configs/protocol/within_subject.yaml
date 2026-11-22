@@ -1,8 +1,9 @@
 # --- Experiment protocol: within-subject ---
 # Question: does the model generalize to NEW TRIALS of an already seen subject (sessions pooled)?
 # Correct split: split=cross_validation/moabb_within_subject.
+# Methodology rules: PROT-001 (split must be moabb_within_subject, moabb_within_session or general).
 
-task: "motor imagery classification"
-evaluation_scheme: within_subject
-usage: offline
-rigor: standard
+task: "motor imagery classification"    # Research question / task definition
+evaluation_scheme: within_subject       # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: offline                          # offline | simulated_online | online
+rigor: standard                         # none | exploratory | standard | publication (strictness of methodology validation)

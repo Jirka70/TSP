@@ -6,7 +6,6 @@ from typing import Any, List, Tuple
 import mne
 import numpy as np
 from autoreject import AutoReject
-from mne.decoding import CSP
 from mne.preprocessing import ICA
 
 from src.pipeline.context.run_context import RunContext
@@ -34,8 +33,6 @@ class EpochPreprocessor(IEpochPreprocessing):
             1. Temporal Alignment: Shifts epoch time markers.
             2. Independent Component Analysis (ICA): Isolates and removes EOG artifacts.
             3. AutoReject: Automatically detects, repairs, or drops bad local data segments.
-            4. Common Spatial Patterns (CSP): Learns spatial filters and transforms
-               the data into feature arrays (if enabled).
 
             Args:
                 input_dto (EpochPreprocessingInputDTO): Input object containing the
@@ -44,8 +41,7 @@ class EpochPreprocessor(IEpochPreprocessing):
 
             Returns:
                 StepResult[EpochPreprocessedDTO]: A step result wrapping the processed
-                    recordings. Depending on `cfg.csp.enabled`, the inner `.data` fields
-                    will contain either transformed NumPy ndarrays or cleaned MNE Epochs objects.
+                    recordings; the inner `.data` fields contain cleaned MNE Epochs objects.
 
             Raises:
                 Exception: Re-raises any exception caught during processing, logging the
@@ -109,22 +105,7 @@ class EpochPreprocessor(IEpochPreprocessing):
                         )
                         epochs, _ = auto_reject.fit_transform(epochs, return_log=True)
 
-                # --- 4. CSP & Data Formatting ---
-                if config.csp.enabled:
-                    log.info(f"Applying CSP and converting to ndarray for index {i}", VerbosityLevel.TRACE)
-                    labels: np.ndarray = epochs.events[:, -1]
-                    csp: CSP = CSP(
-                        n_components=config.csp.n_components,
-                        reg=config.csp.reg,
-                        log=config.csp.log,
-                        norm_trace=config.csp.norm_trace
-                    )
-
-                    signal_data: np.ndarray = csp.fit_transform(epochs.get_data(), labels)
-                    new_entry: Any = dataclasses.replace(entry, data=signal_data)
-                else:
-                    new_entry = dataclasses.replace(entry, data=epochs)
-
+                new_entry: Any = dataclasses.replace(entry, data=epochs)
                 processed_recordings.append(new_entry)
 
             log.info("Epoch preprocessing completed successfully", VerbosityLevel.QUIET)

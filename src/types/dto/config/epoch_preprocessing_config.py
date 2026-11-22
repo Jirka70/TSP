@@ -42,16 +42,8 @@ class AutoRejectConfig(BaseModel):
             raise ValueError("consensus values must be between 0.0 and 1.0")
         return v
 
-class CSPConfig(BaseModel):
-    enabled: bool
-    n_components: int = Field(gt=0)
-    reg: float | str | None = None
-    log: bool
-    norm_trace: bool
-
 class EpochPreprocessingConfig(AStageConfig):
     backend: Literal["default"]
     alignment: AlignmentConfig
     ica: ICAConfig
     autoreject: AutoRejectConfig
-    csp: CSPConfig

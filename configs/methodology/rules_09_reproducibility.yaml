@@ -26,3 +26,15 @@ rules:
         - { path: model.training.deterministic, eq: false }
     impact: Results cannot be reproduced exactly.
     remediation: Set model.training.deterministic=true.
+
+  - id: REP-003
+    title: Random forest without a fixed seed
+    description: "model=riemannian_rf without model.parameters.random_state; bootstrap samples and feature splits change between runs."
+    certainty: proven
+    pipeline_modes: [ training, benchmark ]
+    when:
+      all:
+        - { path: model.model_name, eq: riemannian_rf }
+        - { path: model.parameters.random_state, exists: false }
+    impact: Repeated runs give different models and scores.
+    remediation: Set model.parameters.random_state.

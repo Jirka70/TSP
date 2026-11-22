@@ -93,7 +93,10 @@ class ModelFactory:
             return Pipeline([
                 ("cov", Covariances(estimator=params.get("estimator", "oas"))),
                 ("ts", TangentSpace(metric=params.get("metric", "riemann"))),
-                ("rf", RandomForestClassifier(n_estimators=params.get("n_estimators", 100)))
+                ("rf", RandomForestClassifier(
+                    n_estimators=params.get("n_estimators", 100),
+                    random_state=params.get("random_state"),
+                ))
             ])
 
         # Deep learning - EEGNet and Braindecode with Skorch wrapper

@@ -97,7 +97,7 @@ class Condition(BaseModel):
 
     Examples (YAML)::
 
-        {path: epoch_preprocessing.csp.enabled, eq: true}
+        {path: raw_augmentation.enabled, eq: true}
         {path: protocol.evaluation_scheme, in: [within_session, within_subject]}
         {path: evaluation.metrics, contains: balanced_accuracy}
         all: [{...}, {not: {...}}]
@@ -151,7 +151,7 @@ class MethodologyRule(BaseModel):
     """One rule of the methodology catalog.
 
     Attributes:
-        id: Unique rule identifier (e.g. ``LEAK-001``).
+        id: Unique rule identifier (e.g. ``LEAK-002``).
         title: Short human-readable name of the violation.
         description: What exactly is wrong when the rule fires.
         phase: Whether the rule is checked statically (config) or at runtime (data).

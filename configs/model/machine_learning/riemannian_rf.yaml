@@ -11,3 +11,4 @@ parameters:
   estimator: "oas"           # Robust covariance estimation method
   metric: "riemann"          # Manifold metric for feature extraction
   n_estimators: 100          # Number of decision trees in the forest
+  random_state: 42           # Seed for reproducible tree construction (bootstrap samples and feature splits)

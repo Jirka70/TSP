@@ -1,0 +1,88 @@
+# =====================================================================
+# Methodology rules - 6. Preprocessing and its compatibility with the model
+# =====================================================================
+# Part of the methodology rules catalog; see _README.md for how to write rules
+# (fields, certainty, conditions). All rules_*.yaml files in this folder are merged.
+# =====================================================================
+
+rules:
+
+  # --- Experiment mode: the loaded model vs. its training run ---------
+  # Both rules read <run>/config.json saved next to the loaded model; without it nothing is reported.
+
+  - id: PRE-001
+    title: Model input definition differs from the training run
+    description: "Settings that define the model input (events, band, window, sampling, reference) differ from the training run of the loaded model."
+    certainty: proven
+    pipeline_modes: [ experiment ]
+    check: experiment_preprocessing_matches_training
+    params:
+      paths:
+        - paradigm.events
+        - paradigm.filter
+        - paradigm.window
+        - paradigm.resampling
+        - raw_preprocessing.resampling
+        - raw_preprocessing.re_referencing
+    impact: The trained model is evaluated on a different kind of input than it was trained on.
+    remediation: Use the preprocessing from the training run's config.json for the experiment.
+
+  - id: PRE-002
+    title: Signal cleaning differs from the training run
+    description: "Cleaning steps differ from the training run of the loaded model; this can be legitimate (e.g. other bad channels), but must be justified."
+    certainty: suspected
+    pipeline_modes: [ experiment ]
+    check: experiment_preprocessing_matches_training
+    params:
+      paths:
+        - raw_preprocessing.high_pass_filter
+        - raw_preprocessing.low_pass_filter
+        - raw_preprocessing.notch_filter
+        - raw_preprocessing.bad_channels_interpolation
+        - raw_preprocessing.ica
+        - epoch_preprocessing.alignment
+        - epoch_preprocessing.ica
+        - epoch_preprocessing.autoreject
+    impact: The evaluated signal can differ from the training signal; the score may not describe the trained model.
+    remediation: Use the training cleaning steps, or document why the difference does not change the model input.
+
+  # --- Riemannian models: covariance rank ------------------------------
+  # Riemannian models take the matrix logarithm of covariances. A rank-deficient signal gives a near-zero
+  # eigenvalue that only an estimator with shrinkage (oas, lwf, sch) regularizes.
+
+  - id: PRE-003
+    title: Re-referencing makes covariances singular for an unregularized Riemannian model
+    description: "AVERAGE / CSD re-referencing always removes one rank, and the configured covariance estimator has no shrinkage."
+    certainty: proven
+    when:
+      all:
+        - { path: model.model_name, in: [ riemannian_lda, riemannian_svm, riemannian_mdm, riemannian_lr, riemannian_rf ] }
+        - { path: model.parameters.estimator, in: [ scm, cov, corr, mcd, hub, stu, tyl ] }
+        - { path: raw_preprocessing.re_referencing.enabled, eq: true }
+    impact: Tangent-space features are dominated by numerical noise, or the fit fails.
+    remediation: Use a shrinkage estimator (model.parameters.estimator=oas or lwf).
+
+  - id: PRE-004
+    title: Cleaning can make covariances singular for an unregularized Riemannian model
+    description: "Epoch ICA removes components and bad-channel interpolation adds linearly dependent channels; the covariance estimator has no shrinkage."
+    certainty: suspected
+    when:
+      all:
+        - { path: model.model_name, in: [ riemannian_lda, riemannian_svm, riemannian_mdm, riemannian_lr, riemannian_rf ] }
+        - { path: model.parameters.estimator, in: [ scm, cov, corr, mcd, hub, stu, tyl ] }
+        - any:
+            - { path: epoch_preprocessing.ica.enabled, eq: true }
+            - { path: raw_preprocessing.bad_channels_interpolation.enabled, eq: true }
+    impact: Tangent-space features can be dominated by numerical noise.
+    remediation: Use a shrinkage estimator (model.parameters.estimator=oas or lwf).
+
+  # --- Declared vs. effective frequency band ---------------------------
+
+  - id: PRE-005
+    title: Effective frequency band is narrower than paradigm.filter
+    certainty: proven
+    check: effective_band_matches_paradigm_filter
+    # The narrowing is certain, but it mainly misreports the analysed band; it does not bias the estimate.
+    severity: { exploratory: info, standard: warn, publication: error }
+    impact: The reported analysis band does not match the signal the model actually sees.
+    remediation: Align raw filters / resampling with paradigm.filter, or report the effective band.

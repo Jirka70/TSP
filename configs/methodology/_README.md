@@ -25,7 +25,7 @@ A new section = a new `rules_*.yaml` file, nothing else has to be registered.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `id` | yes | Unique id; prefix = category: `LEAK`, `SEL`, `GRP`, `PROT`, `STAT`, `ONL`, `MET`, `REP`, `EVAL` |
+| `id` | yes | Unique id; prefix = category: `LEAK`, `SEL`, `GRP`, `PROT`, `STAT`, `ONL`, `MET`, `REP`, `EVAL`, `PRE` (preprocessing and its compatibility with the model) |
 | `title` | yes | Short name of the violation |
 | `description` | no | What is wrong when the rule fires (used as the finding text for `when` rules) |
 | `phase` | no | `static` (config, before the run; default) or `runtime` (data, during the run; not wired yet) |
@@ -42,15 +42,17 @@ Example:
 
 ```yaml
 rules:
-  - id: LEAK-001
-    title: Supervised transformation (CSP) fitted before the split
-    description: "epoch_preprocessing.csp is fitted with labels on all epochs before the split stage."
+  - id: LEAK-002
+    title: Raw augmentation before the split
+    description: "raw_augmentation runs before the split stage; augmented copies can end up in both train and test."
     certainty: proven
+    pipeline_modes: [ training, benchmark ]
     when:
-      path: epoch_preprocessing.csp.enabled
-      eq: true
-    impact: Optimistically biased performance; the test set influenced the learned features.
-    remediation: Disable epoch_preprocessing.csp and use a model whose pipeline contains CSP.
+      all:
+        - { path: raw_augmentation.enabled, eq: true }
+        - { path: raw_augmentation.backend, ne: none }
+    impact: Near-duplicate samples in train and test inflate the score.
+    remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
 ```
 
 ## Certainty
@@ -69,7 +71,7 @@ the config and the known behaviour of the pipeline alone; there is no legitimate
 in which the rule fires and the experiment is fine (no false positives by design).
 Typical: a supervised step fitted before the split, a split that does not match the
 declared protocol, a shuffled split without a seed.
-Examples: `LEAK-001` (CSP fitted with labels on all epochs), `PROT-001`, `REP-001`.
+Examples: `LEAK-002` (raw augmentation before the split), `PROT-001`, `REP-001`.
 
 **`suspected`**: the violation is likely, but whether it really happens (or matters)
 depends on facts the validator cannot see from the config:
@@ -130,10 +132,15 @@ when:
 Use `check` instead of `when` when the logic is too complex for the condition DSL
 (branching, counting, combining several config fields).
 
-1. Write a function `(ctx: CheckContext) -> list[Finding]` in
-   `src/validation/methodology/checks/static_checks.py` and register it with
+1. Write a function `(ctx: CheckContext) -> list[Finding]` in a module of
+   `src/validation/methodology/checks/` (`static_checks.py`, `preprocessing_checks.py`,
+   `training_run_checks.py`; a new module must be imported in `checks/__init__.py`) and register it with
    `@methodology_check("<name>")` (runtime checks: `phase=RulePhase.RUNTIME`).
 2. Reference it from a rule with `check: <name>` and optional `params: {...}`.
+
+Experiment-mode checks in `training_run_checks.py` compare the experiment with `<run>/config.json`,
+the config snapshot the artifact saver stores next to the loaded model (`<run>/models/<model file>`);
+without that snapshot they report nothing.
 
 The function receives:
 

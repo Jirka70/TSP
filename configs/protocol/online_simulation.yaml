@@ -1,8 +1,10 @@
 # --- Experiment protocol: simulated online, cross-session ---
 # Question: would the model work in real-time prediction on a new session?
 # Only causal processing is allowed (no future samples, no whole-session statistics).
+# Correct split: train on one session, test on another (split=cross_validation/moabb_cross_session).
+# Methodology rules: ONL-001 (non-causal filters), ONL-002 (ICA / AutoReject fitted on whole recordings).
 
-task: "motor imagery classification"
-evaluation_scheme: cross_session
-usage: simulated_online
-rigor: standard
+task: "motor imagery classification"    # Research question / task definition
+evaluation_scheme: cross_session        # within_session | within_subject | cross_session | cross_subject | cross_dataset
+usage: simulated_online                 # offline | simulated_online | online
+rigor: standard                         # none | exploratory | standard | publication (strictness of methodology validation)
