@@ -1,8 +1,4 @@
 # No-op raw augmentation configuration.
-# This explicitly disables raw signal augmentation.
+# Backend 'none' passes the raw recordings through unchanged.
 
-# Whether to enable raw augmentation.
-enabled: false
-
-# Backend identifier. 'none' means no augmentation is applied.
 backend: none

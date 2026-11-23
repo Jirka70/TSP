@@ -6,7 +6,7 @@ from src.types.dto.config.astageconfig import AStageConfig
 
 
 class GaussianNoiseConfig(BaseModel):
-    std: float = Field(ge=0.0, description="Standard deviation of Gaussian noise.")
+    std: float = Field(default=0.0, ge=0.0, le=0.0001)
 
 
 class MaskConfig(BaseModel):
@@ -27,14 +27,12 @@ class ScaleConfig(BaseModel):
 class RawAugmentationConfigNone(AStageConfig):
     """Configuration for disabling raw signal augmentation."""
 
-    enabled: bool = Field(description="Whether to enable raw augmentation.")
     backend: Literal["none"] = Field(description="Backend identifier.")
 
 
 class RawAugmentationConfigTorchEEG(AStageConfig):
     """Configuration for TorchEEG-based raw signal augmentation."""
 
-    enabled: bool = Field(description="Whether to enable raw augmentation.")
     backend: Literal["raw_torcheeg"] = Field(description="Backend identifier.")
 
     random_seed: int = Field(ge=0, description="Random seed for reproducibility.")

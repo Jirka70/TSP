@@ -97,7 +97,7 @@ class Condition(BaseModel):
 
     Examples (YAML)::
 
-        {path: raw_augmentation.enabled, eq: true}
+        {path: raw_augmentation.backend, ne: none}
         {path: protocol.evaluation_scheme, in: [within_session, within_subject]}
         {path: evaluation.metrics, contains: balanced_accuracy}
         all: [{...}, {not: {...}}]

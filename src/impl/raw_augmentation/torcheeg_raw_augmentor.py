@@ -46,11 +46,6 @@ class TorchEEGRawAugmentor(IRawAugmentor):
         config: RawAugmentationConfigTorchEEG = input_dto.config
         raw_preprocessed = input_dto.data
 
-        # 1. Check if augmentation is enabled
-        if not config.enabled:
-            log.info("Raw TorchEEG Augmentation is disabled. Passing data through unchanged.")
-            return StepResult(RawAugmentedDTO(data=raw_preprocessed.data))
-
         log.warning("Using TorchEEGRawAugmentor. Be aware that this may cause data leakage - consider using Cross subject splitter for save split. Also this may significantly increase the number of recordings and thus memory usage.")
         log.info(f"Running TorchEEGRawAugmentor. Recordings: {len(raw_preprocessed.data)}.")
 

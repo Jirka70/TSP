@@ -63,8 +63,8 @@ Each `rules_*.yaml` file holds the rules of one section of the methodology docum
     title: Raw augmentation before the split
     certainty: proven
     when:                                   # condition over the config ...
-      path: raw_augmentation.enabled
-      eq: true
+      path: raw_augmentation.backend
+      ne: none
     remediation: Augment after the split (augmentation stage, train part only).
 ```
 

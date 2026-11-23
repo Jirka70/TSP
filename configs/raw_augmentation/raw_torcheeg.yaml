@@ -1,15 +1,14 @@
 # TorchEEG-based raw signal augmentation configuration.
 # This stage applies transformations to the continuous raw signal before epoching.
 
-
-enabled: true                  # Whether to enable raw augmentation.
 backend: raw_torcheeg
 
 random_seed: 42                # Random seed for reproducibility of transformations
 copies_per_sample: 1           # Number of augmented copies to create for each original recording
 
 gaussian_noise:
-  std: 0.05                    # Standard deviation of Gaussian noise added to the raw signal
+  std: 0.00001                 # Standard deviation of Gaussian noise added to the signal (0.0 to disable)
+                               # e.g., for a µV signal, a std of 0.00001 corresponds to 10 µV noise
 
 mask:
   prob: 0.1                    # Probability of applying a random mask (zeroing out segments) to the signal

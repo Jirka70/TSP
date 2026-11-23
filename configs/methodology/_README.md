@@ -48,9 +48,8 @@ rules:
     certainty: proven
     pipeline_modes: [ training, benchmark ]
     when:
-      all:
-        - { path: raw_augmentation.enabled, eq: true }
-        - { path: raw_augmentation.backend, ne: none }
+      path: raw_augmentation.backend
+      ne: none
     impact: Near-duplicate samples in train and test inflate the score.
     remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
 ```
@@ -123,8 +122,8 @@ not: {...}                     # negation
 ```yaml
 when:
   all:
-    - {path: raw_augmentation.enabled, eq: true}
-    - {path: raw_augmentation.backend, ne: none}
+    - {path: split.backend, eq: general}
+    - {path: split.shuffle, eq: true}
 ```
 
 ## Python checks (`check` + `params`)
