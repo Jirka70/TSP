@@ -138,7 +138,7 @@ def test_rule_validator_rejects_invalid_rule_structure(tmp_path: Path) -> None:
         RuleValidator(path).validate()
 
 
-def test_invalid_rules_configuration_is_logged_and_exits(
+def test_invalid_rules_configuration_is_logged_and_returns(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -146,7 +146,10 @@ def test_invalid_rules_configuration_is_logged_and_exits(
     monkeypatch.setattr(
         main_module.ExperimentConfigValidator,
         "validate",
-        lambda self, cfg: SimpleNamespace(is_valid=True, config=object()),
+        lambda self, cfg: SimpleNamespace(
+            is_valid=True,
+            config=SimpleNamespace(protocol=SimpleNamespace(rigor=RigorLevel.STANDARD)),
+        ),
     )
 
     def reject_rules(self: RuleValidator) -> RulesCatalog:
@@ -154,12 +157,42 @@ def test_invalid_rules_configuration_is_logged_and_exits(
 
     monkeypatch.setattr(RuleValidator, "validate", reject_rules)
 
-    with pytest.raises(SystemExit) as error:
-        main_module.my_app.__wrapped__(object())
+    result = main_module.my_app.__wrapped__(object())
 
-    assert error.value.code == 1
+    assert result is None
     assert "rules_broken.yaml" in caplog.text
     assert "missing certainty" in caplog.text
+
+
+def test_disabled_methodology_skips_rules_catalog_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = SimpleNamespace(
+        protocol=SimpleNamespace(rigor=RigorLevel.NONE),
+        logging=object(),
+    )
+
+    def stop_pipeline_setup(configuration: object) -> None:
+        raise RuntimeError("pipeline setup reached")
+
+    monkeypatch.setattr(main_module, "setup_bootstrap_logging", lambda: None)
+    monkeypatch.setattr(
+        main_module.ExperimentConfigValidator,
+        "validate",
+        lambda self, cfg: SimpleNamespace(is_valid=True, config=config),
+    )
+    monkeypatch.setattr(main_module, "setup_pipeline_logging", stop_pipeline_setup)
+
+    def reject_rules(self: RuleValidator) -> RulesCatalog:
+        raise AssertionError("rules must not be validated when methodology is disabled")
+
+    monkeypatch.setattr(RuleValidator, "validate", reject_rules)
+
+    with pytest.raises(RuntimeError, match="pipeline setup reached"):
+        main_module.my_app.__wrapped__(object())
+
+    assert "Methodology validation disabled" in caplog.text
 
 
 def test_catalog_with_unknown_check_is_rejected(tmp_path: Path) -> None:
