@@ -18,7 +18,7 @@ Three places work together:
 configs/config.yaml  ──(Hydra)──►  ExperimentConfig ─────────────┐
    └─ protocol: within_session      (incl. protocol section)     │
                                                                  ▼
-configs/methodology/rules_*.yaml ──► rule_loader ──► MethodologyValidator.validate()
+configs/methodology/rules_*.yaml ──► RuleValidator ──► MethodologyValidator.validate()
                                                                  │
                                                                  ▼
                                     MethodologyReport ──► methodology_report.json
@@ -103,7 +103,8 @@ A rule's `severity` cannot set any other action than `off` for `none`.
 | File | Responsibility |
 |---|---|
 | `rule_model.py` | Schema of a rule (`MethodologyRule`), the condition (`Condition`), enums `Certainty`, `RuleAction`, `RulePhase`, default severities |
-| `rule_loader.py` | Loads and merges `configs/methodology/rules_*.yaml`, checks unique ids and that every `check` exists |
+| `rule_validator.py` | Validates and loads rule YAML before methodology evaluation |
+| `rule_loader.py` | Parses and merges rule files, validates the Pydantic schema, unique ids, and registered checks |
 | `condition_evaluator.py` | Evaluates `when` conditions against the dumped config |
 | `check_registry.py` | Registry of Python checks (`@methodology_check("name")`), `CheckContext`, `Finding` |
 | `checks/static_checks.py` | Python checks evaluated from the config (e.g. `split_matches_protocol`) |

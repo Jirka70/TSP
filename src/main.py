@@ -15,6 +15,8 @@ from src.types.dto.config.protocol_config import RigorLevel
 from src.validation.config_validator import ExperimentConfigValidator
 from src.validation.methodology.methodology_report import resolve_report_dir
 from src.validation.methodology.methodology_validator import MethodologyValidator
+from src.validation.methodology.rule_loader import RulesCatalogError
+from src.validation.methodology.rule_validator import RuleValidator
 
 # A logger for this file
 log = logging.getLogger(__name__)
@@ -36,11 +38,17 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
+    try:
+        rule_catalog = RuleValidator().validate()
+    except RulesCatalogError as error:
+        log.error("Invalid methodology rules configuration: %s", error)
+        return
+
     # Methodology validation (rules: configs/methodology/, strictness: protocol.rigor; rigor=none skips it)
     if ex_conf.protocol.rigor == RigorLevel.NONE:
         log.warning("Methodology validation disabled (protocol.rigor=none): rules are not applied")
     else:
-        methodology_report = MethodologyValidator.from_file().validate(ex_conf)
+        methodology_report = MethodologyValidator(rule_catalog).validate(ex_conf)
         report_path = methodology_report.save(resolve_report_dir(ex_conf))
         if methodology_report.is_valid:
             log.info(f"Methodology validated (rigor={methodology_report.rigor.value}, violations={len(methodology_report.violations)}), report: {report_path}")

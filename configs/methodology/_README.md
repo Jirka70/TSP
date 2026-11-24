@@ -17,9 +17,10 @@ overridden per experiment. Strictness is chosen per experiment via `protocol.rig
 | `rules_<section>_<name>.yaml` | rules of one section of the methodology document, top-level key `rules` |
 | `rules_runtime_planned.yaml` | planned runtime rules (commented out, not active yet) |
 
-All `rules_*.yaml` files are loaded by `src/validation/methodology/rule_loader.py` in
-alphabetical order and merged into one catalog. Rule ids must be unique across all files.
-A new section = a new `rules_*.yaml` file, nothing else has to be registered.
+Before methodology rules are evaluated, `RuleValidator` loads all `rules_*.yaml` files
+through the Pydantic schemas in `rule_model.py`. The files are read in alphabetical order
+and merged into one catalog; rule ids must be unique across all files. A new section = a
+new `rules_*.yaml` file, nothing else has to be registered.
 
 ## Rule fields
 
