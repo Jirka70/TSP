@@ -38,16 +38,16 @@ def my_app(cfg):
 
     ex_conf = validation_res.config
 
-    try:
-        rule_catalog = RuleValidator().validate()
-    except RulesCatalogError as error:
-        log.error("Invalid methodology rules configuration: %s", error)
-        return
-
     # Methodology validation (rules: configs/methodology/, strictness: protocol.rigor; rigor=none skips it)
     if ex_conf.protocol.rigor == RigorLevel.NONE:
         log.warning("Methodology validation disabled (protocol.rigor=none): rules are not applied")
     else:
+        try:
+            rule_catalog = RuleValidator().validate()
+        except RulesCatalogError as error:
+            log.error("Invalid methodology rules configuration: %s", error)
+            return
+
         methodology_report = MethodologyValidator(rule_catalog).validate(ex_conf)
         report_path = methodology_report.save(resolve_report_dir(ex_conf))
         if methodology_report.is_valid:
