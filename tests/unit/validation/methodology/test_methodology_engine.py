@@ -1,15 +1,18 @@
 """Unit tests of the methodology rules engine (DSL, rule model, loader)."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
+import src.main as main_module
 from src.types.dto.config.protocol_config import RigorLevel
 from src.validation.methodology.check_registry import registered_checks
 from src.validation.methodology.condition_evaluator import MISSING, evaluate_condition, resolve_path
 from src.validation.methodology.rule_loader import DEFAULT_RULES_PATH, RulesCatalogError, load_rules_catalog
-from src.validation.methodology.rule_model import Condition, MethodologyRule, RuleAction, RulePhase
+from src.validation.methodology.rule_model import Condition, MethodologyRule, RulesCatalog, RuleAction, RulePhase
+from src.validation.methodology.rule_validator import RuleValidator
 
 DATA = {
     "mode": "training",
@@ -118,6 +121,78 @@ def test_default_catalog_loads_and_all_checks_exist() -> None:
         if rule.check is not None:
             assert rule.check in checks
             assert checks[rule.check].phase == RulePhase.STATIC
+
+
+def test_rule_validator_returns_pydantic_validated_catalog() -> None:
+    catalog = RuleValidator().validate()
+
+    assert catalog.rules
+    assert all(isinstance(rule, MethodologyRule) for rule in catalog.rules)
+
+
+def test_rule_validator_rejects_invalid_rule_structure(tmp_path: Path) -> None:
+    path = tmp_path / "rules.yaml"
+    path.write_text("rules:\n  - {id: X-1, title: t, when: {path: a, eq: 1}}\n", encoding="utf-8")
+
+    with pytest.raises(RulesCatalogError, match="certainty"):
+        RuleValidator(path).validate()
+
+
+def test_invalid_rules_configuration_is_logged_and_returns(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setattr(main_module, "setup_bootstrap_logging", lambda: None)
+    monkeypatch.setattr(
+        main_module.ExperimentConfigValidator,
+        "validate",
+        lambda self, cfg: SimpleNamespace(
+            is_valid=True,
+            config=SimpleNamespace(protocol=SimpleNamespace(rigor=RigorLevel.STANDARD)),
+        ),
+    )
+
+    def reject_rules(self: RuleValidator) -> RulesCatalog:
+        raise RulesCatalogError("Invalid methodology rules 'rules_broken.yaml': missing certainty")
+
+    monkeypatch.setattr(RuleValidator, "validate", reject_rules)
+
+    result = main_module.my_app.__wrapped__(object())
+
+    assert result is None
+    assert "rules_broken.yaml" in caplog.text
+    assert "missing certainty" in caplog.text
+
+
+def test_disabled_methodology_skips_rules_catalog_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config = SimpleNamespace(
+        protocol=SimpleNamespace(rigor=RigorLevel.NONE),
+        logging=object(),
+    )
+
+    def stop_pipeline_setup(configuration: object) -> None:
+        raise RuntimeError("pipeline setup reached")
+
+    monkeypatch.setattr(main_module, "setup_bootstrap_logging", lambda: None)
+    monkeypatch.setattr(
+        main_module.ExperimentConfigValidator,
+        "validate",
+        lambda self, cfg: SimpleNamespace(is_valid=True, config=config),
+    )
+    monkeypatch.setattr(main_module, "setup_pipeline_logging", stop_pipeline_setup)
+
+    def reject_rules(self: RuleValidator) -> RulesCatalog:
+        raise AssertionError("rules must not be validated when methodology is disabled")
+
+    monkeypatch.setattr(RuleValidator, "validate", reject_rules)
+
+    with pytest.raises(RuntimeError, match="pipeline setup reached"):
+        main_module.my_app.__wrapped__(object())
+
+    assert "Methodology validation disabled" in caplog.text
 
 
 def test_catalog_with_unknown_check_is_rejected(tmp_path: Path) -> None:
