@@ -59,8 +59,8 @@ Each `rules_*.yaml` file holds the rules of one section of the methodology docum
 (data leakage, reproducibility, ...). All files are merged into one catalog.
 
 ```yaml
-  - id: LEAK-002
-    title: Raw augmentation before the split
+  - id: LEAK-006
+    title: Evaluation includes raw augmented data
     certainty: proven
     when:                                   # condition over the config ...
       path: raw_augmentation.backend

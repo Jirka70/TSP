@@ -76,6 +76,21 @@ rules:
     impact: Tangent-space features can be dominated by numerical noise.
     remediation: Use a shrinkage estimator (model.parameters.estimator=oas or lwf).
 
+  # Only the basic augmentor has channel dropout; it zeroes whole channels of augmented train epochs.
+  # Augmentation does not run in experiment mode.
+  - id: PRE-006
+    title: Channel dropout makes covariances singular for an unregularized Riemannian model
+    description: "augmentation.channel_dropout zeroes whole channels of augmented epochs, and the covariance estimator has no shrinkage."
+    certainty: proven
+    pipeline_modes: [ training, benchmark ]
+    when:
+      all:
+        - { path: model.model_name, in: [ riemannian_lda, riemannian_svm, riemannian_mdm, riemannian_lr, riemannian_rf ] }
+        - { path: model.parameters.estimator, in: [ scm, cov, corr, mcd, hub, stu, tyl ] }
+        - { path: augmentation.channel_dropout.prob, gt: 0.0 }
+    impact: Covariances of augmented epochs are singular; the fit fails or tangent-space features are dominated by numerical noise.
+    remediation: Use a shrinkage estimator (model.parameters.estimator=oas or lwf), or set augmentation.channel_dropout.prob=0.0.
+
   # --- Declared vs. effective frequency band ---------------------------
 
   - id: PRE-005

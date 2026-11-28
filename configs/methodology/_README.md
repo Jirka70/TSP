@@ -43,15 +43,15 @@ Example:
 
 ```yaml
 rules:
-  - id: LEAK-002
-    title: Raw augmentation before the split
-    description: "raw_augmentation runs before the split stage; augmented copies can end up in both train and test."
+  - id: LEAK-006
+    title: Evaluation includes raw augmented data
+    description: "raw_augmentation runs before the split, so test data contain synthetic copies that are counted as extra sessions."
     certainty: proven
     pipeline_modes: [ training, benchmark ]
     when:
       path: raw_augmentation.backend
       ne: none
-    impact: Near-duplicate samples in train and test inflate the score.
+    impact: The score is partly measured on synthetic data; session counts include copies, not only real recordings.
     remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
 ```
 
@@ -71,7 +71,7 @@ the config and the known behaviour of the pipeline alone; there is no legitimate
 in which the rule fires and the experiment is fine (no false positives by design).
 Typical: a supervised step fitted before the split, a split that does not match the
 declared protocol, a shuffled split without a seed.
-Examples: `LEAK-002` (raw augmentation before the split), `PROT-001`, `REP-001`.
+Examples: `LEAK-002` (raw augmented copies can land in both train and test), `PROT-001`, `REP-001`.
 
 **`suspected`**: the violation is likely, but whether it really happens (or matters)
 depends on facts the validator cannot see from the config:

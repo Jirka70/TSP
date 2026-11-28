@@ -7,15 +7,30 @@
 
 rules:
 
+  # Raw augmentation runs before the split and stores each copy as a new session of the same subject
+  # (session_id "<session>_<copy>raw_augmented"). Splits that separate whole subjects (cross_subject) or
+  # split each session on its own (within_session) keep a copy and its original apart; the others do not.
   - id: LEAK-002
-    title: Raw augmentation before the split
-    description: "raw_augmentation runs before the split stage; augmented copies derived from one recording can end up in both train and test."
+    title: Raw augmented copies can land in both train and test
+    description: "raw_augmentation stores copies as new sessions of the same subject; this split can put a copy in train and its original in test."
+    certainty: proven
+    pipeline_modes: [ training, benchmark ]
+    when:
+      all:
+        - { path: raw_augmentation.backend, ne: none }
+        - { path: split.backend, in: [ general, moabb_cross_session, moabb_within_subject ] }
+    impact: Near-duplicate samples in train and test inflate the score.
+    remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
+
+  - id: LEAK-006
+    title: Evaluation includes raw augmented data
+    description: "raw_augmentation runs before the split, so test data contain synthetic copies that are counted as extra sessions."
     certainty: proven
     pipeline_modes: [ training, benchmark ]
     when:
       path: raw_augmentation.backend
       ne: none
-    impact: Near-duplicate samples in train and test inflate the score.
+    impact: The score is partly measured on synthetic data; session counts include copies, not only real recordings.
     remediation: Use raw_augmentation=none and augment after the split (augmentation stage, train part only).
 
   # ICA / AutoReject are fitted per recording. They can leak only when the split puts epochs of one

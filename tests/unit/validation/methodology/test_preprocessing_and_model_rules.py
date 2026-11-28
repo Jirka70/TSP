@@ -84,6 +84,39 @@ def test_epoch_ica_with_unregularized_estimator_is_suspected_rank_problem() -> N
     assert "PRE-003" not in violated_rule_ids
 
 
+# --- PRE-006: channel dropout for Riemannian models ------------------------
+
+CHANNEL_DROPOUT_OVERRIDES = ["augmentation=basic", "augmentation.channel_dropout.prob=0.1"]
+
+
+def test_channel_dropout_with_unregularized_estimator_is_proven_rank_problem() -> None:
+    config = load_config(TRAINING_ML_CONFIG, CHANNEL_DROPOUT_OVERRIDES + ["model.parameters.estimator=scm"])
+
+    assert "PRE-006" in find_violated_rule_ids(config)
+
+
+def test_channel_dropout_with_shrinkage_estimator_is_accepted() -> None:
+    config = load_config(TRAINING_ML_CONFIG, CHANNEL_DROPOUT_OVERRIDES + ["model.parameters.estimator=oas"])
+
+    assert "PRE-006" not in find_violated_rule_ids(config)
+
+
+def test_disabled_channel_dropout_with_unregularized_estimator_is_accepted() -> None:
+    config = load_config(
+        TRAINING_ML_CONFIG,
+        ["augmentation=basic", "augmentation.channel_dropout.prob=0.0", "model.parameters.estimator=scm"],
+    )
+
+    assert "PRE-006" not in find_violated_rule_ids(config)
+
+
+def test_channel_dropout_is_not_checked_in_experiment_mode(tmp_path: Path) -> None:
+    model_path = save_training_run(tmp_path)
+    config = load_experiment_config(model_path, CHANNEL_DROPOUT_OVERRIDES + ["model.parameters.estimator=scm"])
+
+    assert "PRE-006" not in find_violated_rule_ids(config)
+
+
 # --- PRE-005: effective band ----------------------------------------------
 
 
